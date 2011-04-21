@@ -35,8 +35,8 @@ def get_debug_script_obj():
     return s
 
 def get_noop_script_obj():
-    s = script.MercurialScript(config={'noop': True},
-                               initial_config_file='test/test.json')
+    s = script.BaseScript(config={'noop': True},
+                          initial_config_file='test/test.json')
     return s
 
 class TestScript(unittest.TestCase):
@@ -58,16 +58,6 @@ class TestScript(unittest.TestCase):
         s.mkdir_p('test_dir/foo/bar/baz')
         self.assertTrue(os.path.isdir('test_dir/foo/bar/baz'),
                         msg="mkdir_p error when dir exists")
-
-    def test_mercurial(self):
-        s = script.MercurialScript(initial_config_file='test/test.json')
-        s.mkdir_p('test_dir')
-        s.run_command("touch test_dir/tools")
-        s.scm_checkout("http://hg.mozilla.org/build/tools",
-                      parent_dir="test_dir", clobber=True)
-        self.assertTrue(os.path.isdir("test_dir/tools"))
-        s.scm_checkout("http://hg.mozilla.org/build/tools",
-                      dir_name="test_dir/tools", halt_on_failure=False)
 
     def test_noop_mkdir_p(self):
         s = get_noop_script_obj()

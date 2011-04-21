@@ -20,7 +20,7 @@ sys.path.insert(1, os.path.dirname(sys.path[0]))
 
 from mozharness.base.config import parse_config_file
 from mozharness.base.errors import SSHErrorList
-from mozharness.base.script import MercurialScript
+from mozharness.base.vcs.mercurial import MercurialScript
 from mozharness.l10n.locales import LocalesMixin
 
 
