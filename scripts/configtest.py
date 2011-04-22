@@ -10,9 +10,9 @@ import os
 import pprint
 import sys
 try:
-    import json
-except:
     import simplejson as json
+except ImportError:
+    import json
 
 sys.path.insert(1, os.path.dirname(sys.path[0]))
 
@@ -75,7 +75,7 @@ class ConfigTest(BaseScript):
                 fh = open(config_file)
                 try:
                     json.load(fh)
-                except:
+                except ValueError:
                     self.add_summary("%s is invalid json." % config_file,
                                      level="error")
                     self.error(pprint.pformat(sys.exc_info()[1]))

@@ -4,9 +4,9 @@ import sys
 import unittest
 
 try:
-    import json
-except:
     import simplejson as json
+except ImportError:
+    import json
 
 import mozharness.base.config as config
 

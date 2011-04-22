@@ -11,12 +11,13 @@ import shutil
 import subprocess
 import sys
 import tempfile
+import traceback
 import urllib2
 
 try:
-    import json
-except:
     import simplejson as json
+except ImportError:
+    import json
 
 from mozharness.base.config import BaseConfig
 from mozharness.base.log import SimpleFileLogger, MultiFileLogger
@@ -235,10 +236,9 @@ class BaseScript(object):
         if not self.config['noop']:
             try:
                 shutil.copyfile(src, dest)
-            except:
-                # TODO say why
-                self.log("Can't copy %s to %s!" % (src, dest),
-                         level=error_level)
+            except (IOError, shutil.Error):
+                self.dump_exception("Can't copy %s to %s!" % (src, dest),
+                                    level=error_level)
 
     def chdir(self, dir_name, ignore_if_noop=False):
         self.log("Changing directory to %s." % dir_name)
@@ -284,6 +284,15 @@ class BaseScript(object):
         elif level == 'fatal':
             print >> sys.stderr, "FATAL: %s" % message
             raise SystemExit(exit_code)
+
+    # Copying Bear's dumpException():
+    # http://hg.mozilla.org/build/tools/annotate/1485f23c38e0/sut_tools/sut_lib.py#l23
+    def dump_exception(self, message, level='error'):
+        tb_type, tb_value, tb_traceback = sys.exc_info()
+        for s in traceback.format_exception(tb_type, tb_value, tb_traceback):
+            message += "\n%s" % s
+        # Log at the end, as a fatal will attempt to exit after the 1st line.
+        self.log(message, level=level)
 
     def debug(self, message):
         if self.config.get('log_level', None) == 'debug':

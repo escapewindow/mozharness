@@ -24,9 +24,9 @@ from optparse import OptionParser, Option
 import os
 import sys
 try:
-    import json
-except:
     import simplejson as json
+except ImportError:
+    import json
 
 
 

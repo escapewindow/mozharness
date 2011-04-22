@@ -6,9 +6,9 @@ import sys
 import unittest
 
 try:
-    import json
-except:
     import simplejson as json
+except ImportError:
+    import json
 
 import mozharness.base.errors as errors
 import mozharness.base.vcs.mercurial as mercurial
