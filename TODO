@@ -1,3 +1,3 @@
-* Strongly consider s,--only-ACTION,--ACTION,
+* Consider dropping --only-ACTION in favor of --action.
 ** This will require changing the multilocale steps in buildbotcustom to
    use the amended option names.

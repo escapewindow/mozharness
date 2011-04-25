@@ -1,0 +1,21 @@
+2011-04-25  Aki Sasaki  <aki@mozilla.com>
+
+* mozharness/base/config.py (_create_config_parser): Allow for --ACTION to do the same thing as --only-ACTION.
+
+* scripts/hgtool.py: New file.
+
+* CHANGES: New file.
+
+* TODO: New file.
+
+* mozharness/__init__.py: Bumped version to 0.4.
+
+2011-04-21  Aki Sasaki  <aki@mozilla.com>
+
+* mozharness/base/script.py (MercurialMixin, MercurialScript): Moved to mozharness/base/vcs/mercurial.py.  Adjusted other files accordingly.
+
+* mozharness/base/script.py (BaseScript.dump_exception): New function.
+
+* mozharness/base/script.py (BaseScript.copyfile): Adjusted to use dump_exception and a tighter try/except.
+
+* mozharness/base/config.py, script.py, scripts/configtest.py, test/*: Switched simplejson/json import order, as simplejson is faster.

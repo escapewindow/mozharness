@@ -260,7 +260,7 @@ class BaseConfig(object):
         )
         for action in self.all_actions:
             self.config_parser.add_option(
-             "--only-%s" % action, action="append_const",
+             "--only-%s" % action, "--%s" % action, action="append_const",
              dest="only_actions", const=action,
              help="Add %s to the limited list of actions" % action
             )
