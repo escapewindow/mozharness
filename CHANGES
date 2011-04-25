@@ -1,6 +1,8 @@
 2011-04-25  Aki Sasaki  <aki@mozilla.com>
 
-* mozharness/base/config.py (_create_config_parser): Allow for --ACTION to do the same thing as --only-ACTION.
+* mozharness/base/config.py (_create_config_parser): Allow for --ACTION to do the same thing as --only-ACTION.  Put in action OptionGroup.  Disable noop option.
+
+The noop option disable forced a change of s,self.config['noop'],self.config.get('noop'), throughout mozharness.
 
 * scripts/hgtool.py: New file.
 

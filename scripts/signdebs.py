@@ -166,7 +166,7 @@ dist = %(platform)s
 components = %(section)s
 """ % replace_dict
         self.info("Writing install file to %s" % file_path)
-        if self.config['noop']:
+        if self.config.get('noop'):
             print contents
             return
         fh = open(file_path, 'w')

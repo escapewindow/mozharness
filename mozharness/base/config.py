@@ -20,7 +20,7 @@ TODO:
 """
 
 from copy import deepcopy
-from optparse import OptionParser, Option
+from optparse import OptionParser, Option, OptionGroup
 import os
 import sys
 try:
@@ -232,43 +232,51 @@ class BaseConfig(object):
          type="string", help="Specify the config file (required)"
         )
 
+        # TODO deal with noop properly.
+        #self.config_parser.add_option(
+        # "--noop", "--dry-run", action="store_true", default=False,
+        # dest="noop",
+        # help="Echo commands without executing them."
+        #)
+
         # Actions
-        self.config_parser.add_option(
+        action_option_group = OptionGroup(
+         self.config_parser,
+         "Action options",
+         "Use these options to list or enable/disable actions."
+        )
+        action_option_group.add_option(
          "--list-actions", action="store_true",
          dest="list_actions",
          help="List all available actions, then exit"
         )
-        self.config_parser.add_option(
+        action_option_group.add_option(
          "--action", action="extend",
          dest="only_actions", metavar="ACTIONS",
          help="Do action %s" % self.all_actions
         )
-        self.config_parser.add_option(
+        action_option_group.add_option(
          "--add-action", action="extend",
          dest="add_actions", metavar="ACTIONS",
          help="Add action %s to the list of actions" % self.all_actions
         )
-        self.config_parser.add_option(
+        action_option_group.add_option(
          "--no-action", action="extend",
          dest="no_actions", metavar="ACTIONS",
          help="Don't perform action"
         )
-        self.config_parser.add_option(
-         "--noop", "--dry-run", action="store_true", default=False,
-         dest="noop",
-         help="Echo commands without executing them."
-        )
         for action in self.all_actions:
-            self.config_parser.add_option(
+            action_option_group.add_option(
              "--only-%s" % action, "--%s" % action, action="append_const",
              dest="only_actions", const=action,
              help="Add %s to the limited list of actions" % action
             )
-            self.config_parser.add_option(
+            action_option_group.add_option(
              "--no-%s" % action, action="append_const",
              dest="no_actions", const=action,
              help="Remove %s from the list of actions to perform" % action
             )
+        self.config_parser.add_option_group(action_option_group)
         self.volatile_config_vars.extend(['only_actions', 'add_actions',
                                           'no_actions', 'list_actions',
                                           'noop'])

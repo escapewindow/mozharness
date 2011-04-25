@@ -130,7 +130,7 @@ class BaseScript(object):
     def mkdir_p(self, path):
         if not os.path.exists(path):
             self.info("mkdir: %s" % path)
-            if not self.config['noop']:
+            if not self.config.get('noop'):
                 os.makedirs(path)
         else:
             self.debug("mkdir_p: %s Already exists." % path)
@@ -138,7 +138,7 @@ class BaseScript(object):
     def rmtree(self, path, error_level='error', exit_code=-1):
         self.info("rmtree: %s" % path)
         if os.path.exists(path):
-            if not self.config['noop']:
+            if not self.config.get('noop'):
                 if os.path.isdir(path):
                     if self._is_windows():
                         self._rmdir_recursive(path)
@@ -196,7 +196,7 @@ class BaseScript(object):
         """
         if not file_name:
             file_name = os.path.basename(url)
-        if self.config['noop']:
+        if self.config.get('noop'):
             self.info("Downloading %s" % url)
             return file_name
         req = urllib2.Request(url)
@@ -218,22 +218,22 @@ class BaseScript(object):
 
     def move(self, src, dest):
         self.info("Moving %s to %s" % (src, dest))
-        if not self.config['noop']:
+        if not self.config.get('noop'):
             shutil.move(src, dest)
 
     def chmod(self, path, mode):
         self.info("Chmoding %s to %s" % (path, mode))
-        if not self.config['noop']:
+        if not self.config.get('noop'):
             os.chmod(path, mode)
 
     def chown(self, path, uid, guid):
         self.info("Chowning %s to uid %s guid %s" % (path, uid, guid))
-        if not self.config['noop']:
+        if not self.config.get('noop'):
             os.chown(path, uid, guid)
 
     def copyfile(self, src, dest, error_level='error'):
         self.info("Copying %s to %s" % (src, dest))
-        if not self.config['noop']:
+        if not self.config.get('noop'):
             try:
                 shutil.copyfile(src, dest)
             except (IOError, shutil.Error):
@@ -242,7 +242,7 @@ class BaseScript(object):
 
     def chdir(self, dir_name, ignore_if_noop=False):
         self.log("Changing directory to %s." % dir_name)
-        if self.config['noop'] and ignore_if_noop:
+        if self.config.get('noop') and ignore_if_noop:
             self.info("noop: not changing dir")
         else:
             os.chdir(dir_name)
@@ -412,7 +412,7 @@ class BaseScript(object):
             self.info("Running command: %s in %s" % (command, cwd))
         else:
             self.info("Running command: %s" % command)
-        if self.config['noop']:
+        if self.config.get('noop'):
             self.info("(Dry run; skipping)")
             return
         p = subprocess.Popen(command, shell=shell, stdout=subprocess.PIPE,
@@ -482,7 +482,7 @@ class BaseScript(object):
         else:
             self.info("Getting output from command: %s" % command)
         # This could potentially return something?
-        if self.config['noop']:
+        if self.config.get('noop'):
             self.info("(Dry run; skipping)")
             return
         tmp_stdout = None
