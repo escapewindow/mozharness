@@ -1,3 +1,4 @@
+=== 0.4 ===
 2011-04-25  Aki Sasaki  <aki@mozilla.com>
 
 * mozharness/base/script.py (ExtendedOptionParser):
@@ -40,3 +41,5 @@
 
 * mozharness/base/config.py, script.py, scripts/configtest.py, test/*:
 	Switched simplejson/json import order, as simplejson is faster.
+
+=== 0.3 and before are non-changelogged. ===
