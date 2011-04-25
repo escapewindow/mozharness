@@ -32,31 +32,11 @@ except ImportError:
 
 # optparse {{{1
 class ExtendedOptionParser(OptionParser):
-    """Very slightly modified optparse.OptionParser, which assumes you know
-    all the options you just add_option'ed, which is usually the case.
-
-    However, I wanted to be able to have options defined in various places
-    and then figure out the dest for each option (e.g. not -v or --verbose,
-    but options.verbose) so I could set those directly in the config.
-
-    The options and parser objects in
-        (options, args) = parser.parse_args()
-    don't give an easy way of doing that; dir(options) is pretty ugly and
-    I was playing with dict() and str() in ways that made me pretty
-    frustrated.
-
-    Adding a self.variables list seems like a fairly innocuous and easy
-    way to work around this problem.
+    """OptionParser, but with ExtendOption as the option_class.
     """
     def __init__(self, **kwargs):
         kwargs['option_class'] = ExtendOption
         OptionParser.__init__(self, **kwargs)
-        self.variables = []
-
-    def add_option(self, *args, **kwargs):
-        option = OptionParser.add_option(self, *args, **kwargs)
-        if option.dest and option.dest not in self.variables:
-            self.variables.append(option.dest)
 
 class ExtendOption(Option):
     """from http://docs.python.org/library/optparse.html?highlight=optparse#adding-new-actions"""
@@ -203,21 +183,6 @@ class BaseConfig(object):
     def _create_config_parser(self, config_options, usage):
         self.config_parser = ExtendedOptionParser(usage=usage)
         self.config_parser.add_option(
-         "--log-level", action="store",
-         type="choice", dest="log_level", default="info",
-         choices=['debug', 'info', 'warning', 'error', 'critical', 'fatal'],
-         help="Set log level (debug|info|warning|error|critical|fatal)"
-        )
-        self.config_parser.add_option(
-         "-q", "--quiet", action="store_false", dest="log_to_console",
-         default=True, help="Don't log to the console"
-        )
-        self.config_parser.add_option(
-         "--append-to-log", action="store_true",
-         dest="append_to_log", default=False,
-         help="Append to the log"
-        )
-        self.config_parser.add_option(
          "--work-dir", action="store", dest="work_dir",
          type="string", default="work_dir",
          help="Specify the work_dir (subdir of base_work_dir)"
@@ -228,9 +193,37 @@ class BaseConfig(object):
          help="Specify the absolute path of the parent of the working directory"
         )
         self.config_parser.add_option(
-         "--config-file", action="store", dest="config_file",
+         "--config-file", "--cfg", action="store", dest="config_file",
          type="string", help="Specify the config file (required)"
         )
+
+        # Logging
+        log_option_group = OptionGroup(self.config_parser, "Logging")
+        log_option_group.add_option(
+         "--log-level", action="store",
+         type="choice", dest="log_level", default="info",
+         choices=['debug', 'info', 'warning', 'error', 'critical', 'fatal'],
+         help="Set log level (debug|info|warning|error|critical|fatal)"
+        )
+        log_option_group.add_option(
+         "-q", "--quiet", action="store_false", dest="log_to_console",
+         default=True, help="Don't log to the console"
+        )
+        log_option_group.add_option(
+         "--append-to-log", action="store_true",
+         dest="append_to_log", default=False,
+         help="Append to the log"
+        )
+        log_option_group.add_option(
+         "--multi-log", action="store_const", const="multi",
+         dest="log_type", help="Log using MultiFileLogger"
+        )
+        log_option_group.add_option(
+         "--simple-log", action="store_const", const="simple",
+          dest="log_type", help="Log using SimpleFileLogger"
+        )
+        self.config_parser.add_option_group(log_option_group)
+
 
         # TODO deal with noop properly.
         #self.config_parser.add_option(
@@ -240,11 +233,8 @@ class BaseConfig(object):
         #)
 
         # Actions
-        action_option_group = OptionGroup(
-         self.config_parser,
-         "Action options",
-         "Use these options to list or enable/disable actions."
-        )
+        action_option_group = OptionGroup(self.config_parser, "Actions",
+         "Use these options to list or enable/disable actions.")
         action_option_group.add_option(
          "--list-actions", action="store_true",
          dest="list_actions",
@@ -336,7 +326,7 @@ class BaseConfig(object):
                 raise SystemExit(-1)
         else:
             self.set_config(parse_config_file(options.config_file))
-        for key in self.config_parser.variables:
+        for key in defaults.keys():
             value = getattr(options, key)
             if value is None:
                 continue

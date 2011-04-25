@@ -30,21 +30,6 @@ class BaseScript(object):
         self.abs_dirs = None
         if config_options is None:
             config_options = []
-        config_options.extend([[
-         ["--multi-log",],
-         {"action": "store_const",
-          "const": "multi",
-          "dest": "log_type",
-          "help": "Log using MultiFileLogger"
-         }
-        ],[
-         ["--simple-log",],
-         {"action": "store_const",
-          "const": "simple",
-          "dest": "log_type",
-          "help": "Log using SimpleFileLogger"
-         }
-        ]])
         self.summary_list = []
         rw_config = BaseConfig(config_options=config_options,
                                **kwargs)
@@ -53,16 +38,25 @@ class BaseScript(object):
         self.all_actions = tuple(rw_config.all_actions)
         self.env = None
         self.new_log_obj(default_log_level=default_log_level)
-        # self.config is read-only and locked.
+
+        # Set self.config to read-only.
         #
         # We can create intermediate config info programmatically from
         # this in a repeatable way, with logs; this is how we straddle the
         # ideal-but-not-user-friendly static config and the
         # easy-to-write-hard-to-debug writable config.
-        self._lock_config()
+        #
+        # To allow for other, script-specific configurations
+        # (e.g., hgtool's buildbot props json parsing), before locking,
+        # call self._pre_config_lock().  If needed, this method can
+        # alter self.config.
+        if hasattr(self, '_pre_config_lock') and callable(getattr(self, '_pre_config_lock')):
+            self._pre_config_lock()
+        self._config_lock()
+
         self.info("Run as %s" % rw_config.command_line)
 
-    def _lock_config(self):
+    def _config_lock(self):
         self.config.lock()
 
     def _possibly_run_method(self, method_name, error_if_missing=False):
