@@ -14,6 +14,7 @@ except ImportError:
 
 sys.path.insert(1, os.path.dirname(sys.path[0]))
 
+from mozharness.base.config import parse_config_file
 from mozharness.base.script import BaseScript
 from mozharness.base.vcs.mercurial import MercurialMixin
 
@@ -38,7 +39,7 @@ class HGTool(MercurialMixin, BaseScript):
     ],[
      ["--props-file", "-p"],
      {"action": "store",
-      "dest": "propsfile",
+      "dest": "vcs_propsfile",
       "default": os.environ.get('PROPERTIES_FILE'),
       "help": "build json file containing revision information"
      }
@@ -73,9 +74,11 @@ class HGTool(MercurialMixin, BaseScript):
 
     def __init__(self, require_config_file=False):
         BaseScript.__init__(self, config_options=self.config_options,
-                            all_actions=['doit',
+                            all_actions=['mercurial',
+                             'output'
                             ],
-                            default_actions=['doit',
+                            default_actions=['mercurial',
+                             'output'
                             ],
                             usage="usage: %prog [options] repo [dest]",
                             require_config_file=require_config_file)
@@ -102,8 +105,43 @@ class HGTool(MercurialMixin, BaseScript):
         else:
             self.config['vcs_dest'] = os.path.basename(self.config['vcs_repo'])
 
-    def doit(self):
+        # This is a buildbot-specific props file.
+        if self.config.get('vcs_propsfile'):
+            js = parse_config_file(self.config['vcs_propsfile'])
+            if self.config.get('vcs_revision') is None:
+                self.config['vcs_revision'] = js['sourcestamp']['revision']
+            if self.config.get('vcs_branch') is None:
+                self.config['vcs_branch'] = js['sourcestamp']['branch']
+
+    def query_revision(self):
+        if self.revision:
+            return self.revision
+        # TODO determine revision if mercurial action hasn't run?
+        return "12345"
+
+    def mercurial(self):
+        # got_revision = mercurial(repo, dest, options.branch, options.revision,
+
+        # shareBase=options.shared_dir)
         pass
+
+    def output(self):
+        c = self.config
+
+        got_revision = self.query_revision()
+        if c.get('tbox_output'):
+            if c['vcs_repo'].startswith("http"):
+                url = "%s/rev/%s" % (c['vcs_repo'], got_revision)
+                msg = "TinderboxPrint: <a href=\"%(url)s\">revision: %(got_revision)s</a>" % locals()
+            else:
+                msg = "TinderboxPrint: revision: %s" % got_revision
+
+            # Print as well as info() to make sure we get the TinderboxPrint
+            # sans any log prefixes.
+            print msg
+            self.info(msg)
+        else:
+            self.info("Got revision %s" % got_revision)
 
 # __main__ {{{1
 if __name__ == '__main__':
