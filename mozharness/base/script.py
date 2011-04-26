@@ -16,7 +16,6 @@ import re
 import shutil
 import subprocess
 import sys
-import tempfile
 import urllib2
 
 try:
@@ -275,7 +274,8 @@ class ShellMixin(object):
 
     def get_output_from_command(self, command, cwd=None, shell=True,
                                 halt_on_failure=False, env=None,
-                                silent=False):
+                                silent=False, tmpfile_base_path='tmpfile',
+                                return_type='output'):
         """Similar to run_command, but where run_command is an
         os.system(command) analog, get_output_from_command is a `command`
         analog.
@@ -301,22 +301,32 @@ class ShellMixin(object):
         if self.config.get('noop'):
             self.info("(Dry run; skipping)")
             return
-        tmp_stdout = None
-        tmp_stderr = None
         pv = platform.python_version_tuple()
         python_26 = False
-        # Bad NamedTemporaryFile in python_version < 2.6 :(
-        if int(pv[0]) > 2 or (int(pv[0]) == 2 and int(pv[1]) >= 6):
-            python_26 = True
-            tmp_stdout = tempfile.NamedTemporaryFile(suffix="stdout",
-                                                     delete=False)
-            tmp_stderr = tempfile.NamedTemporaryFile(suffix="stderr",
-                                                     delete=False)
-        else:
-            tmp_stdout = tempfile.NamedTemporaryFile(suffix="stdout")
-            tmp_stderr = tempfile.NamedTemporaryFile(suffix="stderr")
-        tmp_stdout_filename = tmp_stdout.name
-        tmp_stderr_filename = tmp_stderr.name
+        tmp_stdout = None
+        tmp_stderr = None
+        tmp_stdout_filename = '%s_stdout' % tmpfile_base_path
+        tmp_stderr_filename = '%s_stderr' % tmpfile_base_path
+
+        # TODO probably some more elegant solution than 2 similar passes
+        try:
+            tmp_stdout = open(tmp_stdout_filename, 'w')
+        except IOError:
+            level = 'error'
+            if halt_on_failure:
+                level = 'fatal'
+            self.log("Can't open %s for writing!" % tmp_stdout_filename + \
+                     self.dump_exception(), level=level)
+            return -1
+        try:
+            tmp_stderr = open(tmp_stderr_filename, 'w')
+        except IOError:
+            level = 'error'
+            if halt_on_failure:
+                level = 'fatal'
+            self.log("Can't open %s for writing!" % tmp_stderr_filename + \
+                     self.dump_exception(), level=level)
+            return -1
         p = subprocess.Popen(command, shell=shell, stdout=tmp_stdout,
                              cwd=cwd, stderr=tmp_stderr, env=env)
         self.debug("Temporary files: %s and %s" % (tmp_stdout_filename, tmp_stderr_filename))
@@ -357,7 +367,10 @@ class ShellMixin(object):
                        exit_code=p.returncode)
         # Hm, options on how to return this? I bet often we'll want
         # output_lines[0] with no newline.
-        return output
+        if return_type != 'output':
+            return (tmp_stdout_filename, tmp_stderr_filename)
+        else:
+            return output
 
 
 
