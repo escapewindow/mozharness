@@ -310,7 +310,7 @@ class BaseConfig(object):
         """
         self.command_line = ' '.join(sys.argv)
         if not args:
-            args = sys.argv[:]
+            args = sys.argv[1:]
         (options, args) = self.config_parser.parse_args(args)
         if options.list_actions:
             print "Actions available: " + ', '.join(self.all_actions)
@@ -339,8 +339,8 @@ class BaseConfig(object):
 
         Seems a little complex, but the logic goes:
 
-        If we specify --only-BLAH once or multiple times, we want to override
-        the default_actions list with the ones we list.
+        If we specify --BLAH or --only-BLAH once or multiple times,
+        we want to override the default_actions list with the ones we list.
 
         Otherwise, if we specify --add-action, we want to add an action to
         the default list.
@@ -361,7 +361,9 @@ class BaseConfig(object):
                 if action in self.actions:
                     self.actions.remove(action)
 
-        return (options, args)
+        self.options = options
+        self.args = args
+        return (self.options, self.args)
 
 
 

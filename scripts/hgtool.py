@@ -24,14 +24,14 @@ class HGTool(MercurialMixin, BaseScript):
     config_options = [[
      ["--rev", "-r"],
      {"action": "store",
-      "dest": "revision",
+      "dest": "vcs_revision",
       "default": os.environ.get('HG_REV'),
       "help": "Specify which revision to update to"
      }
     ],[
      ["--branch", "-b"],
      {"action": "store",
-      "dest": "branch",
+      "dest": "vcs_branch",
       "default": os.environ.get('HG_BRANCH', 'default'),
       "help": "Specify which branch to update to"
      }
@@ -45,40 +45,62 @@ class HGTool(MercurialMixin, BaseScript):
     ],[
      ["--tbox",],
      {"action": "store_true",
-      "dest": "tbox",
+      "dest": "tbox_output",
       "default": bool(os.environ.get('PROPERTIES_FILE')),
       "help": "output TinderboxPrint messages"
      }
     ],[
      ["--no-tbox",],
      {"action": "store_false",
-      "dest": "tbox",
+      "dest": "tbox_output",
       "help": "don't output TinderboxPrint messages"
      }
     ],[
      ["--shared-dir", '-s'],
      {"action": "store",
-      "dest": "shared_dir",
+      "dest": "vcs_shared_dir",
       "default": os.environ.get('HG_SHARE_BASE_DIR'),
       "help": "clone to a shared directory"
      }
     ],[
      ["--check-outgoing",],
      {"action": "store_true",
-      "dest": "outgoing",
+      "dest": "vcs_strip_outgoing",
       "default": False,
       "help": "check for and clobber outgoing changesets"
      }
     ]]
 
     def __init__(self, require_config_file=False):
-        self.config_files = []
         BaseScript.__init__(self, config_options=self.config_options,
                             all_actions=['doit',
                             ],
                             default_actions=['doit',
                             ],
+                            usage="usage: %prog [options] repo [dest]",
                             require_config_file=require_config_file)
+
+    def _pre_config_lock(self, rw_config):
+        # This is a workaround for legacy compatibility with the original
+        # hgtool.py.
+        #
+        # Since we need to read the buildbot json props, as well as parse
+        # additional commandline arguments that aren't specified via
+        # options, we call this function before locking the config.
+        #
+        # rw_config is the BaseConfig object that parsed the options;
+        # self.config is the soon-to-be-locked runtime configuration.
+        #
+        # This is a powerful way to hack the config before locking;
+        # we need to be careful not to abuse it.
+        args = rw_config.args
+        if len(args) not in (1, 2):
+            self.fatal("Invalid number of arguments!\n" + rw_config.config_parser.get_usage())
+        self.config['vcs_repo'] = args[0]
+        if len(args) == 2:
+            self.config['vcs_dest'] = args[1]
+        else:
+            self.config['vcs_dest'] = os.path.basename(self.config['vcs_repo'])
 
     def doit(self):
         pass

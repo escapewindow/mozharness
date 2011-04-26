@@ -51,7 +51,7 @@ class BaseScript(object):
         # call self._pre_config_lock().  If needed, this method can
         # alter self.config.
         if hasattr(self, '_pre_config_lock') and callable(getattr(self, '_pre_config_lock')):
-            self._pre_config_lock()
+            self._pre_config_lock(rw_config)
         self._config_lock()
 
         self.info("Run as %s" % rw_config.command_line)

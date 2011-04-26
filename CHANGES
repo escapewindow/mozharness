@@ -1,24 +1,28 @@
 === 0.4 ===
 2011-04-25  Aki Sasaki  <aki@mozilla.com>
 
+* mozharness/base/script.py (BaseConfig.parse_args):
+    Fixed the args list sent to parse_args (sys.argv[1:])
+    Set self.options and self.args after parse_args for later access in BaseScript._pre_config_lock
+
 * mozharness/base/script.py (ExtendedOptionParser):
-	Removed self.variables hack and add_option override.
+    Removed self.variables hack and add_option override.
 
 * mozharness/base/script.py (__init__):
-	Added a _pre_config_lock() call before _config_lock() to allow for things like hgtool reading the buildprops json into self.config.
-	Moved --simple-log and --multi-log options to mozharness.base.config._create_config_parser.
+    Added a _pre_config_lock() call before _config_lock() to allow for things like hgtool reading the buildprops json into self.config.
+    Moved --simple-log and --multi-log options to mozharness.base.config._create_config_parser.
 
 * mozharness/base/script.py (_config_lock):
-	Renamed to match _pre_config_lock (was _lock_config).
+    Renamed to match _pre_config_lock (was _lock_config).
 
 * mozharness/base/config.py (_create_config_parser):
-	Allow for --ACTION to do the same thing as --only-ACTION.
-	Added action and logging OptionGroups.
-	Moved --simple-log and --multi-log options here.
-	Disable noop option argument.
-	Removed dependency on config_parser.variables (config_parser.defaults.keys() gives the same info).
+    Allow for --ACTION to do the same thing as --only-ACTION.
+    Added action and logging OptionGroups.
+    Moved --simple-log and --multi-log options here.
+    Disable noop option argument.
+    Removed dependency on config_parser.variables (config_parser.defaults.keys() gives the same info).
 
-	The noop option disable forced a change of s,self.config['noop'],self.config.get('noop'), throughout mozharness.
+    The noop option disable forced a change of s,self.config['noop'],self.config.get('noop'), throughout mozharness.
 
 * scripts/hgtool.py: New file.
 
@@ -31,15 +35,15 @@
 2011-04-21  Aki Sasaki  <aki@mozilla.com>
 
 * mozharness/base/script.py (MercurialMixin, MercurialScript):
-	Moved to mozharness/base/vcs/mercurial.py.
-	Adjusted other files accordingly.
+    Moved to mozharness/base/vcs/mercurial.py.
+    Adjusted other files accordingly.
 
 * mozharness/base/script.py (BaseScript.dump_exception): New function.
 
 * mozharness/base/script.py (BaseScript.copyfile):
-	Adjusted to use dump_exception and a tighter try/except.
+    Adjusted to use dump_exception and a tighter try/except.
 
 * mozharness/base/config.py, script.py, scripts/configtest.py, test/*:
-	Switched simplejson/json import order, as simplejson is faster.
+    Switched simplejson/json import order, as simplejson is faster.
 
 === 0.3 and before are non-changelogged. ===
