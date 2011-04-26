@@ -104,7 +104,6 @@ class TestScript(unittest.TestCase):
         for obj in (s, s2):
             obj.debug("Testing DEBUG")
             obj.warning("Testing WARNING")
-            obj.warn("Testing WARNING 2")
             obj.error("Testing ERROR")
             obj.critical("Testing CRITICAL")
             try:

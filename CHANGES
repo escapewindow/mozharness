@@ -1,6 +1,12 @@
 === 0.4 ===
 2011-04-26  Aki Sasaki  <aki@mozilla.com>
 
+* test/test_log.py (TestLog.test_console_log): Removed method.
+    Coverage didn't change at all (console logging is tested in test_script.py) but we removed a spurious line of output from unit.sh.
+
+* mozharness/base/log.py (LogMixin.warn): Removed method.
+    Also removed references to it.
+
 * mozharness/base/script.py (ShellMixin.get_output_from_command):
     fixed the NamedTemporaryFile issue between 2.5 and 2.6, by allowing you to name your own tmpfile if you want to munge the contents later.
 

@@ -34,10 +34,3 @@ class TestLog(unittest.TestCase):
         l.log_message('blah')
         self.assertTrue(os.path.exists(get_log_file_path()))
         del(l)
-
-    def test_console_log(self):
-        l = log.SimpleFileLogger(log_dir=tmp_dir, log_name=log_name,
-                                 log_to_console=True)
-        l.log_message("This test warning should go to the console.",
-                      level="warning")
-        del(l)

@@ -3,12 +3,6 @@
 
 TODO:
 - network logging support.
-- ability to change log settings mid-stream
-- per-module log settings
-- are we really forced to use global logging.* settings???
-  - i hope i'm mistaken here
-  - would love to do instance-based settings so we can have multiple
-    objects that can each have their own logger
 - log rotation config
 """
 
@@ -64,9 +58,6 @@ class LogMixin(object):
     def warning(self, message):
         self.log(message, level='warning')
 
-    def warn(self, message):
-        self.log(message, level='warning')
-
     def error(self, message):
         self.log(message, level='error')
 
@@ -84,15 +75,6 @@ class BaseLogger(object):
     either logging or config that allows you to count the number of
     error,critical,fatal messages for us to count up at the end (aiming
     for 0).
-
-    This "warning" instead of "warn" is going to trip me up.
-    (It has, already.)
-    However, while adding a 'warn': logging.WARNING would be nice,
-
-        a) I don't want to confuse people who know the logging module and
-           are comfortable with WARNING, so removing 'warning' is out, and
-        b) there's a |for level in self.LEVELS.keys():| below, which would
-           create a dup .warn.log alongside the .warning.log.
     """
     LEVELS = {'debug': logging.DEBUG,
               'info': logging.INFO,
