@@ -49,11 +49,13 @@ class BaseScript(LogMixin, object):
         # (e.g., hgtool's buildbot props json parsing), before locking,
         # call self._pre_config_lock().  If needed, this method can
         # alter self.config.
-        if hasattr(self, '_pre_config_lock') and callable(getattr(self, '_pre_config_lock')):
-            self._pre_config_lock(rw_config)
+        self._pre_config_lock(rw_config)
         self._config_lock()
 
         self.info("Run as %s" % rw_config.command_line)
+
+    def _pre_config_lock(self, rw_config):
+        pass
 
     def _config_lock(self):
         self.config.lock()
