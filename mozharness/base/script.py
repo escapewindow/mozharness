@@ -11,7 +11,6 @@ import shutil
 import subprocess
 import sys
 import tempfile
-import traceback
 import urllib2
 
 try:

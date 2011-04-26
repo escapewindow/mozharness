@@ -15,6 +15,8 @@ TODO:
 from datetime import datetime
 import logging
 import os
+import sys
+import traceback
 
 # Define our own FATAL
 FATAL = logging.CRITICAL + 10
@@ -22,8 +24,61 @@ logging.addLevelName(FATAL, 'FATAL')
 
 
 
+# LogMixin {{{1
+class LogMixin(object):
+    """This is a mixin for any object to access similar logging
+    functionality -- more so, of course, for those objects with
+    self.config and self.log_obj, of course.
+    """
+
+    def log(self, message, level='info', exit_code=-1):
+        if self.log_obj:
+            return self.log_obj.log_message(message, level=level,
+                                            exit_code=exit_code)
+        if level == 'info':
+            print message
+        elif level == 'debug':
+            print 'DEBUG: %s' % message
+        elif level in ('warning', 'error', 'critical'):
+            print >> sys.stderr, "%s: %s" % (level.upper(), message)
+        elif level == 'fatal':
+            print >> sys.stderr, "FATAL: %s" % message
+            raise SystemExit(exit_code)
+   
+    # Copying Bear's dumpException():
+    # http://hg.mozilla.org/build/tools/annotate/1485f23c38e0/sut_tools/sut_lib.py#l23
+    def dump_exception(self, message, level='error'):
+        tb_type, tb_value, tb_traceback = sys.exc_info()
+        for s in traceback.format_exception(tb_type, tb_value, tb_traceback):
+            message += "\n%s" % s
+        # Log at the end, as a fatal will attempt to exit after the 1st line.
+        self.log(message, level=level)
+
+    def debug(self, message):
+        if hasattr(self, 'config') and self.config.get('log_level', None) == 'debug':
+            self.log(message, level='debug')
+
+    def info(self, message):
+        self.log(message, level='info')
+
+    def warning(self, message):
+        self.log(message, level='warning')
+
+    def warn(self, message):
+        self.log(message, level='warning')
+
+    def error(self, message):
+        self.log(message, level='error')
+
+    def critical(self, message):
+        self.log(message, level='critical')
+
+    def fatal(self, message, exit_code=-1):
+        self.log(message, level='fatal', exit_code=exit_code)
+
+
 # BaseLogger {{{1
-class BaseLogger(object):
+class BaseLogger(LogMixin, object):
     """Create a base logging class.
     TODO: status? There may be a status object or status capability in
     either logging or config that allows you to count the number of
@@ -67,6 +122,8 @@ class BaseLogger(object):
         self.log_name = log_name
         self.log_dir = log_dir
         self.append_to_log = append_to_log
+        # for LogMixin
+        self.log_obj = self
 
         # Not sure what I'm going to use this for; useless unless we
         # can have multiple logging objects that don't trample each other
@@ -169,59 +226,6 @@ class BaseLogger(object):
             self.logger.log(FATAL, 'Exiting %d' % exit_code)
             raise SystemExit(exit_code)
 
-
-
-# LogMixin {{{1
-class LogMixin(object):
-    """This is a mixin for any object to access similar logging
-    functionality -- more so, of course, for those objects with
-    self.config and self.log_obj, of course.
-    """
-
-    def log(self, message, level='info', exit_code=-1):
-        if self.log_obj:
-            return self.log_obj.log_message(message, level=level,
-                                            exit_code=exit_code)
-        if level == 'info':
-            print message
-        elif level == 'debug':
-            print 'DEBUG: %s' % message
-        elif level in ('warning', 'error', 'critical'):
-            print >> sys.stderr, "%s: %s" % (level.upper(), message)
-        elif level == 'fatal':
-            print >> sys.stderr, "FATAL: %s" % message
-            raise SystemExit(exit_code)
-   
-    # Copying Bear's dumpException():
-    # http://hg.mozilla.org/build/tools/annotate/1485f23c38e0/sut_tools/sut_lib.py#l23
-    def dump_exception(self, message, level='error'):
-        tb_type, tb_value, tb_traceback = sys.exc_info()
-        for s in traceback.format_exception(tb_type, tb_value, tb_traceback):
-            message += "\n%s" % s
-        # Log at the end, as a fatal will attempt to exit after the 1st line.
-        self.log(message, level=level)
-
-    def debug(self, message):
-        if hasattr(self, 'config') and self.config.get('log_level', None) == 'debug':
-            self.log(message, level='debug')
-
-    def info(self, message):
-        self.log(message, level='info')
-
-    def warning(self, message):
-        self.log(message, level='warning')
-
-    def warn(self, message):
-        self.log(message, level='warning')
-
-    def error(self, message):
-        self.log(message, level='error')
-
-    def critical(self, message):
-        self.log(message, level='critical')
-
-    def fatal(self, message, exit_code=-1):
-        self.log(message, level='fatal', exit_code=exit_code)
 
 
 # SimpleFileLogger {{{1
