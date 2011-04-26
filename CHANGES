@@ -1,11 +1,21 @@
 === 0.4 ===
 2011-04-25  Aki Sasaki  <aki@mozilla.com>
 
-* mozharness/base/script.py (BaseConfig.parse_args):
+* mozharness/base/log.py (BaseLogger.log_message): Renamed from log() to be compatible with LogMixin.
+
+* mozharness/base/log.py (LogMixin): New class.
+    Pull the generic logging methods from BaseScript to this new class.
+    This is specifically to allow for non-BaseScript objects to use the log_obj from BaseScript (set a LogMixin's self.log_obj to the logging object)
+
+* mozharness/base/script.py (BaseScript):
+    Pull the generic logging methods from BaseScript to a new LogMixin class.
+    Change BaseScript to inherit LogMixin by default.
+
+* mozharness/base/config.py (BaseConfig.parse_args):
     Fixed the args list sent to parse_args (sys.argv[1:])
     Set self.options and self.args after parse_args for later access in BaseScript._pre_config_lock
 
-* mozharness/base/script.py (ExtendedOptionParser):
+* mozharness/base/config.py (ExtendedOptionParser):
     Removed self.variables hack and add_option override.
 
 * mozharness/base/script.py (__init__):
