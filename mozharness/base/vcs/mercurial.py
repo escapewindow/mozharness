@@ -61,16 +61,37 @@ class MercurialScript(MercurialMixin, BaseScript):
 
 
 # MercurialVCS {{{1
-#
-#from util.commands import run_cmd, get_output, remove_path
-#
-#import logging
-#log = logging.getLogger(__name__)
 class DefaultShareBase:
     pass
 DefaultShareBase = DefaultShareBase()
 
+REVISION, BRANCH = 0, 1
+
+def make_hg_url(hg_host, repo_path, protocol='http', revision=None,
+                filename=None):
+    """Helper function.
+
+    Construct a valid hg url from a base hg url (hg.mozilla.org),
+    repo_path, revision and possible filename
+    """
+    base = '%s://%s' % (protocol, hg_host)
+    repo = '/'.join(p.strip('/') for p in [base, repo_path])
+    if not filename:
+        if not revision:
+            return repo
+        else:
+            return '/'.join([p.strip('/') for p in [repo, 'rev', revision]])
+    else:
+        assert revision
+        return '/'.join([p.strip('/') for p in [repo, 'raw-file', revision, filename]])
+
 class MercurialVCS(ShellMixin, OSMixin, LogMixin, object):
+    # For the most part, scripts import mercurial, update,
+    # hgtool uses mercurial, share, out
+    # tag-release.py imports
+    #  apply_and_push, update, get_revision, out, BRANCH, REVISION,
+    #  get_branches, cleanOutgoingRevs
+
     def __init__(self, log_obj=None, config=None, vcs_config=None):
         super(MercurialVCS, self).__init__()
         self.branch = None
@@ -80,10 +101,10 @@ class MercurialVCS(ShellMixin, OSMixin, LogMixin, object):
         self.config = config
         # TODO gotta implement this
         # vcs_config = {
+        #  hg_host: hg_host,
         #  repo: repository,
         #  branch: branch,
         #  revision: revision,
-        #  hg_host: hg_host,
         #  ssh_username: ssh_username,
         #  ssh_key: ssh_key,
         # }
@@ -134,21 +155,6 @@ class MercurialVCS(ShellMixin, OSMixin, LogMixin, object):
             repo = os.path.abspath(repo)
         return repo
 
-    # TODO get these from vcs_config?
-    def make_hg_url(self, hg_host, repo_path, protocol='http', revision=None,
-                    filename=None):
-        """construct a valid hg url from a base hg url (hg.mozilla.org),
-        repo_path, revision and possible filename"""
-        base = '%s://%s' % (protocol, hg_host)
-        repo = '/'.join(p.strip('/') for p in [base, repo_path])
-        if not filename:
-            if not revision:
-                return repo
-            else:
-                return '/'.join([p.strip('/') for p in [repo, 'rev', revision]])
-        else:
-            revision = self.query_revision()
-            return '/'.join([p.strip('/') for p in [repo, 'raw-file', revision, filename]])
 
     # TODO self.repo
     def get_repo_name(self, repo):
@@ -291,7 +297,6 @@ class MercurialVCS(ShellMixin, OSMixin, LogMixin, object):
         return self.update(dest, branch=branch, revision=revision)
 
     # Defines the places of attributes in the tuples returned by `out'
-    REVISION, BRANCH = 0, 1
 
     def out(self, src, remote, **kwargs):
         """Check for outgoing changesets present in a repo"""
@@ -456,7 +461,7 @@ class MercurialVCS(ShellMixin, OSMixin, LogMixin, object):
                 if n == max_attempts:
                     self.debug("Tried %d times, giving up" % max_attempts)
                     for r in reversed(new_revs):
-                        self.run_command(['hg', 'strip', r[self.REVISION]],
+                        self.run_command(['hg', 'strip', r[REVISION]],
                                          cwd=localrepo, error_list=HgErrorList)
                     raise VCSException("Failed to push")
                 self.pull(remote, localrepo, update_dest=False,
@@ -470,7 +475,7 @@ class MercurialVCS(ShellMixin, OSMixin, LogMixin, object):
                     self.debug("Failed to rebase: %s" % str(e))
                     self.update(localrepo, branch=branch)
                     for r in reversed(new_revs):
-                        self.run_command(['hg', 'strip', r[self.REVISION]],
+                        self.run_command(['hg', 'strip', r[REVISION]],
                                          cwd=localrepo, error_list=HgErrorList)
                     changer(localrepo, n+1)
 
@@ -487,7 +492,7 @@ class MercurialVCS(ShellMixin, OSMixin, LogMixin, object):
         outgoingRevs = self.out(src=reponame, remote=remote,
                                 ssh_username=username, ssh_key=sshKey)
         for r in reversed(outgoingRevs):
-            self.run_command(['hg', 'strip', r[self.REVISION]],
+            self.run_command(['hg', 'strip', r[REVISION]],
                              cwd=reponame, error_list=HgErrorList)
 
 

@@ -36,7 +36,7 @@ class TestMercurial(unittest.TestCase):
     def tearDown(self):
         cleanup()
 
-    def test_mercurial(self):
+    def test_mercurial_script(self):
         s = mercurial.MercurialScript(initial_config_file='test/test.json')
         s.mkdir_p('test_dir')
         s.run_command("touch test_dir/tools")
