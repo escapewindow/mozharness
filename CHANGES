@@ -15,6 +15,7 @@
 
 * mozharness/base/vcs/mercurial.py (MercurialVCS): Added class.
     This will hopefully be a standalone object that takes the baseScript log_obj and perhaps config, but will allow for multiple VCS objects per BaseScript.
+    First pass: changed standalone functions to a MercurialVCS object.
 
 2011-04-25  Aki Sasaki  <aki@mozilla.com>
 
