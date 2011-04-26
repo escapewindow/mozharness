@@ -10,7 +10,8 @@ import sys
 sys.path.insert(1, os.path.dirname(os.path.dirname(os.path.dirname(sys.path[0]))))
 
 from mozharness.base.errors import HgErrorList, VCSException
-from mozharness.base.script import BaseScript
+from mozharness.base.log import LogMixin
+from mozharness.base.script import BaseScript, ShellMixin
 
 # Mercurial {{{1
 class MercurialMixin(object):
@@ -69,17 +70,40 @@ class DefaultShareBase:
     pass
 DefaultShareBase = DefaultShareBase()
 
-class MercurialVCS(object):
-    def __init__(self, log_obj=None, vcs_config=None):
+class MercurialVCS(ShellMixin, LogMixin, object):
+    def __init__(self, log_obj=None, config=None, vcs_config=None):
+        super(MercurialVCS, self).__init__()
         self.revision = None
+        self.repo = None
         self.log_obj = log_obj
+        self.config = config
         # TODO gotta implement this
         self.vcs_config = vcs_config
 
-    def query_revision(self):
+    def query_revision(self, error_level='error'):
         if self.revision:
             return self.revision
-        # TODO figure out revision
+        if 'revision' in self.vcs_config:
+            self.revision = self.vcs_config['revision']
+        # else: ??? + profit
+        if self.revision:
+            return self.revision
+        else:
+            self.log("Can't determine revision in %s" % __name__,
+                     level=error_level)
+
+    def query_repo(self, error_level='error'):
+        if self.repo:
+            return self.repo
+        if 'repo' in self.vcs_config:
+            self.repo = self.vcs_config['repo']
+        # else: ??? + profit
+        if self.repo:
+            return self.repo
+        else:
+            self.log("Can't determine repo in %s" % __name__,
+                     level=error_level)
+
 
     # TODO rename?
     def _make_absolute(self, repo):
@@ -109,7 +133,6 @@ class MercurialVCS(object):
     # TODO self.repo
     def get_repo_name(self, repo):
         return repo.rstrip('/').split('/')[-1]
-
 
     # TODO self.repo
     def get_repo_path(self, repo):

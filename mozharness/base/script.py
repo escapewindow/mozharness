@@ -29,6 +29,10 @@ from mozharness.base.errors import HgErrorList
 
 # OSMixin {{{1
 class OSMixin(object):
+    """Filesystem commands and the like.
+
+    Currently dependent on LogMixin, and a self.config of some sort.
+    """
     def mkdir_p(self, path):
         if not os.path.exists(path):
             self.info("mkdir: %s" % path)
@@ -154,6 +158,9 @@ class OSMixin(object):
 class ShellMixin(object):
     """These are very special but very complex methods that, together with
     logging and config, provide the base for all scripts in this harness.
+
+    This is currently dependent on LogMixin, and assumes that there is
+    a self.config of some sort.
     """
     def __init__(self):
         self.env = None
@@ -359,9 +366,6 @@ class ShellMixin(object):
         elif p.returncode:
             return_level = 'error'
         self.log("Return code: %d" % p.returncode, level=return_level)
-        if python_26:
-            self.rmtree(tmp_stdout_filename)
-            self.rmtree(tmp_stderr_filename)
         if halt_on_failure and return_level == 'error':
             self.fatal("Halting on failure while running %s" % command,
                        exit_code=p.returncode)
