@@ -1,6 +1,8 @@
 === 0.4 ===
 2011-04-26  Aki Sasaki  <aki@mozilla.com>
 
+* scripts/sourcetool.py: Moved from scripts/hgtool.py.
+
 * test/test_log.py (TestLog.test_console_log): Removed method.
     Coverage didn't change at all (console logging is tested in test_script.py) but we removed a spurious line of output from unit.sh.
 
