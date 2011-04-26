@@ -11,6 +11,11 @@
 # TODO:  We could have a generic shell command error list
 # (e.g. File not found, permission denied) that others could be based on.
 
+# Exceptions
+# TODO do we need this?
+class VCSException(Exception):
+    pass
+
 # ErrorLists {{{1
 
 # For ssh, scp, rsync over ssh

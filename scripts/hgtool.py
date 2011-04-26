@@ -19,7 +19,7 @@ from mozharness.base.script import BaseScript
 from mozharness.base.vcs.mercurial import MercurialMixin
 
 # HGTool {{{1
-class HGTool(MercurialMixin, BaseScript):
+class HGTool(BaseScript):
     # These options were chosen with an eye towards backwards
     # compatibility with the existing hgtool.
     config_options = [[
@@ -73,6 +73,7 @@ class HGTool(MercurialMixin, BaseScript):
     ]]
 
     def __init__(self, require_config_file=False):
+        self.revision = None
         BaseScript.__init__(self, config_options=self.config_options,
                             all_actions=['mercurial',
                              'output'
