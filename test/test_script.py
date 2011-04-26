@@ -17,16 +17,12 @@ bar
 baz'''
 
 def cleanup():
-    if os.path.exists('test_logs'):
-        shutil.rmtree('test_logs')
-    if os.path.exists('test_dir'):
-        if os.path.isdir('test_dir'):
-            shutil.rmtree('test_dir')
-        else:
-            os.remove('test_dir')
-    for filename in ('localconfig.json', 'localconfig.json.bak'):
-        if os.path.exists(filename):
-            os.remove(filename)
+    for f in ('test_logs', 'test_dir', 'tmpfile_stdout', 'tmpfile_stderr'):
+        if os.path.exists(f):
+            if os.path.isdir(f):
+                shutil.rmtree(f)
+            else:
+                os.remove(f)
 
 def get_debug_script_obj():
     s = script.BaseScript(config={'log_type': 'multi',
