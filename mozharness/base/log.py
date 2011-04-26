@@ -78,7 +78,7 @@ class LogMixin(object):
 
 
 # BaseLogger {{{1
-class BaseLogger(LogMixin, object):
+class BaseLogger(object):
     """Create a base logging class.
     TODO: status? There may be a status object or status capability in
     either logging or config that allows you to count the number of
@@ -122,8 +122,6 @@ class BaseLogger(LogMixin, object):
         self.log_name = log_name
         self.log_dir = log_dir
         self.append_to_log = append_to_log
-        # for LogMixin
-        self.log_obj = self
 
         # Not sure what I'm going to use this for; useless unless we
         # can have multiple logging objects that don't trample each other
@@ -145,9 +143,9 @@ class BaseLogger(LogMixin, object):
     def init_message(self, name=None):
         if not name:
             name = self.__class__.__name__
-        self.info("%s online at %s in %s" % \
-                  (name, datetime.now().strftime("%Y%m%d %H:%M:%S"),
-                   os.getcwd()))
+        self.log_message("%s online at %s in %s" % \
+                         (name, datetime.now().strftime("%Y%m%d %H:%M:%S"),
+                         os.getcwd()))
 
     def get_logger_level(self, level=None):
         if not level:

@@ -295,3 +295,48 @@ class TestSummary(unittest.TestCase):
         if warning_logsize >= warning_logsize2:
             msg += "summary() didn't log to warning!\n"
         self.assertEqual(msg, "", msg=msg)
+
+    def _test_log_level(self, log_level, log_level_file_list):
+        s = script.BaseScript(config={'log_type': 'multi'},
+                              initial_config_file='test/test.json')
+        if log_level != "fatal":
+            s.log('testing', level=log_level)
+        else:
+            try:
+                s.fatal('testing')
+            except SystemExit:
+                pass
+        del(s)
+        msg = ""
+        for level in log_level_file_list:
+            log_path = "test_logs/test_%s.log" % level
+            if not os.path.exists(log_path):
+                msg += "%s doesn't exist!\n" % log_path
+            else:
+                filesize = os.path.getsize(log_path)
+                if not filesize > 0:
+                    msg += "%s is size 0!\n" % log_path
+        self.assertEqual(msg, "", msg=msg)
+
+    def test_debug(self):
+        self._test_log_level('debug', [])
+
+    def test_ignore(self):
+        self._test_log_level('ignore', [])
+
+    def test_info(self):
+        self._test_log_level('info', ['info'])
+
+    def test_warning(self):
+        self._test_log_level('warning', ['info', 'warning'])
+
+    def test_error(self):
+        self._test_log_level('error', ['info', 'warning', 'error'])
+
+    def test_critical(self):
+        self._test_log_level('critical', ['info', 'warning', 'error',
+                                          'critical'])
+
+    def test_fatal(self):
+        self._test_log_level('fatal', ['info', 'warning', 'error',
+                                          'critical', 'fatal'])
