@@ -1,5 +1,11 @@
 #!/usr/bin/env python
 """Generic script objects.
+
+TODO: The various mixins assume that they're used by BaseScript.
+Either every child object will need self.config, or these need some
+work.
+
+TODO: The mixin names kind of need work too?
 """
 
 import codecs
@@ -22,106 +28,8 @@ from mozharness.base.config import BaseConfig
 from mozharness.base.log import SimpleFileLogger, MultiFileLogger, LogMixin
 from mozharness.base.errors import HgErrorList
 
-# BaseScript {{{1
-class BaseScript(LogMixin, object):
-    def __init__(self, config_options=None, default_log_level="info", **kwargs):
-        self.log_obj = None
-        self.abs_dirs = None
-        if config_options is None:
-            config_options = []
-        self.summary_list = []
-        rw_config = BaseConfig(config_options=config_options,
-                               **kwargs)
-        self.config = rw_config.get_read_only_config()
-        self.actions = tuple(rw_config.actions)
-        self.all_actions = tuple(rw_config.all_actions)
-        self.env = None
-        self.new_log_obj(default_log_level=default_log_level)
-
-        # Set self.config to read-only.
-        #
-        # We can create intermediate config info programmatically from
-        # this in a repeatable way, with logs; this is how we straddle the
-        # ideal-but-not-user-friendly static config and the
-        # easy-to-write-hard-to-debug writable config.
-        #
-        # To allow for other, script-specific configurations
-        # (e.g., hgtool's buildbot props json parsing), before locking,
-        # call self._pre_config_lock().  If needed, this method can
-        # alter self.config.
-        self._pre_config_lock(rw_config)
-        self._config_lock()
-
-        self.info("Run as %s" % rw_config.command_line)
-
-    def _pre_config_lock(self, rw_config):
-        pass
-
-    def _config_lock(self):
-        self.config.lock()
-
-    def _possibly_run_method(self, method_name, error_if_missing=False):
-        if hasattr(self, method_name) and callable(getattr(self, method_name)):
-            return getattr(self, method_name)()
-        elif error_if_missing:
-            self.error("No such method %s!" % method_name)
-
-    def run(self):
-        """Default run method.
-        This is the "do everything" method, based on actions and all_actions.
-
-        First run self.dump_config() if it exists.
-        Second, go through the list of all_actions.
-        If they're in the list of self.actions, try to run
-        self.preflight_ACTION(), self.ACTION(), and self.postflight_ACTION().
-
-        Preflight is sanity checking before doing anything time consuming or
-        destructive.
-
-        Postflight is quick testing for success after an action.
-
-        Run self.summary() at the end.
-
-        """
-        self.dump_config()
-        for action in self.all_actions:
-            if action not in self.actions:
-                self.action_message("Skipping %s step." % action)
-            else:
-                method_name = action.replace("-", "_")
-                self.action_message("Running %s step." % action)
-                self._possibly_run_method("preflight_%s" % method_name)
-                self._possibly_run_method(method_name, error_if_missing=True)
-                self._possibly_run_method("postflight_%s" % method_name)
-        self.summary()
-
-    def query_abs_dirs(self):
-        if self.abs_dirs:
-            return self.abs_dirs
-        c = self.config
-        dirs = {}
-        dirs['abs_work_dir'] = os.path.join(c['base_work_dir'], c['work_dir'])
-        dirs['abs_upload_dir'] = os.path.join(c['base_work_dir'], 'upload_dir')
-        if c.get('log_dir', None):
-            dirs['abs_log_dir'] = os.path.join(c['base_work_dir'], c['log_dir'])
-        else:
-            dirs['abs_log_dir'] = os.path.join(dirs['abs_upload_dir'], 'logs')
-        self.abs_dirs = dirs
-        return self.abs_dirs
-
-    def dump_config(self, file_path=None):
-        dirs = self.query_abs_dirs()
-        if not file_path:
-            file_path = os.path.join(dirs['abs_upload_dir'], "localconfig.json")
-        self.info("Dumping config to %s." % file_path)
-        self.mkdir_p(dirs['abs_upload_dir'])
-        json_config = json.dumps(self.config, sort_keys=True, indent=4)
-        fh = codecs.open(file_path, encoding='utf-8', mode='w+')
-        fh.write(json_config)
-        fh.close()
-        self.info(pprint.pformat(self.config))
-
-# os commands {{{2
+# OSMixin {{{1
+class OSMixin(object):
     def mkdir_p(self, path):
         if not os.path.exists(path):
             self.info("mkdir: %s" % path)
@@ -183,6 +91,7 @@ class BaseScript(LogMixin, object):
         os.rmdir(path)
 
     # http://www.techniqal.com/blog/2008/07/31/python-file-read-write-with-urllib2/
+    # TODO thinking about creating a transfer object.
     def download_file(self, url, file_name=None,
                      error_level='error', exit_code=-1):
         """Python wget.
@@ -242,55 +151,13 @@ class BaseScript(LogMixin, object):
         else:
             os.chdir(dir_name)
 
-# logging {{{2
-    def new_log_obj(self, default_log_level="info"):
-        dirs = self.query_abs_dirs()
-        log_config = {"logger_name": 'Simple',
-                      "log_name": 'test',
-                      "log_dir": dirs['abs_log_dir'],
-                      "log_level": default_log_level,
-                      "log_format": '%(asctime)s %(levelname)8s - %(message)s',
-                      "log_to_console": True,
-                      "append_to_log": False,
-                     }
-        log_type = self.config.get("log_type", "multi")
-        if log_type == "multi":
-            log_config['logger_name'] = 'Multi'
-        for key in log_config.keys():
-            value = self.config.get(key, None)
-            if value is not None:
-                log_config[key] = value
-        if log_type == "multi":
-            self.log_obj = MultiFileLogger(**log_config)
-        else:
-            self.log_obj = SimpleFileLogger(**log_config)
-
-    def action_message(self, message):
-        self.info("#####")
-        self.info("##### %s" % message)
-        self.info("#####")
-
-    def summary(self):
-        self.action_message("%s summary:" % self.__class__.__name__)
-        if self.summary_list:
-            for item in self.summary_list:
-                try:
-                    self.log(item['message'], level=item['level'])
-                except ValueError:
-                    """log is closed; print as a default. Ran into this
-                    when calling from __del__()"""
-                    print "### Log is closed! (%s)" % item['message']
-
-    def add_summary(self, message, level='info'):
-        self.summary_list.append({'message': message, 'level': level})
-        # TODO write to a summary-only log?
-        # Summaries need a lot more love.
-        self.log(message, level=level)
-
-# run_command and get_output_from_command {{{2
+# ShellMixin {{{1
+class ShellMixin(object):
     """These are very special but very complex methods that, together with
     logging and config, provide the base for all scripts in this harness.
     """
+    def __init__(self):
+        self.env = None
 
     def query_env(self, partial_env=None, replace_dict=None):
         """Environment query/generation method.
@@ -491,7 +358,153 @@ class BaseScript(LogMixin, object):
         # Hm, options on how to return this? I bet often we'll want
         # output_lines[0] with no newline.
         return output
-# End run_command and get_output_from_command 2}}}
+
+
+
+# BaseScript {{{1
+class BaseScript(ShellMixin, OSMixin, LogMixin, object):
+    def __init__(self, config_options=None, default_log_level="info", **kwargs):
+        super(BaseScript, self).__init__()
+        self.log_obj = None
+        self.abs_dirs = None
+        if config_options is None:
+            config_options = []
+        self.summary_list = []
+        rw_config = BaseConfig(config_options=config_options,
+                               **kwargs)
+        self.config = rw_config.get_read_only_config()
+        self.actions = tuple(rw_config.actions)
+        self.all_actions = tuple(rw_config.all_actions)
+        self.env = None
+        self.new_log_obj(default_log_level=default_log_level)
+
+        # Set self.config to read-only.
+        #
+        # We can create intermediate config info programmatically from
+        # this in a repeatable way, with logs; this is how we straddle the
+        # ideal-but-not-user-friendly static config and the
+        # easy-to-write-hard-to-debug writable config.
+        #
+        # To allow for other, script-specific configurations
+        # (e.g., hgtool's buildbot props json parsing), before locking,
+        # call self._pre_config_lock().  If needed, this method can
+        # alter self.config.
+        self._pre_config_lock(rw_config)
+        self._config_lock()
+
+        self.info("Run as %s" % rw_config.command_line)
+
+    def _pre_config_lock(self, rw_config):
+        pass
+
+    def _config_lock(self):
+        self.config.lock()
+
+    def _possibly_run_method(self, method_name, error_if_missing=False):
+        if hasattr(self, method_name) and callable(getattr(self, method_name)):
+            return getattr(self, method_name)()
+        elif error_if_missing:
+            self.error("No such method %s!" % method_name)
+
+    def run(self):
+        """Default run method.
+        This is the "do everything" method, based on actions and all_actions.
+
+        First run self.dump_config() if it exists.
+        Second, go through the list of all_actions.
+        If they're in the list of self.actions, try to run
+        self.preflight_ACTION(), self.ACTION(), and self.postflight_ACTION().
+
+        Preflight is sanity checking before doing anything time consuming or
+        destructive.
+
+        Postflight is quick testing for success after an action.
+
+        Run self.summary() at the end.
+
+        """
+        self.dump_config()
+        for action in self.all_actions:
+            if action not in self.actions:
+                self.action_message("Skipping %s step." % action)
+            else:
+                method_name = action.replace("-", "_")
+                self.action_message("Running %s step." % action)
+                self._possibly_run_method("preflight_%s" % method_name)
+                self._possibly_run_method(method_name, error_if_missing=True)
+                self._possibly_run_method("postflight_%s" % method_name)
+        self.summary()
+
+    def query_abs_dirs(self):
+        if self.abs_dirs:
+            return self.abs_dirs
+        c = self.config
+        dirs = {}
+        dirs['abs_work_dir'] = os.path.join(c['base_work_dir'], c['work_dir'])
+        dirs['abs_upload_dir'] = os.path.join(c['base_work_dir'], 'upload_dir')
+        if c.get('log_dir', None):
+            dirs['abs_log_dir'] = os.path.join(c['base_work_dir'], c['log_dir'])
+        else:
+            dirs['abs_log_dir'] = os.path.join(dirs['abs_upload_dir'], 'logs')
+        self.abs_dirs = dirs
+        return self.abs_dirs
+
+    def dump_config(self, file_path=None):
+        dirs = self.query_abs_dirs()
+        if not file_path:
+            file_path = os.path.join(dirs['abs_upload_dir'], "localconfig.json")
+        self.info("Dumping config to %s." % file_path)
+        self.mkdir_p(dirs['abs_upload_dir'])
+        json_config = json.dumps(self.config, sort_keys=True, indent=4)
+        fh = codecs.open(file_path, encoding='utf-8', mode='w+')
+        fh.write(json_config)
+        fh.close()
+        self.info(pprint.pformat(self.config))
+
+    # logging {{{2
+    def new_log_obj(self, default_log_level="info"):
+        dirs = self.query_abs_dirs()
+        log_config = {"logger_name": 'Simple',
+                      "log_name": 'test',
+                      "log_dir": dirs['abs_log_dir'],
+                      "log_level": default_log_level,
+                      "log_format": '%(asctime)s %(levelname)8s - %(message)s',
+                      "log_to_console": True,
+                      "append_to_log": False,
+                     }
+        log_type = self.config.get("log_type", "multi")
+        if log_type == "multi":
+            log_config['logger_name'] = 'Multi'
+        for key in log_config.keys():
+            value = self.config.get(key, None)
+            if value is not None:
+                log_config[key] = value
+        if log_type == "multi":
+            self.log_obj = MultiFileLogger(**log_config)
+        else:
+            self.log_obj = SimpleFileLogger(**log_config)
+
+    def action_message(self, message):
+        self.info("#####")
+        self.info("##### %s" % message)
+        self.info("#####")
+
+    def summary(self):
+        self.action_message("%s summary:" % self.__class__.__name__)
+        if self.summary_list:
+            for item in self.summary_list:
+                try:
+                    self.log(item['message'], level=item['level'])
+                except ValueError:
+                    """log is closed; print as a default. Ran into this
+                    when calling from __del__()"""
+                    print "### Log is closed! (%s)" % item['message']
+
+    def add_summary(self, message, level='info'):
+        self.summary_list.append({'message': message, 'level': level})
+        # TODO write to a summary-only log?
+        # Summaries need a lot more love.
+        self.log(message, level=level)
 
 
 

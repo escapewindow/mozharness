@@ -2,10 +2,13 @@
 """Mercurial VCS support.
 """
 
-import os, sys
+import os
+from urlparse import urlsplit
 
 # TODO delete
+import sys
 sys.path.insert(1, os.path.dirname(os.path.dirname(os.path.dirname(sys.path[0]))))
+
 from mozharness.base.errors import HgErrorList, VCSException
 from mozharness.base.script import BaseScript
 
@@ -56,7 +59,6 @@ class MercurialScript(MercurialMixin, BaseScript):
 
 # MercurialVCS {{{1
 #import os, re, subprocess
-#from urlparse import urlsplit
 #
 #from util.commands import run_cmd, get_output, remove_path
 #from util.retry import retry

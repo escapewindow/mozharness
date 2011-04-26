@@ -1,4 +1,12 @@
 === 0.4 ===
+2011-04-26  Aki Sasaki  <aki@mozilla.com>
+
+* mozharness/base/script.py (BaseScript):
+    Pulled all os and shell methods out to mixins.
+
+* mozharness/base/vcs/mercurial.py (MercurialVCS): Added class.
+    This will hopefully be a standalone object that takes the baseScript log_obj and perhaps config, but will allow for multiple VCS objects per BaseScript.
+
 2011-04-25  Aki Sasaki  <aki@mozilla.com>
 
 * mozharness/base/log.py (BaseLogger.log_message): Renamed from log() to be compatible with LogMixin.
