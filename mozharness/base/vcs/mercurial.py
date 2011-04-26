@@ -63,7 +63,6 @@ class MercurialScript(MercurialMixin, BaseScript):
 # MercurialVCS {{{1
 #
 #from util.commands import run_cmd, get_output, remove_path
-#from util.retry import retry
 #
 #import logging
 #log = logging.getLogger(__name__)
@@ -321,167 +320,176 @@ class MercurialVCS(ShellMixin, OSMixin, LogMixin, object):
                 # TODO self.error
                 raise
 
-#def push(src, remote, push_new_branches=True, **kwargs):
-#    cmd = ['hg', 'push']
-#    cmd.extend(self.common_args(**kwargs))
-#    if push_new_branches:
-#        cmd.append('--new-branch')
-#    cmd.append(remote)
-#    run_cmd(cmd, cwd=src)
-#
-#def mercurial(repo, dest, branch=None, revision=None, update_dest=True,
-#              shareBase=DefaultShareBase, allowUnsharedLocalClones=False):
-#    """Makes sure that `dest` is has `revision` or `branch` checked out from
-#    `repo`.
-#
-#    Do what it takes to make that happen, including possibly clobbering
-#    dest.
-#
-#    If allowUnsharedLocalClones is True and we're trying to use the share
-#    extension but fail, then we will be able to clone from the shared repo to
-#    our destination.  If this is False, the default, then if we don't have the
-#    share extension we will just clone from the remote repository.
-#    """
-#    dest = os.path.abspath(dest)
-#    if shareBase is DefaultShareBase:
-#        shareBase = os.environ.get("HG_SHARE_BASE_DIR", None)
-#
-#    if shareBase:
-#        # Check that 'hg share' works
-#        try:
-#            log.info("Checking if share extension works")
-#            output = get_output(['hg', 'help', 'share'], dont_log=True)
-#            if 'no commands defined' in output:
-#                # Share extension is enabled, but not functional
-#                log.info("Disabling sharing since share extension doesn't seem to work (1)")
-#                shareBase = None
-#            elif 'unknown command' in output:
-#                # Share extension is disabled
-#                log.info("Disabling sharing since share extension doesn't seem to work (2)")
-#                shareBase = None
-#        except subprocess.CalledProcessError:
-#            # The command failed, so disable sharing
-#            log.info("Disabling sharing since share extension doesn't seem to work (3)")
-#            shareBase = None
-#
-#    # If the working directory already exists and isn't using share we update
-#    # the working directory directly from the repo, ignoring the sharing
-#    # settings
-#    if os.path.exists(dest):
-#        if not os.path.exists(os.path.join(dest, ".hg", "sharedpath")):
-#            try:
-#                return pull(repo, dest, update_dest=update_dest, branch=branch, revision=revision)
-#            except subprocess.CalledProcessError:
-#                log.warning("Error pulling changes into %s from %s; clobbering", dest, repo)
-#                log.debug("Exception:", exc_info=True)
-#                remove_path(dest)
-#
-#    # If that fails for any reason, and sharing is requested, we'll try to
-#    # update the shared repository, and then update the working directory from
-#    # that.
-#    if shareBase:
-#        sharedRepo = os.path.join(shareBase, get_repo_path(repo))
-#        dest_sharedPath = os.path.join(dest, '.hg', 'sharedpath')
-#        if os.path.exists(dest_sharedPath):
-#            # Make sure that the sharedpath points to sharedRepo
-#            dest_sharedPath_data = os.path.normpath(open(dest_sharedPath).read())
-#            norm_sharedRepo = os.path.normpath(os.path.join(sharedRepo, '.hg'))
-#            if dest_sharedPath_data != norm_sharedRepo:
-#                # Clobber!
-#                log.info("We're currently shared from %s, but are being requested to pull from %s (%s); clobbering", dest_sharedPath_data, repo, norm_sharedRepo)
-#                remove_path(dest)
-#
-#        try:
-#            log.info("Updating shared repo")
-#            mercurial(repo, sharedRepo, branch=branch, revision=revision,
-#                update_dest=False, shareBase=None)
-#            if os.path.exists(dest):
-#                return self.update(dest, branch=branch, revision=revision)
-#
-#            try:
-#                log.info("Trying to share %s to %s", sharedRepo, dest)
-#                return share(sharedRepo, dest, branch=branch, revision=revision)
-#            except subprocess.CalledProcessError:
-#                if not allowUnsharedLocalClones:
-#                    # Re-raise the exception so it gets caught below.
-#                    # We'll then clobber dest, and clone from original repo
-#                    raise
-#
-#                log.warning("Error calling hg share from %s to %s;"
-#                            "falling back to normal clone from shared repo",
-#                            sharedRepo, dest)
-#                # Do a full local clone first, and then update to the
-#                # revision we want
-#                # This lets us use hardlinks for the local clone if the OS
-#                # supports it
-#                clone(sharedRepo, dest, update_dest=False)
-#                return self.update(dest, branch=branch, revision=revision)
-#        except subprocess.CalledProcessError:
-#            log.warning("Error updating %s from sharedRepo (%s): ", dest, sharedRepo)
-#            log.debug("Exception:", exc_info=True)
-#            remove_path(dest)
-#
-#    if not os.path.exists(os.path.dirname(dest)):
-#        os.makedirs(os.path.dirname(dest))
-#    # Share isn't available or has failed, clone directly from the source
-#    return clone(repo, dest, branch, revision, update_dest=update_dest)
-#
-#def apply_and_push(localrepo, remote, changer, max_attempts=10,
-#                   ssh_username=None, ssh_key=None):
-#    """This function calls `changer' to make changes to the repo, and tries
-#       its hardest to get them to the origin repo. `changer' must be a
-#       callable object that receives two arguments: the directory of the local
-#       repository, and the attempt number. This function will push ALL
-#       changesets missing from remote."""
-#    assert callable(changer)
-#    branch = get_branch_from_path(localrepo)
-#    changer(localrepo, 1)
-#    for n in range(1, max_attempts+1):
-#        try:
-#            new_revs = out(src=localrepo, remote=remote,
-#                           ssh_username=ssh_username,
-#                           ssh_key=ssh_key)
-#            if len(new_revs) < 1:
-#                raise VCSException("No revs to push")
-#            push(src=localrepo, remote=remote, ssh_username=ssh_username,
-#                 ssh_key=ssh_key)
-#            return
-#        except subprocess.CalledProcessError, e:
-#            log.debug("Hit error when trying to push: %s" % str(e))
-#            if n == max_attempts:
-#                log.debug("Tried %d times, giving up" % max_attempts)
-#                for r in reversed(new_revs):
-#                    run_cmd(['hg', 'strip', r[REVISION]], cwd=localrepo)
-#                raise VCSException("Failed to push")
-#            pull(remote, localrepo, update_dest=False,
-#                 ssh_username=ssh_username, ssh_key=ssh_key)
-#            # After we successfully rebase or strip away heads the push is
-#            # is attempted again at the start of the loop
-#            try:
-#                run_cmd(['hg', 'rebase'], cwd=localrepo)
-#            except subprocess.CalledProcessError, e:
-#                log.debug("Failed to rebase: %s" % str(e))
-#                self.update(localrepo, branch=branch)
-#                for r in reversed(new_revs):
-#                    run_cmd(['hg', 'strip', r[REVISION]], cwd=localrepo)
-#                changer(localrepo, n+1)
-#
-#def share(source, dest, branch=None, revision=None):
-#    """Creates a new working directory in "dest" that shares history with
-#       "source" using Mercurial's share extension"""
-#    run_cmd(['hg', 'share', '-U', source, dest])
-#    return self.update(dest, branch=branch, revision=revision)
-#
-#def cleanOutgoingRevs(reponame, remote, username, sshKey):
-#    outgoingRevs = retry(out, kwargs=dict(src=reponame, remote=remote,
-#                                          ssh_username=username,
-#                                          ssh_key=sshKey))
-#    for r in reversed(outgoingRevs):
-#        run_cmd(['hg', 'strip', r[REVISION]], cwd=reponame)
+    def push(self, src, remote, push_new_branches=True, **kwargs):
+        cmd = ['hg', 'push']
+        cmd.extend(self.common_args(**kwargs))
+        if push_new_branches:
+            cmd.append('--new-branch')
+        cmd.append(remote)
+        self.run_command(cmd, cwd=src, error_list=HgErrorList)
 
+    # TODO this is probably the default behavior that MercurialVCS should
+    # have, and should be able to just use self.vcs_config info.
+    def mercurial(self, repo, dest, branch=None, revision=None,
+                  update_dest=True, shareBase=DefaultShareBase,
+                  allowUnsharedLocalClones=False):
+        """Makes sure that `dest` is has `revision` or `branch` checked out
+        from `repo`.
 
-        
-        
+        Do what it takes to make that happen, including possibly clobbering
+        dest.
+
+        If allowUnsharedLocalClones is True and we're trying to use the
+        share extension but fail, then we will be able to clone from the
+        shared repo to our destination.  If this is False, the default, the
+        if we don't have the share extension we will just clone from the
+        remote repository.
+        """
+        dest = os.path.abspath(dest)
+        if shareBase is DefaultShareBase:
+            shareBase = os.environ.get("HG_SHARE_BASE_DIR", None)
+        if shareBase:
+            # Check that 'hg share' works
+            try:
+                self.info("Checking if share extension works")
+                output = self.get_output_from_command(['hg', 'help', 'share'])
+                if 'no commands defined' in output:
+                    # Share extension is enabled, but not functional
+                    self.info("Disabling sharing since share extension doesn't seem to work (1)")
+                    shareBase = None
+                elif 'unknown command' in output:
+                    # Share extension is disabled
+                    self.info("Disabling sharing since share extension doesn't seem to work (2)")
+                    shareBase = None
+            except subprocess.CalledProcessError:
+                # The command failed, so disable sharing
+                self.info("Disabling sharing since share extension doesn't seem to work (3)")
+                shareBase = None
+
+        # If the working directory already exists and isn't using share we
+        # update the working directory directly from the repo, ignoring the
+        # sharing settings
+        if os.path.exists(dest):
+            if not os.path.exists(os.path.join(dest, ".hg", "sharedpath")):
+                try:
+                    return self.pull(repo, dest, update_dest=update_dest,
+                                     branch=branch, revision=revision)
+                except subprocess.CalledProcessError:
+                    self.warning("Error pulling changes into %s from %s; clobbering", dest, repo)
+                    self.debug("Exception: " + self.dump_exception())
+                    self.rmtree(dest)
+
+        # If that fails for any reason, and sharing is requested, we'll try
+        # to update the shared repository, and then update the working
+        # directory from that.
+        if shareBase:
+            sharedRepo = os.path.join(shareBase, self.get_repo_path(repo))
+            dest_sharedPath = os.path.join(dest, '.hg', 'sharedpath')
+            if os.path.exists(dest_sharedPath):
+                # Make sure that the sharedpath points to sharedRepo
+                dest_sharedPath_data = os.path.normpath(open(dest_sharedPath).read())
+                norm_sharedRepo = os.path.normpath(os.path.join(sharedRepo, '.hg'))
+                if dest_sharedPath_data != norm_sharedRepo:
+                    # Clobber!
+                    self.info("We're currently shared from %s, but are being requested to pull from %s (%s); clobbering", dest_sharedPath_data, repo, norm_sharedRepo)
+                    self.rmtree(dest)
+
+            try:
+                self.info("Updating shared repo")
+                self.mercurial(repo, sharedRepo, branch=branch, revision=revision,
+                          update_dest=False, shareBase=None)
+                if os.path.exists(dest):
+                    return self.update(dest, branch=branch, revision=revision)
+
+                try:
+                    self.info("Trying to share %s to %s", sharedRepo, dest)
+                    return self.share(sharedRepo, dest, branch=branch, revision=revision)
+                except subprocess.CalledProcessError:
+                    if not allowUnsharedLocalClones:
+                        # Re-raise the exception so it gets caught below.
+                        # We'll then clobber dest, and clone from original
+                        # repo
+                        raise
+
+                    self.warning("Error calling hg share from %s to %s; falling back to normal clone from shared repo" % (sharedRepo, dest))
+                    # Do a full local clone first, and then update to the
+                    # revision we want
+                    # This lets us use hardlinks for the local clone if the
+                    # OS supports it
+                    self.clone(sharedRepo, dest, update_dest=False)
+                    return self.update(dest, branch=branch, revision=revision)
+            except subprocess.CalledProcessError:
+                self.warning("Error updating %s from sharedRepo (%s): ", dest, sharedRepo)
+                self.debug("Exception: " + self.dump_exception())
+                self.rmtree(dest)
+
+        if not os.path.exists(os.path.dirname(dest)):
+            self.mkdir_p(os.path.dirname(dest))
+        # Share isn't available or has failed, clone directly from the
+        # source
+        return self.clone(repo, dest, branch, revision, update_dest=update_dest)
+
+    def apply_and_push(self, localrepo, remote, changer, max_attempts=10,
+                       ssh_username=None, ssh_key=None):
+        """This function calls `changer' to make changes to the repo, and
+        tries its hardest to get them to the origin repo. `changer' must be
+        a callable object that receives two arguments: the directory of the
+        local repository, and the attempt number. This function will push
+        ALL changesets missing from remote.
+        """
+        assert callable(changer) # TODO what is this?
+        branch = self.get_branch_from_path(localrepo)
+        changer(localrepo, 1)
+        for n in range(1, max_attempts+1):
+            try:
+                new_revs = self.out(src=localrepo, remote=remote,
+                                    ssh_username=ssh_username,
+                                    ssh_key=ssh_key)
+                if len(new_revs) < 1:
+                    raise VCSException("No revs to push")
+                self.push(src=localrepo, remote=remote,
+                          ssh_username=ssh_username,
+                          ssh_key=ssh_key)
+                return
+            except subprocess.CalledProcessError, e:
+                self.debug("Hit error when trying to push: %s" % str(e))
+                if n == max_attempts:
+                    self.debug("Tried %d times, giving up" % max_attempts)
+                    for r in reversed(new_revs):
+                        self.run_command(['hg', 'strip', r[self.REVISION]],
+                                         cwd=localrepo, error_list=HgErrorList)
+                    raise VCSException("Failed to push")
+                self.pull(remote, localrepo, update_dest=False,
+                          ssh_username=ssh_username, ssh_key=ssh_key)
+                # After we successfully rebase or strip away heads the push
+                # is is attempted again at the start of the loop
+                try:
+                    self.run_command(['hg', 'rebase'], cwd=localrepo,
+                                     error_list=HgErrorList)
+                except subprocess.CalledProcessError, e:
+                    self.debug("Failed to rebase: %s" % str(e))
+                    self.update(localrepo, branch=branch)
+                    for r in reversed(new_revs):
+                        self.run_command(['hg', 'strip', r[self.REVISION]],
+                                         cwd=localrepo, error_list=HgErrorList)
+                    changer(localrepo, n+1)
+
+    def share(self, source, dest, branch=None, revision=None):
+        """Creates a new working directory in "dest" that shares history
+        with "source" using Mercurial's share extension
+        """
+        self.run_command(['hg', 'share', '-U', source, dest],
+                         error_list=HgErrorList)
+        return self.update(dest, branch=branch, revision=revision)
+
+    def cleanOutgoingRevs(self, reponame, remote, username, sshKey):
+        # TODO retry
+        outgoingRevs = self.out(src=reponame, remote=remote,
+                                ssh_username=username, ssh_key=sshKey)
+        for r in reversed(outgoingRevs):
+            self.run_command(['hg', 'strip', r[self.REVISION]],
+                             cwd=reponame, error_list=HgErrorList)
+
 
 
 # __main__ {{{1
