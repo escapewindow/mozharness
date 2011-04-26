@@ -153,7 +153,7 @@ class BaseLogger(object):
         self.logger.addHandler(file_handler)
         self.all_handlers.append(file_handler)
 
-    def log(self, message, level='info', exit_code=-1):
+    def log_message(self, message, level='info', exit_code=-1):
         """Generic log method.
         There should be more options here -- do or don't split by line,
         use os.linesep instead of assuming \n, be able to pass in log level
@@ -169,8 +169,41 @@ class BaseLogger(object):
             self.logger.log(FATAL, 'Exiting %d' % exit_code)
             raise SystemExit(exit_code)
 
+
+
+# LogMixin {{{1
+class LogMixin(object):
+    """This is a mixin for any object to access similar logging
+    functionality -- more so, of course, for those objects with
+    self.config and self.log_obj, of course.
+    """
+
+    def log(self, message, level='info', exit_code=-1):
+        if self.log_obj:
+            return self.log_obj.log_message(message, level=level,
+                                            exit_code=exit_code)
+        if level == 'info':
+            print message
+        elif level == 'debug':
+            print 'DEBUG: %s' % message
+        elif level in ('warning', 'error', 'critical'):
+            print >> sys.stderr, "%s: %s" % (level.upper(), message)
+        elif level == 'fatal':
+            print >> sys.stderr, "FATAL: %s" % message
+            raise SystemExit(exit_code)
+   
+    # Copying Bear's dumpException():
+    # http://hg.mozilla.org/build/tools/annotate/1485f23c38e0/sut_tools/sut_lib.py#l23
+    def dump_exception(self, message, level='error'):
+        tb_type, tb_value, tb_traceback = sys.exc_info()
+        for s in traceback.format_exception(tb_type, tb_value, tb_traceback):
+            message += "\n%s" % s
+        # Log at the end, as a fatal will attempt to exit after the 1st line.
+        self.log(message, level=level)
+
     def debug(self, message):
-        self.log(message, level='debug')
+        if hasattr(self, 'config') and self.config.get('log_level', None) == 'debug':
+            self.log(message, level='debug')
 
     def info(self, message):
         self.log(message, level='info')

@@ -20,11 +20,11 @@ except ImportError:
     import json
 
 from mozharness.base.config import BaseConfig
-from mozharness.base.log import SimpleFileLogger, MultiFileLogger
+from mozharness.base.log import SimpleFileLogger, MultiFileLogger, LogMixin
 from mozharness.base.errors import HgErrorList
 
 # BaseScript {{{1
-class BaseScript(object):
+class BaseScript(LogMixin, object):
     def __init__(self, config_options=None, default_log_level="info", **kwargs):
         self.log_obj = None
         self.abs_dirs = None
@@ -263,52 +263,6 @@ class BaseScript(object):
             self.log_obj = MultiFileLogger(**log_config)
         else:
             self.log_obj = SimpleFileLogger(**log_config)
-
-    """There may be a better way of doing this, but I did this previously...
-    """
-    def log(self, message, level='info', exit_code=-1):
-        if self.log_obj:
-            return self.log_obj.log(message, level=level, exit_code=exit_code)
-        if level == 'info':
-            print message
-        elif level == 'debug':
-            print 'DEBUG: %s' % message
-        elif level in ('warning', 'error', 'critical'):
-            print >> sys.stderr, "%s: %s" % (level.upper(), message)
-        elif level == 'fatal':
-            print >> sys.stderr, "FATAL: %s" % message
-            raise SystemExit(exit_code)
-
-    # Copying Bear's dumpException():
-    # http://hg.mozilla.org/build/tools/annotate/1485f23c38e0/sut_tools/sut_lib.py#l23
-    def dump_exception(self, message, level='error'):
-        tb_type, tb_value, tb_traceback = sys.exc_info()
-        for s in traceback.format_exception(tb_type, tb_value, tb_traceback):
-            message += "\n%s" % s
-        # Log at the end, as a fatal will attempt to exit after the 1st line.
-        self.log(message, level=level)
-
-    def debug(self, message):
-        if self.config.get('log_level', None) == 'debug':
-            self.log(message, level='debug')
-
-    def info(self, message):
-        self.log(message, level='info')
-
-    def warning(self, message):
-        self.log(message, level='warning')
-
-    def warn(self, message):
-        self.log(message, level='warning')
-
-    def error(self, message):
-        self.log(message, level='error')
-
-    def critical(self, message):
-        self.log(message, level='critical')
-
-    def fatal(self, message, exit_code=-1):
-        self.log(message, level='fatal', exit_code=exit_code)
 
     def action_message(self, message):
         self.info("#####")
