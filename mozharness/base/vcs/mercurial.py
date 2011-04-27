@@ -61,10 +61,6 @@ class MercurialScript(MercurialMixin, BaseScript):
 
 
 # MercurialVCS {{{1
-class DefaultShareBase:
-    pass
-DefaultShareBase = DefaultShareBase()
-
 REVISION, BRANCH = 0, 1
 
 def make_hg_url(hg_host, repo_path, protocol='http', revision=None,
@@ -94,9 +90,7 @@ class MercurialVCS(ShellMixin, OSMixin, LogMixin, object):
 
     def __init__(self, log_obj=None, config=None, vcs_config=None):
         super(MercurialVCS, self).__init__()
-        self.branch = None
-        self.repo = None
-        self.revision = None
+        self.can_share = None
         self.log_obj = log_obj
         self.config = config
         # TODO gotta implement this
@@ -109,42 +103,6 @@ class MercurialVCS(ShellMixin, OSMixin, LogMixin, object):
         #  ssh_key: ssh_key,
         # }
         self.vcs_config = vcs_config
-
-    def query_revision(self, error_level='error'):
-        if self.revision:
-            return self.revision
-        if 'revision' in self.vcs_config:
-            self.revision = self.vcs_config['revision']
-        # else: ??? + profit
-        if self.revision:
-            return self.revision
-        else:
-            self.log("Can't determine revision in %s" % __name__,
-                     level=error_level)
-
-    def query_branch(self, error_level='warning'):
-        if self.branch:
-            return self.branch
-        if 'branch' in self.vcs_config:
-            self.branch = self.vcs_config['branch']
-        # else: ??? + profit
-        if self.branch:
-            return self.branch
-        else:
-            self.log("Can't determine branch in %s" % __name__,
-                     level=error_level)
-
-    def query_repo(self, error_level='error'):
-        if self.repo:
-            return self.repo
-        if 'repo' in self.vcs_config:
-            self.repo = self.vcs_config['repo']
-        # else: ??? + profit
-        if self.repo:
-            return self.repo
-        else:
-            self.log("Can't determine repo in %s" % __name__,
-                     level=error_level)
 
     # TODO rename?
     def _make_absolute(self, repo):
@@ -290,11 +248,9 @@ class MercurialVCS(ShellMixin, OSMixin, LogMixin, object):
         self.run_command(cmd, cwd=dest, error_list=HgErrorList)
 
         if update_dest:
-            branch = self.query_branch()
-        revision = None
-        if 'revision' in kwargs and kwargs['revision']:
-            revision = kwargs['revision']
-        return self.update(dest, branch=branch, revision=revision)
+            branch = self.vcs_config.get('branch')
+            revision = self.vcs_config.get('revision')
+            return self.update(dest, branch=branch, revision=revision)
 
     # Defines the places of attributes in the tuples returned by `out'
 
@@ -333,43 +289,57 @@ class MercurialVCS(ShellMixin, OSMixin, LogMixin, object):
         cmd.append(remote)
         self.run_command(cmd, cwd=src, error_list=HgErrorList)
 
+    def query_can_share(self):
+        if self.can_share is not None:
+            return self.can_share
+        # Check that 'hg share' works
+        self.can_share = True
+        try:
+            self.info("Checking if share extension works")
+            output = self.get_output_from_command(['hg', 'help', 'share'])
+            if 'no commands defined' in output:
+                # Share extension is enabled, but not functional
+                self.info("Disabling sharing since share extension doesn't seem to work (1)")
+                self.can_share = False
+            elif 'unknown command' in output:
+                # Share extension is disabled
+                self.info("Disabling sharing since share extension doesn't seem to work (2)")
+                self.can_share = False
+        except subprocess.CalledProcessError:
+            # The command failed, so disable sharing
+            self.info("Disabling sharing since share extension doesn't seem to work (3)")
+            self.can_share = False
+        return self.can_share
+
     # TODO this is probably the default behavior that MercurialVCS should
     # have, and should be able to just use self.vcs_config info.
-    def mercurial(self, repo, dest, branch=None, revision=None,
-                  update_dest=True, shareBase=DefaultShareBase,
-                  allowUnsharedLocalClones=False):
+#    def mercurial(self, repo, dest, branch=None, revision=None,
+#                  update_dest=True, shareBase=DefaultShareBase,
+#                  allowUnsharedLocalClones=False):
+    def ensure_repo_and_revision(self):
         """Makes sure that `dest` is has `revision` or `branch` checked out
         from `repo`.
 
         Do what it takes to make that happen, including possibly clobbering
         dest.
 
-        If allowUnsharedLocalClones is True and we're trying to use the
+        If allow_unshared_local_clones is True and we're trying to use the
         share extension but fail, then we will be able to clone from the
         shared repo to our destination.  If this is False, the default, the
         if we don't have the share extension we will just clone from the
         remote repository.
         """
-        dest = os.path.abspath(dest)
-        if shareBase is DefaultShareBase:
-            shareBase = os.environ.get("HG_SHARE_BASE_DIR", None)
-        if shareBase:
-            # Check that 'hg share' works
-            try:
-                self.info("Checking if share extension works")
-                output = self.get_output_from_command(['hg', 'help', 'share'])
-                if 'no commands defined' in output:
-                    # Share extension is enabled, but not functional
-                    self.info("Disabling sharing since share extension doesn't seem to work (1)")
-                    shareBase = None
-                elif 'unknown command' in output:
-                    # Share extension is disabled
-                    self.info("Disabling sharing since share extension doesn't seem to work (2)")
-                    shareBase = None
-            except subprocess.CalledProcessError:
-                # The command failed, so disable sharing
-                self.info("Disabling sharing since share extension doesn't seem to work (3)")
-                shareBase = None
+        c = self.vcs_config
+        for conf_item in ('dest', 'repo'):
+            assert self.vcs_config['conf_item']
+        dest = os.path.abspath(c['dest'])
+        repo = c['repo']
+        revision = c.get('revision')
+        branch = c.get('branch')
+        share_base = c.get('share_base',
+                           os.environ.get("HG_SHARE_BASE_DIR", None))
+        if share_base and not self.can_share:
+            share_base = None
 
         # If the working directory already exists and isn't using share we
         # update the working directory directly from the repo, ignoring the
@@ -377,8 +347,9 @@ class MercurialVCS(ShellMixin, OSMixin, LogMixin, object):
         if os.path.exists(dest):
             if not os.path.exists(os.path.join(dest, ".hg", "sharedpath")):
                 try:
-                    return self.pull(repo, dest, update_dest=update_dest,
-                                     branch=branch, revision=revision)
+                    # aki TODO verify this works
+                    return self.pull(repo, dest, branch=branch,
+                                     revision=revision)
                 except subprocess.CalledProcessError:
                     self.warning("Error pulling changes into %s from %s; clobbering", dest, repo)
                     self.debug("Exception: " + self.dump_exception())
@@ -387,44 +358,45 @@ class MercurialVCS(ShellMixin, OSMixin, LogMixin, object):
         # If that fails for any reason, and sharing is requested, we'll try
         # to update the shared repository, and then update the working
         # directory from that.
-        if shareBase:
-            sharedRepo = os.path.join(shareBase, self.get_repo_path(repo))
-            dest_sharedPath = os.path.join(dest, '.hg', 'sharedpath')
-            if os.path.exists(dest_sharedPath):
-                # Make sure that the sharedpath points to sharedRepo
-                dest_sharedPath_data = os.path.normpath(open(dest_sharedPath).read())
-                norm_sharedRepo = os.path.normpath(os.path.join(sharedRepo, '.hg'))
-                if dest_sharedPath_data != norm_sharedRepo:
+        if share_base:
+            shared_repo = os.path.join(share_base, self.get_repo_path(repo))
+            dest_shared_path = os.path.join(dest, '.hg', 'sharedpath')
+            if os.path.exists(dest_shared_path):
+                # Make sure that the sharedpath points to shared_repo
+                dest_shared_path_data = os.path.normpath(open(dest_shared_path).read())
+                norm_shared_repo = os.path.normpath(os.path.join(shared_repo, '.hg'))
+                if dest_shared_path_data != norm_shared_repo:
                     # Clobber!
-                    self.info("We're currently shared from %s, but are being requested to pull from %s (%s); clobbering", dest_sharedPath_data, repo, norm_sharedRepo)
+                    self.info("We're currently shared from %s, but are being requested to pull from %s (%s); clobbering", dest_shared_path_data, repo, norm_shared_repo)
                     self.rmtree(dest)
 
             try:
                 self.info("Updating shared repo")
-                self.mercurial(repo, sharedRepo, branch=branch, revision=revision,
-                          update_dest=False, shareBase=None)
+# TODO aki
+#                self.mercurial(repo, shared_repo, branch=branch, revision=revision,
+#                               update_dest=False, share_base=None)
                 if os.path.exists(dest):
                     return self.update(dest, branch=branch, revision=revision)
 
                 try:
-                    self.info("Trying to share %s to %s", sharedRepo, dest)
-                    return self.share(sharedRepo, dest, branch=branch, revision=revision)
+                    self.info("Trying to share %s to %s", shared_repo, dest)
+                    return self.share(shared_repo, dest, branch=branch, revision=revision)
                 except subprocess.CalledProcessError:
-                    if not allowUnsharedLocalClones:
+                    if not c.get('allow_unshared_local_clones'):
                         # Re-raise the exception so it gets caught below.
                         # We'll then clobber dest, and clone from original
                         # repo
                         raise
 
-                    self.warning("Error calling hg share from %s to %s; falling back to normal clone from shared repo" % (sharedRepo, dest))
+                    self.warning("Error calling hg share from %s to %s; falling back to normal clone from shared repo" % (shared_repo, dest))
                     # Do a full local clone first, and then update to the
                     # revision we want
                     # This lets us use hardlinks for the local clone if the
                     # OS supports it
-                    self.clone(sharedRepo, dest, update_dest=False)
+                    self.clone(shared_repo, dest, update_dest=False)
                     return self.update(dest, branch=branch, revision=revision)
             except subprocess.CalledProcessError:
-                self.warning("Error updating %s from sharedRepo (%s): ", dest, sharedRepo)
+                self.warning("Error updating %s from shared_repo (%s): ", dest, shared_repo)
                 self.debug("Exception: " + self.dump_exception())
                 self.rmtree(dest)
 
@@ -432,7 +404,8 @@ class MercurialVCS(ShellMixin, OSMixin, LogMixin, object):
             self.mkdir_p(os.path.dirname(dest))
         # Share isn't available or has failed, clone directly from the
         # source
-        return self.clone(repo, dest, branch, revision, update_dest=update_dest)
+        # TODO aki
+#        return self.clone(repo, dest, branch, revision, update_dest=update_dest)
 
     def apply_and_push(self, localrepo, remote, changer, max_attempts=10,
                        ssh_username=None, ssh_key=None):

@@ -31,6 +31,8 @@ class SourceTool(BaseScript):
     # compatibility with the existing hgtool.
     #
     # TODO: get rid of env options, or at least remove HG
+    # TODO: At some point SourceTool should be a base object that
+    # others can inherit.
     config_options = [[
      ["--rev", "-r"],
      {"action": "store",
@@ -46,18 +48,18 @@ class SourceTool(BaseScript):
       "help": "Specify which branch to update to."
      }
     ],[
-#     # Comment this out til we have more options.
-#     ["--vcs",],
-#     {"action": "store",
-#      "type": "choice",
-#      "dest": "vcs",
-#      "default": 'hg', # might be nice to determine the default from
-#                       # sys.argv[0] (ln -s sourcetool.py gittool.py
-#                       # means the default is git?)
-#      "choices": ['hg',],
-#      "help": "Specify which VCS to use."
-#     }
-#    ],[
+     # Comment this out til we have more options.
+     ["--vcs",],
+     {"action": "store",
+      "type": "choice",
+      "dest": "vcs",
+      "default": 'hg', # might be nice to determine the default from
+                       # sys.argv[0] (ln -s sourcetool.py gittool.py
+                       # means the default is git?)
+      "choices": ['hg',],
+      "help": "Specify which VCS to use."
+     }
+    ],[
      ["--props-file", "-p"],
      {"action": "store",
       "dest": "vcs_propsfile",
@@ -91,11 +93,19 @@ class SourceTool(BaseScript):
       "help": "Specify the destination directory (optional)"
      }
     ],[
+     # TODO is this HG-specific?
      ["--shared-dir", '-s'],
      {"action": "store",
       "dest": "vcs_shared_dir",
       "default": os.environ.get('HG_SHARE_BASE_DIR'),
       "help": "clone to a shared directory"
+     }
+    ],[
+     ["--allow-unshared-local-clones",],
+     {"action": "store_true",
+      "dest": "vcs_allow_unshared_local_clones",
+      "default": False,
+      "help": "Allow unshared checkouts if --shared-dir is specified"
      }
     ],[
      ["--check-outgoing",],
@@ -153,24 +163,32 @@ You need to either specify --repo or specify it after the options:
         if self.config['vcs'] == 'hg':
             vcs_obj = MercurialVCS(
              log_obj=self.log_obj,
+             #
+             # Torn between creating a smaller, more flexible config per
+             # helper object, or passing the read-only master config as
+             # vcs_obj.config and creating a smaller vcs_obj.vcs_config.
+             #
+             # Deciding on the latter for now, while reserving the right
+             # to change my mind later.
              config=self.config,
              vcs_config={
               'repo': self.config['vcs_repo'],
               'dest': self.config['vcs_dest'],
               'branch': self.config.get('vcs_branch'),
               'revision': self.config.get('vcs_revision'),
-              'share_base': self.config.get('vcs_shared_dir')
+              'share_base': self.config.get('vcs_shared_dir'),
+              'allow_unshared_local_clones': self.config.get('vcs_allow_unshared_local_clones'),
+              'halt_on_failure': self.config.get('halt_on_failure', True),
+              'noop': self.config.get('noop'),
              }
             )
         else:
             self.fatal("I don't know how to handle vcs '%s'!" % self.config['vcs'])
-        pprint.pprint(vcs_obj)
         # got_revision = mercurial(repo, dest, options.branch, options.revision,
 
         # shareBase=options.shared_dir)
         # TODO
-        # got_revision = vcs_obj.functionname()
-        got_revision = None
+        got_revision = vcs_obj.ensure_repo_and_revision()
 
         self.add_summary("Got revision %s\n" % got_revision)
         if c.get('tbox_output'):
