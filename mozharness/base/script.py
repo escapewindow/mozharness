@@ -275,7 +275,7 @@ class ShellMixin(object):
     def get_output_from_command(self, command, cwd=None,
                                 halt_on_failure=False, env=None,
                                 silent=False, tmpfile_base_path='tmpfile',
-                                return_type='output'):
+                                return_type='output', save_tmpfiles=False):
         """Similar to run_command, but where run_command is an
         os.system(command) analog, get_output_from_command is a `command`
         analog.
@@ -365,6 +365,10 @@ class ShellMixin(object):
         if halt_on_failure and return_level == 'error':
             self.fatal("Halting on failure while running %s" % command,
                        exit_code=p.returncode)
+        # Clean up.
+        if not save_tmpfiles:
+            self.rmtree(tmp_stderr_filename)
+            self.rmtree(tmp_stdout_filename)
         # Hm, options on how to return this? I bet often we'll want
         # output_lines[0] with no newline.
         if return_type != 'output':

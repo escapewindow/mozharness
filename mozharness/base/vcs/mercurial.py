@@ -154,7 +154,7 @@ class MercurialVCS(ShellMixin, OSMixin, LogMixin, object):
             ver = tuple(int(b) for b in bits)
         else:
             ver = (0, 0, 0)
-        self.debug("Running hg version %s", ver)
+        self.debug("Running hg version %s" % str(ver))
         return ver
 
     def update(self, dest, branch=None, revision=None):
