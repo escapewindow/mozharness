@@ -196,7 +196,7 @@ class ShellMixin(object):
         return env
 
     def run_command(self, command, cwd=None, error_list=[], parse_at_end=False,
-                    shell=True, halt_on_failure=False, success_codes=[0],
+                    halt_on_failure=False, success_codes=[0],
                     env=None, return_type='status'):
         """Run a command, with logging and error parsing.
 
@@ -213,7 +213,6 @@ class ShellMixin(object):
         """
         if return_type == 'output':
             return self.get_output_from_command(command=command, cwd=cwd,
-                                                shell=shell,
                                                 halt_on_failure=halt_on_failure,
                                                 env=env)
         num_errors = 0
@@ -228,6 +227,9 @@ class ShellMixin(object):
         if self.config.get('noop'):
             self.info("(Dry run; skipping)")
             return
+        shell = True
+        if isinstance(command, list):
+            shell = False
         p = subprocess.Popen(command, shell=shell, stdout=subprocess.PIPE,
                              cwd=cwd, stderr=subprocess.STDOUT, env=env)
         loop = True
@@ -270,7 +272,7 @@ class ShellMixin(object):
             return num_errors
         return p.returncode
 
-    def get_output_from_command(self, command, cwd=None, shell=True,
+    def get_output_from_command(self, command, cwd=None,
                                 halt_on_failure=False, env=None,
                                 silent=False, tmpfile_base_path='tmpfile',
                                 return_type='output'):
@@ -325,6 +327,9 @@ class ShellMixin(object):
             self.log("Can't open %s for writing!" % tmp_stderr_filename + \
                      self.dump_exception(), level=level)
             return -1
+        shell = True
+        if isinstance(command, list):
+            shell = False
         p = subprocess.Popen(command, shell=shell, stdout=tmp_stdout,
                              cwd=cwd, stderr=tmp_stderr, env=env)
         self.debug("Temporary files: %s and %s" % (tmp_stdout_filename, tmp_stderr_filename))

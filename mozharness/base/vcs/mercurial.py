@@ -405,7 +405,7 @@ class MercurialVCS(ShellMixin, OSMixin, LogMixin, object):
         """
         c = self.vcs_config
         for conf_item in ('dest', 'repo'):
-            assert self.vcs_config['conf_item']
+            assert self.vcs_config[conf_item]
         dest = os.path.abspath(c['dest'])
         repo = c['repo']
         revision = c.get('revision')
