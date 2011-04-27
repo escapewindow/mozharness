@@ -302,7 +302,7 @@ class MercurialVCS(ShellMixin, OSMixin, LogMixin, object):
                 # Share extension is enabled, but not functional
                 self.warning("Disabling sharing since share extension doesn't seem to work (1)")
                 self.can_share = False
-            elif 'unknown command' in output:
+            elif 'unknown command' in output or 'hg help extensions' in output:
                 # Share extension is disabled
                 self.warning("Disabling sharing since share extension doesn't seem to work (2)")
                 self.can_share = False
@@ -310,6 +310,8 @@ class MercurialVCS(ShellMixin, OSMixin, LogMixin, object):
             # The command failed, so disable sharing
             self.warning("Disabling sharing since share extension doesn't seem to work (3)")
             self.can_share = False
+        if self.can_share:
+            self.info("hg share works.")
         return self.can_share
 
     def _ensure_shared_repo_and_revision(self, share_base):
@@ -360,7 +362,7 @@ class MercurialVCS(ShellMixin, OSMixin, LogMixin, object):
                 return self.update(dest, branch=branch, revision=revision)
 
             try:
-                self.info("Trying to share %s to %s", shared_repo, dest)
+                self.info("Trying to share %s to %s" % (shared_repo, dest))
                 return self.share(shared_repo, dest, branch=branch, revision=revision)
             except subprocess.CalledProcessError:
                 if not c.get('allow_unshared_local_clones'):

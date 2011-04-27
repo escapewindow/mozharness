@@ -1,4 +1,9 @@
 === 0.4 ===
+2011-04-27  Aki Sasaki  <aki@mozilla.com>
+
+* mozharness/base/vcs/mercurial.py:
+   Worked through the various scenarios in sourcetool.py; fixing bugs.
+
 2011-04-26  Aki Sasaki  <aki@mozilla.com>
 
 * scripts/sourcetool.py: Moved from scripts/hgtool.py.
