@@ -101,8 +101,6 @@ class ReadOnlyDict(dict):
 def parse_config_file(file_name, quiet=False, search_path=None):
     """Read a config file and return a dictionary.
     """
-    # TODO error checking.  Does this need to be part of an object with
-    # self.log() functions?
     file_path = None
     if os.path.exists(file_name):
         file_path = file_name
@@ -115,10 +113,7 @@ def parse_config_file(file_name, quiet=False, search_path=None):
                 file_path = os.path.join(path, file_name)
                 break
         else:
-            if not quiet:
-                print "ERROR: Can't find %s in %s!" % (file_name, search_path)
-            return
-    # TODO more try/except ?
+            raise IOError, "Can't find %s in %s!" % (file_name, search_path)
     if file_name.endswith('.py'):
         global_dict = {}
         local_dict = {}
@@ -130,7 +125,7 @@ def parse_config_file(file_name, quiet=False, search_path=None):
         json_config = json.load(fh)
         config = dict(json_config)
     else:
-        assert False, "Unknown config file type %s!" % file_name
+        raise RuntimeError, "Unknown config file type %s!" % file_name
     return config
 
 

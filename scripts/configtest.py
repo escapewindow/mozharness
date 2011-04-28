@@ -53,7 +53,8 @@ class ConfigTest(BaseScript):
             for name in files:
                 # Hardcode =P
                 if name.endswith(".json") or name.endswith(".py"):
-                    config_files.append(os.path.join(root, name))
+                    if not name.startswith("test_malformed"):
+                        config_files.append(os.path.join(root, name))
         self.config_files = config_files
         return self.config_files
 

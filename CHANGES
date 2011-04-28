@@ -1,12 +1,21 @@
 === 0.4 ===
 2011-04-28  Aki Sasaki  <aki@mozilla.com>
 
+* scripts/configtest.py:
+    Ignore test_malformed* config files.
+
+* configs/test/test_malformed.json: Added file.
+
+* configs/test/test_malformed.py: Added file.
+
 * mozharness/base/config.py (parse_config_file):
     Fixed python config files.
     Raise assertion if config file does not end in .json or .py.
+    Raise assertion if config file is not found.
 
 * test/test_base_config.py:
-    Added TestPythonConfig class
+    TestJsonConfig -> TestParseConfigFile.
+    Added python config file tests, illegal/malformed config file checking.
 
 * configs/test/test.py: Added file.
 
