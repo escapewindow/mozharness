@@ -1,8 +1,20 @@
 === 0.4 ===
 2011-04-27  Aki Sasaki  <aki@mozilla.com>
 
+* mozharness/base/vcs/hgtool.py: Created softlink -> sourcetool.py.
+
+* mozharness/base/vcs/sourcetool.py:
+    Was able to test a successful |sourcetool.py repo|, as well as a |sourcetool.py -s shared_dir repo|.
+    Created ability to change the default VCS by looking at the filename (softlink to hgtool.py and it'll use hg by default; softlink to gittool.py and it'll use git when we enable it. I also see potential svntool.py and cvstool.py at some point.)
+
+* mozharness/base/vcs/sourcetool.py (SourceTool._pre_config_lock):
+    Verified that self.config['vcs'] is set; else self.fatal()
+
+* mozharness/base/vcs/sourcetool.py (SourceTool.source):
+    Cleaned up old TODO comments
+
 * mozharness/base/vcs/mercurial.py:
-   Worked through the various scenarios in sourcetool.py; fixing bugs.
+    Worked through the various scenarios in sourcetool.py; fixing bugs.
 
 2011-04-26  Aki Sasaki  <aki@mozilla.com>
 

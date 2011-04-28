@@ -18,21 +18,32 @@ from mozharness.base.config import parse_config_file
 from mozharness.base.script import BaseScript
 from mozharness.base.vcs.mercurial import MercurialVCS
 
+# These variables allow us to create a sourcetool.py that will [hopefully]
+# work with a selection of VCSs.
+#
+# To avoid needing to specify --vcs VCS, softlink sourcetool.py to
+# VCStool.py (where VCS is the VCS you want to use, and is a member of
+# VCS_CHOICES).
+VCS_CHOICES = ['hg',]
+VCS_DEFAULT = None
+VCS_REQUIRED_OPTION = "--vcs VCS "
+VCS_NAME = os.path.basename(sys.argv[0]).replace('tool.py', '')
+if VCS_NAME in VCS_CHOICES:
+    VCS_DEFAULT = VCS_NAME
+    VCS_REQUIRED_OPTION = ""
 SOURCE_TOOL_USAGE = """Usage:
-    %prog [options] repo [dest]
+    %%prog [options] %srepo [dest]
 
-    %prog --repo REPOSITORY [options]
+    %%prog %s--repo REPOSITORY [options]
 
-    %prog [-h|--help]"""
+    %%prog [-h|--help]""" % (VCS_REQUIRED_OPTION, VCS_REQUIRED_OPTION)
 
 # SourceTool {{{1
 class SourceTool(BaseScript):
     # These options were chosen with an eye towards backwards
     # compatibility with the existing hgtool.
     #
-    # TODO: get rid of env options, or at least remove HG
-    # TODO: At some point SourceTool should be a base object that
-    # others can inherit.
+    # TODO: get rid of env options, or at least remove HG from the names.
     config_options = [[
      ["--rev", "-r"],
      {"action": "store",
@@ -53,10 +64,8 @@ class SourceTool(BaseScript):
      {"action": "store",
       "type": "choice",
       "dest": "vcs",
-      "default": 'hg', # might be nice to determine the default from
-                       # sys.argv[0] (ln -s sourcetool.py gittool.py
-                       # means the default is git?)
-      "choices": ['hg',],
+      "default": VCS_DEFAULT,
+      "choices": VCS_CHOICES,
       "help": "Specify which VCS to use."
      }
     ],[
@@ -93,7 +102,9 @@ class SourceTool(BaseScript):
       "help": "Specify the destination directory (optional)"
      }
     ],[
-     # TODO is this HG-specific?
+     # TODO Are the shared options HG-specific?
+     # I think there are, or we can create, similar behavior in other
+     # VCSs.
      ["--shared-dir", '-s'],
      {"action": "store",
       "dest": "vcs_shared_dir",
@@ -137,6 +148,9 @@ class SourceTool(BaseScript):
         # we need to be careful not to abuse it.
         args = rw_config.args
         c = self.config
+        if c.get('vcs') is None:
+            self.fatal("Must specify --vcs!\n\n%s" % \
+                       rw_config.config_parser.format_help())
         if c.get('vcs_repo') is None:
             if len(args) not in (1, 2):
                 self.fatal("""Invalid number of arguments!
@@ -184,10 +198,6 @@ You need to either specify --repo or specify it after the options:
             )
         else:
             self.fatal("I don't know how to handle vcs '%s'!" % self.config['vcs'])
-        # got_revision = mercurial(repo, dest, options.branch, options.revision,
-
-        # shareBase=options.shared_dir)
-        # TODO
         got_revision = vcs_obj.ensure_repo_and_revision()
 
         self.add_summary("Got revision %s\n" % got_revision)
