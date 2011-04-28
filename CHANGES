@@ -1,4 +1,17 @@
 === 0.4 ===
+2011-04-28  Aki Sasaki  <aki@mozilla.com>
+
+* mozharness/l10n/locales.py (LocalesMixin.query_locales):
+    Fixed some borked logic.
+
+* test/helper_files/locales.json: Added file.
+
+* test/helper_files/locales.txt: Added file.
+
+* test/test_l10n_locales.py: Added file.
+
+* test/*: Renamed to match directory structure.
+
 2011-04-27  Aki Sasaki  <aki@mozilla.com>
 
 * test/networked/test_script.py: Added file.

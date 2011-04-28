@@ -18,13 +18,13 @@ class LocalesMixin(object):
         self.locales = None
 
     def query_locales(self):
-        if self.locales:
+        if self.locales is not None:
             return self.locales
         c = self.config
         locales = c.get("locales", None)
         ignore_locales = c.get("ignore_locales", None)
 
-        if not locales:
+        if locales is None:
             locales = []
             if 'locales_file' in c:
                 # Best way to get abs/relative path to this?
@@ -33,6 +33,13 @@ class LocalesMixin(object):
                 locales = self.parse_locales_file(locales_file)
             else:
                 self.fatal("No way to determine locales!")
+        elif ignore_locales:
+            for locale in ignore_locales:
+                if locale in locales:
+                    self.debug("Ignoring locale %s." % locale)
+                    locales.remove(locale)
+        if locales is not None:
+            self.locales = locales
 
         return locales
 
