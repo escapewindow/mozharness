@@ -1,4 +1,3 @@
-# This set of tests requires network; not sure how to bypass that elegantly.
 import os
 import shutil
 import subprocess
