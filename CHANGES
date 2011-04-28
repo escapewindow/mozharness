@@ -1,6 +1,13 @@
 === 0.4 ===
 2011-04-28  Aki Sasaki  <aki@mozilla.com>
 
+* test/test_base_script.py:
+    Added test_chmod method.
+    Renamed TestSummary to TestScriptLogging.
+
+* mozharness/base/script.py (OSMixin.chown): Removed method.
+    I can't see using it as a non-root user; as a root user we'll need to sudo.
+
 * scripts/configtest.py:
     Ignore test_malformed* config files.
 

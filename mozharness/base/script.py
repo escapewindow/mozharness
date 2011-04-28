@@ -129,14 +129,9 @@ class OSMixin(object):
             shutil.move(src, dest)
 
     def chmod(self, path, mode):
-        self.info("Chmoding %s to %s" % (path, mode))
+        self.info("Chmoding %s to %s" % (path, str(oct(mode))))
         if not self.config.get('noop'):
             os.chmod(path, mode)
-
-    def chown(self, path, uid, guid):
-        self.info("Chowning %s to uid %s guid %s" % (path, uid, guid))
-        if not self.config.get('noop'):
-            os.chown(path, uid, guid)
 
     def copyfile(self, src, dest, error_level='error'):
         self.info("Copying %s to %s" % (src, dest))

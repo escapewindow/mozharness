@@ -240,9 +240,16 @@ class TestHelperFunctions(unittest.TestCase):
         self.assertFalse(os.path.exists('test_dir'),
                          msg="_rmdir_recursive unsuccessful")
 
+    def test_chmod(self):
+        self._create_temp_file()
+        s = script.BaseScript(initial_config_file='test/test.json')
+        s.chmod(self.temp_file, 0100700)
+        self.assertEqual(os.stat(self.temp_file)[0], 33216,
+                         msg="chmod unsuccessful")
 
 
-class TestSummary(unittest.TestCase):
+
+class TestScriptLogging(unittest.TestCase):
     # I need a log watcher helper function, here and in test_log.
     def setUp(self):
         cleanup()
