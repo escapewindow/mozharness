@@ -222,6 +222,7 @@ class TestHelperFunctions(unittest.TestCase):
     def test_existing_rmtree(self):
         self._create_temp_file()
         s = script.BaseScript(initial_config_file='test/test.json')
+        s.mkdir_p('test_dir/foo/bar/baz')
         s.rmtree('test_dir')
         self.assertFalse(os.path.exists('test_dir'),
                          msg="rmtree unsuccessful")
@@ -230,6 +231,14 @@ class TestHelperFunctions(unittest.TestCase):
         s = script.BaseScript(initial_config_file='test/test.json')
         status = s.rmtree('test_dir')
         self.assertFalse(status, msg="nonexistent rmtree error")
+
+    def test_existing_rmdir_recursive(self):
+        self._create_temp_file()
+        s = script.BaseScript(initial_config_file='test/test.json')
+        s.mkdir_p('test_dir/foo/bar/baz')
+        s._rmdir_recursive('test_dir')
+        self.assertFalse(os.path.exists('test_dir'),
+                         msg="_rmdir_recursive unsuccessful")
 
 
 

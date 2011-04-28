@@ -27,3 +27,17 @@ class TestNetworkedHelperFunctions(unittest.TestCase):
                         error_level="ignore")
         self.assertTrue(os.path.exists(self.temp_file),
                         msg="error downloading mozilla.com")
+
+    def test_download_bad_domain(self):
+        s = script.BaseScript(initial_config_file='test/test.json')
+        os.mkdir('test_dir')
+        self.assertRaises(SystemExit, s.download_file,
+                          "http://www.mozilla.sdfsdsdf",
+                          error_level='fatal')
+
+    def test_download_bad_file(self):
+        s = script.BaseScript(initial_config_file='test/test.json')
+        os.mkdir('test_dir')
+        self.assertRaises(SystemExit, s.download_file,
+                          "http://www.google.com/lsdkfjlsdkfjekisdilsj",
+                          error_level='fatal')
