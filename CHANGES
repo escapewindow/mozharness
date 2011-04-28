@@ -1,6 +1,13 @@
 === 0.4 ===
 2011-04-27  Aki Sasaki  <aki@mozilla.com>
 
+* test/networked/test_script.py: Added file.
+
+* test/test_script.py (TestHelperFunctions.test_download_file): Removed method.
+
+* unit.sh:
+    Added a separate networked/non-networked call to nosetests.  In the future, we should add an option to skip the network tests.
+
 * mozharness/base/vcs/hgtool.py: Created softlink -> sourcetool.py.
 
 * mozharness/base/vcs/sourcetool.py:

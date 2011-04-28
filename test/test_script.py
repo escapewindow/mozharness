@@ -178,14 +178,6 @@ class TestHelperFunctions(unittest.TestCase):
         self.assertTrue(os.path.isdir('test_dir'),
                         msg="mkdir_p error")
 
-    def test_download_file(self):
-        s = script.BaseScript(initial_config_file='test/test.json')
-        os.mkdir('test_dir')
-        s.download_file("http://www.mozilla.com", file_name=self.temp_file,
-                        error_level="ignore")
-        self.assertTrue(os.path.exists(self.temp_file),
-                        msg="error downloading mozilla.com")
-
     def test_get_output_from_command(self):
         self._create_temp_file()
         s = script.BaseScript(initial_config_file='test/test.json')
