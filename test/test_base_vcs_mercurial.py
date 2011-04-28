@@ -28,7 +28,7 @@ def cleanup():
         if os.path.exists(filename):
             os.remove(filename)
 
-class TestMercurial(unittest.TestCase):
+class TestMercurialScript(unittest.TestCase):
     def setUp(self):
         cleanup()
 
@@ -44,3 +44,28 @@ class TestMercurial(unittest.TestCase):
         self.assertTrue(os.path.isdir("test_dir/tools"))
         s.scm_checkout("http://hg.mozilla.org/build/tools",
                       dir_name="test_dir/tools", halt_on_failure=False)
+
+def get_mercurial_vcs_obj():
+    m = mercurial.MercurialVCS()
+    return m
+
+class TestMakeAbsolute(unittest.TestCase):
+    def testAbsolutePath(self):
+        m = get_mercurial_vcs_obj()
+        self.assertEquals(m._make_absolute("/foo/bar"), "/foo/bar")
+
+    def testRelativePath(self):
+        m = get_mercurial_vcs_obj()
+        self.assertEquals(m._make_absolute("foo/bar"), os.path.abspath("foo/bar"))
+
+    def testHTTPPaths(self):
+        m = get_mercurial_vcs_obj()
+        self.assertEquals(m._make_absolute("http://foo/bar"), "http://foo/bar")
+
+    def testAbsoluteFilePath(self):
+        m = get_mercurial_vcs_obj()
+        self.assertEquals(m._make_absolute("file:///foo/bar"), "file:///foo/bar")
+
+    def testRelativeFilePath(self):
+        m = get_mercurial_vcs_obj()
+        self.assertEquals(m._make_absolute("file://foo/bar"), "file://%s/foo/bar" % os.getcwd())
