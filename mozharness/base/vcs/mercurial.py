@@ -297,7 +297,8 @@ class MercurialVCS(ShellMixin, OSMixin, LogMixin, object):
         self.can_share = True
         try:
             self.info("Checking if share extension works.")
-            output = self.get_output_from_command(['hg', 'help', 'share'])
+            output = self.get_output_from_command(['hg', 'help', 'share'],
+                                                  silent=True)
             if 'no commands defined' in output:
                 # Share extension is enabled, but not functional
                 self.warning("Disabling sharing since share extension doesn't seem to work (1)")
@@ -355,9 +356,11 @@ class MercurialVCS(ShellMixin, OSMixin, LogMixin, object):
 
         try:
             self.info("Updating shared repo")
-# TODO aki
-#            self.mercurial(repo, shared_repo, branch=branch, revision=revision,
-#                           update_dest=False, share_base=None)
+# mkdir?
+# fix hg branch in subdir?
+            self.clone(repo, shared_repo, branch=branch, branch=revision,
+                       update_dest=False)
+#aki
             if os.path.exists(dest):
                 return self.update(dest, branch=branch, revision=revision)
 
