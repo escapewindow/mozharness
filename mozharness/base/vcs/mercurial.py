@@ -358,7 +358,7 @@ class MercurialVCS(ShellMixin, OSMixin, LogMixin, object):
             self.info("Updating shared repo")
 # mkdir?
 # fix hg branch in subdir?
-            self.clone(repo, shared_repo, branch=branch, branch=revision,
+            self.clone(repo, shared_repo, branch=branch, revision=revision,
                        update_dest=False)
 #aki
             if os.path.exists(dest):
