@@ -118,26 +118,19 @@ def parse_config_file(file_name, quiet=False, search_path=None):
             if not quiet:
                 print "ERROR: Can't find %s in %s!" % (file_name, search_path)
             return
+    # TODO more try/except ?
     if file_name.endswith('.py'):
         global_dict = {}
         local_dict = {}
         execfile(file_path, global_dict, local_dict)
         config = local_dict['config']
-    else:
+    elif file_name.endswith('.json'):
         fh = open(file_path)
         config = {}
-        if file_name.endswith('.json'):
-            json_config = json.load(fh)
-            config = dict(json_config)
-        else:
-            # TODO better default? I'd self.fatal if it were available here.
-            contents = []
-            for line in fh:
-                line = line[:-1]
-                contents.append(line)
-                config = dict(contents)
-    fh.close()
-    # TODO return file_path
+        json_config = json.load(fh)
+        config = dict(json_config)
+    else:
+        assert False, "Unknown config file type %s!" % file_name
     return config
 
 

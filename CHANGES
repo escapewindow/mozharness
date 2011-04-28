@@ -1,6 +1,15 @@
 === 0.4 ===
 2011-04-28  Aki Sasaki  <aki@mozilla.com>
 
+* mozharness/base/config.py (parse_config_file):
+    Fixed python config files.
+    Raise assertion if config file does not end in .json or .py.
+
+* test/test_base_config.py:
+    Added TestPythonConfig class
+
+* configs/test/test.py: Added file.
+
 * mozharness/l10n/locales.py (LocalesMixin.query_locales):
     Fixed some borked logic.
 

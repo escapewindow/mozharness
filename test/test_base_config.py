@@ -28,6 +28,20 @@ class TestJsonConfig(unittest.TestCase):
         for key in content_dict.keys():
             self.assertEqual(content_dict[key], c._config[key])
 
+class TestPythonConfig(unittest.TestCase):
+    def _get_python_config(self, filename="configs/test/test.py",
+                           output='dict'):
+        global_dict = {}
+        local_dict = {}
+        execfile(filename, global_dict, local_dict)
+        return local_dict['config']
+    
+    def test_config(self):
+        c = config.BaseConfig(initial_config_file='test/test.py')
+        config_dict = self._get_python_config()
+        for key in config_dict.keys():
+            self.assertEqual(config_dict[key], c._config[key])
+
 
     
 class TestReadOnlyDict(unittest.TestCase):
