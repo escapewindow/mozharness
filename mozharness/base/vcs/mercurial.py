@@ -61,6 +61,13 @@ class MercurialScript(MercurialMixin, BaseScript):
 
 
 # MercurialVCS {{{1
+# TODO Test and debug the remaining functions.
+# TODO Make the remaining functions more mozharness-friendly.
+# TODO Add and run MercurialVCS unittests; port most/all from
+# build/tools/lib/python/buildtools/test/test_util_hg.py.
+# I've mainly concentrated on MercurialVCS.ensure_repo_and_revision().
+# TODO Add the various tag functionality that are currently in
+# build/tools/scripts to MercurialVCS -- generic tagging logic belongs here.
 REVISION, BRANCH = 0, 1
 
 def make_hg_url(hg_host, repo_path, protocol='http', revision=None,
@@ -104,8 +111,9 @@ class MercurialVCS(ShellMixin, OSMixin, LogMixin, object):
         # }
         self.vcs_config = vcs_config
 
-    # TODO rename?
     def _make_absolute(self, repo):
+        # TODO self.repo
+        # TODO rename?
         if repo.startswith("file://"):
             path = repo[len("file://"):]
             repo = "file://%s" % os.path.abspath(path)
@@ -114,12 +122,12 @@ class MercurialVCS(ShellMixin, OSMixin, LogMixin, object):
         return repo
 
 
-    # TODO self.repo
     def get_repo_name(self, repo):
+        # TODO untested
         return repo.rstrip('/').split('/')[-1]
 
-    # TODO self.repo
     def get_repo_path(self, repo):
+        # TODO untested
         repo = self._make_absolute(repo)
         if repo.startswith("/"):
             return repo.lstrip("/")
@@ -128,14 +136,17 @@ class MercurialVCS(ShellMixin, OSMixin, LogMixin, object):
 
     def get_revision_from_path(self, path):
         """Returns which revision directory `path` currently has checked out."""
+        # TODO untested
         return self.get_output_from_command(
             ['hg', 'parent', '--template', '{node|short}'], cwd=path
         )
 
     def get_branch_from_path(self, path):
+        # TODO untested
         return self.get_output_from_command(['hg', 'branch'], cwd=path).strip()
 
     def get_branches_from_path(self, path):
+        # TODO untested
         branches = []
         for line in self.get_output_from_command(['hg', 'branches', '-c'],
                                                  cwd=path).splitlines():
@@ -216,6 +227,7 @@ class MercurialVCS(ShellMixin, OSMixin, LogMixin, object):
         """Fill in common hg arguments, encapsulating logic checks that
         depend on mercurial versions and provided arguments
         """
+        # TODO untested
         args = []
         if ssh_username or ssh_key:
             opt = ['-e', 'ssh']
@@ -240,6 +252,7 @@ class MercurialVCS(ShellMixin, OSMixin, LogMixin, object):
         If `update_dest` is set, then `dest` will be updated to `revision`
         if set, otherwise to `branch`, otherwise to the head of default.
         """
+        # TODO untested
         # Convert repo to an absolute path if it's a local repository
         repo = self._make_absolute(repo)
         cmd = ['hg', 'pull']
@@ -256,6 +269,8 @@ class MercurialVCS(ShellMixin, OSMixin, LogMixin, object):
 
     def out(self, src, remote, **kwargs):
         """Check for outgoing changesets present in a repo"""
+        # TODO untested
+        # TODO rename?
         cmd = ['hg', '-q', 'out', '--template', '{node} {branches}\n']
         cmd.extend(self.common_args(**kwargs))
         cmd.append(remote)
@@ -282,6 +297,7 @@ class MercurialVCS(ShellMixin, OSMixin, LogMixin, object):
                 raise
 
     def push(self, src, remote, push_new_branches=True, **kwargs):
+        # TODO untested
         cmd = ['hg', 'push']
         cmd.extend(self.common_args(**kwargs))
         if push_new_branches:
@@ -396,11 +412,6 @@ class MercurialVCS(ShellMixin, OSMixin, LogMixin, object):
 
     # End hg share methods 2}}}
 
-    # TODO this is probably the default behavior that MercurialVCS should
-    # have, and should be able to just use self.vcs_config info.
-#    def mercurial(self, repo, dest, branch=None, revision=None,
-#                  update_dest=True, shareBase=DefaultShareBase,
-#                  allowUnsharedLocalClones=False):
     def ensure_repo_and_revision(self):
         """Makes sure that `dest` is has `revision` or `branch` checked out
         from `repo`.
@@ -435,6 +446,7 @@ class MercurialVCS(ShellMixin, OSMixin, LogMixin, object):
         local repository, and the attempt number. This function will push
         ALL changesets missing from remote.
         """
+        # TODO untested
         assert callable(changer)
         branch = self.get_branch_from_path(localrepo)
         changer(localrepo, 1)
@@ -474,6 +486,7 @@ class MercurialVCS(ShellMixin, OSMixin, LogMixin, object):
 
 
     def cleanOutgoingRevs(self, reponame, remote, username, sshKey):
+        # TODO untested
         # TODO retry
         outgoingRevs = self.out(src=reponame, remote=remote,
                                 ssh_username=username, ssh_key=sshKey)
