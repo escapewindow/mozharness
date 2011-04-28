@@ -2,6 +2,10 @@
 """sourcetool.py
 
 Port of tools/buildfarm/utils/hgtool.py.
+
+TODO: sourcetool.py currently ignores work_dir completely.
+Maybe we should use it instead of dest ?
+Maybe I need to rethink work_dir?
 """
 
 import os
