@@ -28,22 +28,7 @@ def cleanup():
         if os.path.exists(filename):
             os.remove(filename)
 
-class TestMercurialScript(unittest.TestCase):
-    def setUp(self):
-        cleanup()
 
-    def tearDown(self):
-        cleanup()
-
-    def test_mercurial_script(self):
-        s = mercurial.MercurialScript(initial_config_file='test/test.json')
-        s.mkdir_p('test_dir')
-        s.run_command("touch test_dir/tools")
-        s.scm_checkout("http://hg.mozilla.org/build/tools",
-                      parent_dir="test_dir", clobber=True)
-        self.assertTrue(os.path.isdir("test_dir/tools"))
-        s.scm_checkout("http://hg.mozilla.org/build/tools",
-                      dir_name="test_dir/tools", halt_on_failure=False)
 
 def get_mercurial_vcs_obj():
     m = mercurial.MercurialVCS()
