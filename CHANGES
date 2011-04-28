@@ -4,6 +4,9 @@
 * mozharness/l10n/locales.py (LocalesMixin.query_locales):
     Fixed some borked logic.
 
+* mozharness/l10n/locales.py (LocalesMixin.parse_locales_file):
+    Removed duplicate ignore_locales logic that should be handled in query_locales.
+
 * test/helper_files/locales.json: Added file.
 
 * test/helper_files/locales.txt: Added file.

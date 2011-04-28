@@ -41,13 +41,12 @@ class LocalesMixin(object):
         if locales is not None:
             self.locales = locales
 
-        return locales
+        return self.locales
 
     def parse_locales_file(self, locales_file):
         locales = []
         c = self.config
         platform = c.get("locales_platform", None)
-        ignore_locales = c.get("ignore_locales", None)
 
         if locales_file.endswith('json'):
             locales_json = parse_config_file(locales_file)
@@ -61,14 +60,7 @@ class LocalesMixin(object):
             fh = open(locales_file)
             locales = fh.read().split()
             fh.close()
-        if ignore_locales:
-            for locale in ignore_locales:
-                if locale in locales:
-                    self.debug("Ignoring locale %s." % locale)
-                    locales.remove(locale)
-        if locales:
-            self.locales = locales
-            return self.locales
+        return locales
 
     def run_compare_locales(self, locale, halt_on_failure=False):
         c = self.config
