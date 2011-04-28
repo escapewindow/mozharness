@@ -247,6 +247,31 @@ class TestHelperFunctions(unittest.TestCase):
         self.assertEqual(os.stat(self.temp_file)[0], 33216,
                          msg="chmod unsuccessful")
 
+    def test_env_normal(self):
+        s = script.BaseScript(initial_config_file='test/test.json')
+        script_env = s.query_env()
+        self.assertEqual(script_env, os.environ,
+                         msg="query_env() != env\n%s\n%s" % (script_env, os.environ))
+
+    def test_env_normal2(self):
+        s = script.BaseScript(initial_config_file='test/test.json')
+        s.query_env()
+        script_env = s.query_env()
+        self.assertEqual(script_env, os.environ,
+                         msg="Second query_env() != env\n%s\n%s" % (script_env, os.environ))
+
+    def test_env_partial(self):
+        s = script.BaseScript(initial_config_file='test/test.json')
+        script_env = s.query_env(partial_env={'foo': 'bar'})
+        self.assertTrue('foo' in script_env and script_env['foo'] == 'bar')
+
+    def test_env_path(self):
+        s = script.BaseScript(initial_config_file='test/test.json')
+        partial_path = "yaddayadda:%(PATH)s"
+        full_path = partial_path % {'PATH': os.environ['PATH']}
+        script_env = s.query_env(partial_env={'PATH': partial_path})
+        self.assertEqual(script_env['PATH'], full_path)
+
 
 
 class TestScriptLogging(unittest.TestCase):

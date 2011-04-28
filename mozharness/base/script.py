@@ -173,12 +173,12 @@ class ShellMixin(object):
         """
         set_self_env = False
         if partial_env is None:
-            if self.env:
+            if self.env is not None:
                 return self.env
-            set_self_env = True
             partial_env = self.config.get('env', None)
-            if not partial_env:
-                return None
+            if partial_env is None:
+                partial_env = {}
+            set_self_env = True
         env = os.environ.copy()
         if replace_dict is None:
             replace_dict = {}

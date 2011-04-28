@@ -1,9 +1,13 @@
 === 0.4 ===
 2011-04-28  Aki Sasaki  <aki@mozilla.com>
 
+* mozharness/base/script.py (ShellMixin.query_env):
+    Fixed partial_env logic.
+
 * test/test_base_script.py:
     Added test_chmod method.
     Renamed TestSummary to TestScriptLogging.
+    Added query_env testing.
 
 * mozharness/base/script.py (OSMixin.chown): Removed method.
     I can't see using it as a non-root user; as a root user we'll need to sudo.
