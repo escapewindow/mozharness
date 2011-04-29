@@ -1,6 +1,8 @@
 === 0.4 ===
 2011-04-28  Aki Sasaki  <aki@mozilla.com>
 
+* test/helper_files/init_hgrepo.sh: Added file (copied from build/tools)
+
 * mozharness/base/script.py (ShellMixin.query_env):
     Fixed partial_env logic.
 
