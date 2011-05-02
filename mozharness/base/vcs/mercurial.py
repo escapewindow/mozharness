@@ -142,8 +142,9 @@ class MercurialVCS(ShellMixin, OSMixin, LogMixin, object):
         )
 
     def get_branch_from_path(self, path):
-        # TODO untested
-        return self.get_output_from_command(['hg', 'branch'], cwd=path).strip()
+        # TODO antested
+        branch = self.get_output_from_command(['hg', 'branch'], cwd=path)
+        return str(branch).strip()
 
     def get_branches_from_path(self, path):
         # TODO untested
@@ -179,8 +180,7 @@ class MercurialVCS(ShellMixin, OSMixin, LogMixin, object):
             self.run_command(cmd, cwd=dest, error_list=HgErrorList)
         else:
             # Check & switch branch
-            local_branch = self.get_output_from_command(['hg', 'branch'],
-                                                        cwd=dest).strip()
+            local_branch = self.get_branch_from_path(dest)
 
             cmd = ['hg', 'update', '-C']
 
@@ -201,6 +201,15 @@ class MercurialVCS(ShellMixin, OSMixin, LogMixin, object):
         If `update_dest` is set, then `dest` will be updated to `revision`
         if set, otherwise to `branch`, otherwise to the head of default.
         """
+        msg = "Cloning %s to %s" % (repo, dest)
+        if branch:
+            msg += " on branch %s" % branch
+        if revision:
+            msg += " to revision %s" % revision
+        self.info(msg)
+        parent_dest = os.path.dirname(dest)
+        if not os.path.exists(parent_dest):
+            self.mkdir_p(parent_dest)
         if os.path.exists(dest):
             self.rmtree(dest)
 
@@ -367,7 +376,7 @@ class MercurialVCS(ShellMixin, OSMixin, LogMixin, object):
             norm_shared_repo = os.path.normpath(os.path.join(shared_repo, '.hg'))
             if dest_shared_path_data != norm_shared_repo:
                 # Clobber!
-                self.info("We're currently shared from %s, but are being requested to pull from %s (%s); clobbering", dest_shared_path_data, repo, norm_shared_repo)
+                self.info("We're currently shared from %s, but are being requested to pull from %s (%s); clobbering" % (dest_shared_path_data, repo, norm_shared_repo))
                 self.rmtree(dest)
 
         try:

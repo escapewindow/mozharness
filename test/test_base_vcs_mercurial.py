@@ -201,27 +201,28 @@ class TestHg(unittest.TestCase):
         # Try and pull in changes from the new repo
         self.assertNotEqual(0, m.pull(repo2, self.wc, update_dest=False))
 
-# TODO
-#    def test_share_unrelated(self):
-#        m = get_mercurial_vcs_obj()
-#        # Create a new repo
-#        repo2 = os.path.join(self.tmpdir, 'repo2')
-#        m.run_command(['%s/helper_files/init_hgrepo.sh' % os.path.dirname(__file__), repo2])
-#
-#        self.assertNotEqual(self.revisions, get_revisions(repo2))
-#
-#        share_base = os.path.join(self.tmpdir, 'share')
-#
-#        # Clone the original repo
-#        m.vcs_config = {'repo': self.repodir, 'dest': self.wc, 'share_base': share_base}
-#        m._ensure_shared_repo_and_revision(share_base)
-#
-#        # Clone the new repo
-#        m.vcs_config = {'repo': repo2, 'dest': self.wc, 'share_base': share_base}
-#        m._ensure_shared_repo_and_revision(share_base)
-#
-#        self.assertEquals(get_revisions(self.wc), get_revisions(repo2))
+    def test_share_unrelated(self):
+        m = get_mercurial_vcs_obj()
+        # Create a new repo
+        repo2 = os.path.join(self.tmpdir, 'repo2')
+        m.run_command(['%s/helper_files/init_hgrepo.sh' % os.path.dirname(__file__), repo2])
 
+        self.assertNotEqual(self.revisions, get_revisions(repo2))
+
+        share_base = os.path.join(self.tmpdir, 'share')
+
+        # Clone the original repo
+        m.vcs_config = {'repo': self.repodir, 'dest': self.wc, 'share_base': share_base}
+        m._ensure_shared_repo_and_revision(share_base)
+
+        # Clone the new repo
+        m = get_mercurial_vcs_obj()
+        m.vcs_config = {'repo': repo2, 'dest': self.wc, 'share_base': share_base}
+        m._ensure_shared_repo_and_revision(share_base)
+
+        self.assertEqual(get_revisions(self.wc), get_revisions(repo2))
+
+# TODO
 #    def testShareReset(self):
 #        shareBase = os.path.join(self.tmpdir, 'share')
 #
