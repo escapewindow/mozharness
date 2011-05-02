@@ -222,7 +222,6 @@ class TestHg(unittest.TestCase):
 
         self.assertEquals(get_revisions(self.wc), get_revisions(repo2))
 
-# TODO
     def test_share_reset(self):
         m = get_mercurial_vcs_obj()
         share_base = os.path.join(self.tmpdir, 'share')
@@ -244,34 +243,39 @@ class TestHg(unittest.TestCase):
         self.assertEquals(get_revisions(self.repodir), get_revisions(self.wc))
         self.assertNotEqual(old_revs, get_revisions(self.wc))
 
-#    def test_push(self):
-#        m = get_mercurial_vcs_obj()
-#        clone(self.repodir, self.wc, revision=self.revisions[-2])
-#        push(src=self.repodir, remote=self.wc)
-#        self.assertEquals(get_revisions(self.wc), self.revisions)
-#
-#    def test_push_with_branch(self):
-#        m = get_mercurial_vcs_obj()
-#        clone(self.repodir, self.wc, revision=self.revisions[-1])
-#        push(src=self.repodir, remote=self.wc, branch='branch2')
-#        push(src=self.repodir, remote=self.wc, branch='default')
-#        self.assertEquals(get_revisions(self.wc), self.revisions)
-#
-#    def test_push_with_revision(self):
-#        clone(self.repodir, self.wc, revision=self.revisions[-2])
-#        push(src=self.repodir, remote=self.wc, revision=self.revisions[-1])
-#        self.assertEquals(get_revisions(self.wc), self.revisions[-2:])
-#
+    def test_push(self):
+        m = get_mercurial_vcs_obj()
+        m.clone(self.repodir, self.wc, revision=self.revisions[-2])
+        m.push(src=self.repodir, remote=self.wc)
+        self.assertEquals(get_revisions(self.wc), self.revisions)
+
+    def test_push_with_branch(self):
+        m = get_mercurial_vcs_obj()
+        m.clone(self.repodir, self.wc, revision=self.revisions[-1])
+        m.push(src=self.repodir, remote=self.wc, branch='branch2')
+        m.push(src=self.repodir, remote=self.wc, branch='default')
+        self.assertEquals(get_revisions(self.wc), self.revisions)
+
+    def test_push_with_revision(self):
+        m = get_mercurial_vcs_obj()
+        m.clone(self.repodir, self.wc, revision=self.revisions[-2])
+        m.push(src=self.repodir, remote=self.wc, revision=self.revisions[-1])
+        self.assertEquals(get_revisions(self.wc), self.revisions[-2:])
+
+# TODO
 #    def test_mercurial(self):
+#        m = get_mercurial_vcs_obj()
 #        rev = mercurial(self.repodir, self.wc)
 #        self.assertEquals(rev, self.revisions[0])
 #
 #    def test_push_new_branches_not_allowed(self):
+#        m = get_mercurial_vcs_obj()
 #        clone(self.repodir, self.wc, revision=self.revisions[0])
 #        self.assertRaises(Exception, push, self.repodir, self.wc,
 #                          push_new_branches=False)
 #
 #    def test_mercurial_with_new_share(self):
+#        m = get_mercurial_vcs_obj()
 #        share_base = os.path.join(self.tmpdir, 'share')
 #        sharerepo = os.path.join(share_base, self.repodir.lstrip("/"))
 #        os.mkdir(share_base)
