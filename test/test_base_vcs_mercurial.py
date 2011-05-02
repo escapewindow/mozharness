@@ -284,31 +284,35 @@ class TestHg(unittest.TestCase):
         self.assertEquals(get_revisions(self.repodir), get_revisions(self.wc))
         self.assertEquals(get_revisions(self.repodir), get_revisions(sharerepo))
 
-#    def test_mercurial_with_share_base_in_env(self):
-#        share_base = os.path.join(self.tmpdir, 'share')
-#        sharerepo = os.path.join(share_base, self.repodir.lstrip("/"))
-#        os.mkdir(share_base)
-#        try:
-#            os.environ['HG_SHARE_BASE_DIR'] = share_base
-#            mercurial(self.repodir, self.wc)
-#            self.assertEquals(get_revisions(self.repodir), get_revisions(self.wc))
-#            self.assertEquals(get_revisions(self.repodir), get_revisions(sharerepo))
-#        finally:
-#            del os.environ['HG_SHARE_BASE_DIR']
-#
-#    def test_mercurial_with_existing_share(self):
-#        share_base = os.path.join(self.tmpdir, 'share')
-#        sharerepo = os.path.join(share_base, self.repodir.lstrip("/"))
-#        os.mkdir(share_base)
-#        mercurial(self.repodir, sharerepo)
-#        open(os.path.join(self.repodir, 'test.txt'), 'w').write('hello!')
-#        run_cmd(['hg', 'add', 'test.txt'], cwd=self.repodir)
-#        run_cmd(['hg', 'commit', '-m', 'adding changeset'], cwd=self.repodir)
-#        mercurial(self.repodir, self.wc, share_base=share_base)
-#        self.assertEquals(get_revisions(self.repodir), get_revisions(self.wc))
-#        self.assertEquals(get_revisions(self.repodir), get_revisions(sharerepo))
-#
-#
+    def test_mercurial_with_share_base_in_env(self):
+        share_base = os.path.join(self.tmpdir, 'share')
+        sharerepo = os.path.join(share_base, self.repodir.lstrip("/"))
+        os.mkdir(share_base)
+        try:
+            os.environ['HG_SHARE_BASE_DIR'] = share_base
+            m = get_mercurial_vcs_obj()
+            m.vcs_config = {'repo': self.repodir, 'dest': self.wc}
+            m.ensure_repo_and_revision()
+            self.assertEquals(get_revisions(self.repodir), get_revisions(self.wc))
+            self.assertEquals(get_revisions(self.repodir), get_revisions(sharerepo))
+        finally:
+            del os.environ['HG_SHARE_BASE_DIR']
+
+    def test_mercurial_with_existing_share(self):
+        m = get_mercurial_vcs_obj()
+        share_base = os.path.join(self.tmpdir, 'share')
+        sharerepo = os.path.join(share_base, self.repodir.lstrip("/"))
+        os.mkdir(share_base)
+        m.vcs_config = {'repo': self.repodir, 'dest': sharerepo}
+        m.ensure_repo_and_revision()
+        open(os.path.join(self.repodir, 'test.txt'), 'w').write('hello!')
+        m.run_command(['hg', 'add', 'test.txt'], cwd=self.repodir)
+        m.run_command(['hg', 'commit', '-m', 'adding changeset'], cwd=self.repodir)
+        m.vcs_config = {'repo': self.repodir, 'dest': self.wc, 'share_base': share_base}
+        m.ensure_repo_and_revision()
+        self.assertEquals(get_revisions(self.repodir), get_revisions(self.wc))
+        self.assertEquals(get_revisions(self.repodir), get_revisions(sharerepo))
+
 #    def test_mercurial_relative_dir(self):
 #        os.chdir(os.path.dirname(self.repodir))
 #
