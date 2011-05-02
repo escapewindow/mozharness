@@ -197,7 +197,8 @@ class TestHg(unittest.TestCase):
 
         # Clone the original repo
         m.clone(self.repodir, self.wc, update_dest=False)
-
+        # Hide the wanted error
+        m.config = {'log_to_console': False}
         # Try and pull in changes from the new repo
         self.assertNotEqual(0, m.pull(repo2, self.wc, update_dest=False))
 
@@ -272,6 +273,8 @@ class TestHg(unittest.TestCase):
     def test_push_new_branches_not_allowed(self):
         m = get_mercurial_vcs_obj()
         m.clone(self.repodir, self.wc, revision=self.revisions[0])
+        # Hide the wanted error
+        m.config = {'log_to_console': False}
         self.assertNotEqual(0, m.push(self.repodir, self.wc, push_new_branches=False))
 
     def test_mercurial_with_new_share(self):
@@ -308,6 +311,7 @@ class TestHg(unittest.TestCase):
         open(os.path.join(self.repodir, 'test.txt'), 'w').write('hello!')
         m.run_command(['hg', 'add', 'test.txt'], cwd=self.repodir)
         m.run_command(['hg', 'commit', '-m', 'adding changeset'], cwd=self.repodir)
+        m = get_mercurial_vcs_obj()
         m.vcs_config = {'repo': self.repodir, 'dest': self.wc, 'share_base': share_base}
         m.ensure_repo_and_revision()
         self.assertEquals(get_revisions(self.repodir), get_revisions(self.wc))
@@ -319,11 +323,15 @@ class TestHg(unittest.TestCase):
 #        repo = os.path.basename(self.repodir)
 #        wc = os.path.basename(self.wc)
 #
-#        rev = mercurial(repo, wc, revision=self.revisions[-1])
+#        m = get_mercurial_vcs_obj()
+#        m.vcs_config = {'repo': repo, 'dest': wc, 'revision': self.revisions[-1]}
+#        rev = m.ensure_repo_and_revision()
 #        self.assertEquals(rev, self.revisions[-1])
 #        open(os.path.join(self.wc, 'test.txt'), 'w').write("hello!")
 #
-#        rev = mercurial(repo, wc)
+#        m = get_mercurial_vcs_obj()
+#        m.vcs_config = {'repo': repo, 'dest': wc, 'revision': self.revisions[0]}
+#        rev = m.ensure_repo_and_revision()
 #        self.assertEquals(rev, self.revisions[0])
 #        # Make sure our local file didn't go away
 #        self.failUnless(os.path.exists(os.path.join(self.wc, 'test.txt')))

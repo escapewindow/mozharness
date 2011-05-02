@@ -25,19 +25,37 @@ class LogMixin(object):
     self.config and self.log_obj, of course.
     """
 
+    def _log_level_at_least(self, level):
+        log_level = 'info'
+        levels = ['debug', 'info', 'warning', 'error', 'critical', 'fatal']
+        if hasattr(self, 'config'):
+            log_level = self.config.get('log_level', 'info')
+        return levels.index(level) > levels.index(log_level)
+
+    def _print(self, message, stderr=False):
+        if not hasattr(self, 'config') or self.config.get('log_to_console', True):
+            if stderr:
+                print >> sys.stderr, message
+            else:
+                print message
+
     def log(self, message, level='info', exit_code=-1):
         if self.log_obj:
             return self.log_obj.log_message(message, level=level,
                                             exit_code=exit_code)
         if level == 'info':
-            print message
+            if self._log_level_at_least(level):
+                self._print(message)
         elif level == 'debug':
-            print 'DEBUG: %s' % message
+            if self._log_level_at_least(level):
+                self._print('DEBUG: %s' % message)
         elif level in ('warning', 'error', 'critical'):
-            print >> sys.stderr, "%s: %s" % (level.upper(), message)
+            if self._log_level_at_least(level):
+                self._print("%s: %s" % (level.upper(), message), stderr=True)
         elif level == 'fatal':
-            print >> sys.stderr, "FATAL: %s" % message
-            raise SystemExit(exit_code)
+            if self._log_level_at_least(level):
+                self._print("FATAL: %s" % message, stderr=True)
+                raise SystemExit(exit_code)
    
     # Copying Bear's dumpException():
     # http://hg.mozilla.org/build/tools/annotate/1485f23c38e0/sut_tools/sut_lib.py#l23
