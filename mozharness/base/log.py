@@ -30,7 +30,7 @@ class LogMixin(object):
         levels = ['debug', 'info', 'warning', 'error', 'critical', 'fatal']
         if hasattr(self, 'config'):
             log_level = self.config.get('log_level', 'info')
-        return levels.index(level) > levels.index(log_level)
+        return levels.index(level) >= levels.index(log_level)
 
     def _print(self, message, stderr=False):
         if not hasattr(self, 'config') or self.config.get('log_to_console', True):
@@ -67,8 +67,7 @@ class LogMixin(object):
         self.log(message, level=level)
 
     def debug(self, message):
-        if hasattr(self, 'config') and self.config.get('log_level', None) == 'debug':
-            self.log(message, level='debug')
+        self.log(message, level='debug')
 
     def info(self, message):
         self.log(message, level='info')
