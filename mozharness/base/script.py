@@ -349,6 +349,7 @@ class ShellMixin(object):
                     line = line.decode("utf-8")
                     self.info(' %s' % line)
                 output = '\n'.join(output_lines)
+            fh.close()
         if os.path.exists(tmp_stderr_filename) and os.path.getsize(tmp_stderr_filename):
             return_level = 'error'
             self.error("Errors received:")
