@@ -73,12 +73,17 @@ class TestMakeAbsolute(unittest.TestCase):
 
 
 class TestHg(unittest.TestCase):
+    def _init_hg_repo(self, hg_obj, repodir):
+        hg_obj.run_command(["bash",
+                            os.path.join(os.path.dirname(__file__),
+                                         "helper_files", "init_hgrepo.sh"),
+                            repodir])
+
     def setUp(self):
         self.tmpdir = tempfile.mkdtemp()
         self.repodir = os.path.join(self.tmpdir, 'repo')
         m = get_mercurial_vcs_obj()
-        m.run_command("bash %s/helper_files/init_hgrepo.sh %s" % (os.path.dirname(__file__),
-                      self.repodir))
+        self._init_hg_repo(m, self.repodir)
         self.revisions = get_revisions(self.repodir)
         self.wc = os.path.join(self.tmpdir, 'wc')
         self.pwd = os.getcwd()
@@ -196,7 +201,7 @@ class TestHg(unittest.TestCase):
         m = get_mercurial_vcs_obj()
         # Create a new repo
         repo2 = os.path.join(self.tmpdir, 'repo2')
-        m.run_command(['%s/helper_files/init_hgrepo.sh' % os.path.dirname(__file__), repo2])
+        self._init_hg_repo(m, repo2)
 
         self.assertNotEqual(self.revisions, get_revisions(repo2))
 
@@ -211,7 +216,7 @@ class TestHg(unittest.TestCase):
         m = get_mercurial_vcs_obj()
         # Create a new repo
         repo2 = os.path.join(self.tmpdir, 'repo2')
-        m.run_command(['%s/helper_files/init_hgrepo.sh' % os.path.dirname(__file__), repo2])
+        self._init_hg_repo(m, repo2)
 
         self.assertNotEqual(self.revisions, get_revisions(repo2))
 
@@ -239,7 +244,7 @@ class TestHg(unittest.TestCase):
         old_revs = self.revisions[:]
 
         # Reset the repo
-        m.run_command(['%s/helper_files/init_hgrepo.sh' % os.path.dirname(__file__), self.repodir])
+        self._init_hg_repo(m, self.repodir)
 
         self.assertNotEqual(old_revs, get_revisions(self.repodir))
 
@@ -383,7 +388,7 @@ class TestHg(unittest.TestCase):
         m = get_mercurial_vcs_obj()
         try:
             repo2 = os.path.join(self.tmpdir, 'repo2')
-            m.run_command(['%s/helper_files/init_hgrepo.sh' % os.path.dirname(__file__), repo2])
+            self._init_hg_repo(m, repo2)
 
             self.assertNotEqual(self.revisions, get_revisions(repo2))
 

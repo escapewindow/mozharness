@@ -1,4 +1,22 @@
 === 0.4 ===
+2011-05-03  Aki Sasaki  <aki@mozilla.com>
+
+* mozharness/base/script.py (ShellMixin.get_output_from_command):
+    Explicitly closed tmp_stdout, tmp_stderr, fh filehandles for windows.
+
+* test/test_base_vcs_mercurial.py (*):
+    Altered to pass some tests on windows.
+    TestMakeAbsolute.* disabled on windows.
+
+* test/test_base_script.py (*):
+    Altered to pass tests on windows.
+    test_chmod no longer running on windows.
+    test_chdir uses os.path.join() now.
+
+* unit.sh:
+    Added pylint as a dependency in the header.
+    Ignoring perma-warnings from pylint.
+
 2011-05-02  Aki Sasaki  <aki@mozilla.com>
 
 * mozharness/base/vcs/mercurial.py (MercurialVCS.*):
