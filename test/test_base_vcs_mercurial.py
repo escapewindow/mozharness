@@ -290,55 +290,54 @@ class TestHg(unittest.TestCase):
         self.assertEquals(get_revisions(self.repodir), get_revisions(self.wc))
         self.assertEquals(get_revisions(self.repodir), get_revisions(sharerepo))
 
-#    def test_mercurial_with_share_base_in_env(self):
-#        share_base = os.path.join(self.tmpdir, 'share')
-#        sharerepo = os.path.join(share_base, self.repodir.lstrip("/"))
-#        os.mkdir(share_base)
-#        try:
-#            os.environ['HG_SHARE_BASE_DIR'] = share_base
-#            m = get_mercurial_vcs_obj()
-#            m.vcs_config = {'repo': self.repodir, 'dest': self.wc}
-#            m.ensure_repo_and_revision()
-#            self.assertEquals(get_revisions(self.repodir), get_revisions(self.wc))
-#            self.assertEquals(get_revisions(self.repodir), get_revisions(sharerepo))
-#        finally:
-#            del os.environ['HG_SHARE_BASE_DIR']
-#
-#    def test_mercurial_with_existing_share(self):
-#        m = get_mercurial_vcs_obj()
-#        share_base = os.path.join(self.tmpdir, 'share')
-#        sharerepo = os.path.join(share_base, self.repodir.lstrip("/"))
-#        os.mkdir(share_base)
-#        m.vcs_config = {'repo': self.repodir, 'dest': sharerepo}
-#        m.ensure_repo_and_revision()
-#        open(os.path.join(self.repodir, 'test.txt'), 'w').write('hello!')
-#        m.run_command(['hg', 'add', 'test.txt'], cwd=self.repodir)
-#        m.run_command(['hg', 'commit', '-m', 'adding changeset'], cwd=self.repodir)
-#        m = get_mercurial_vcs_obj()
-#        m.vcs_config = {'repo': self.repodir, 'dest': self.wc, 'share_base': share_base}
-#        m.ensure_repo_and_revision()
-#        self.assertEquals(get_revisions(self.repodir), get_revisions(self.wc))
-#        self.assertEquals(get_revisions(self.repodir), get_revisions(sharerepo))
-#
-#    def test_mercurial_relative_dir(self):
-#        os.chdir(os.path.dirname(self.repodir))
-#
-#        repo = os.path.basename(self.repodir)
-#        wc = os.path.basename(self.wc)
-#
-#        m = get_mercurial_vcs_obj()
-#        m.vcs_config = {'repo': repo, 'dest': wc, 'revision': self.revisions[-1]}
-#        rev = m.ensure_repo_and_revision()
-#        self.assertEquals(rev, self.revisions[-1])
-#        m.info("Creating test.txt")
-#        open(os.path.join(self.wc, 'test.txt'), 'w').write("hello!")
-#
-#        m = get_mercurial_vcs_obj()
-#        m.vcs_config = {'repo': repo, 'dest': wc, 'revision': self.revisions[0]}
-#        rev = m.ensure_repo_and_revision()
-#        self.assertEquals(rev, self.revisions[0])
-#        # Make sure our local file didn't go away
-#        self.failUnless(os.path.exists(os.path.join(self.wc, 'test.txt')))
+    def test_mercurial_with_share_base_in_env(self):
+        share_base = os.path.join(self.tmpdir, 'share')
+        sharerepo = os.path.join(share_base, self.repodir.lstrip("/"))
+        os.mkdir(share_base)
+        try:
+            os.environ['HG_SHARE_BASE_DIR'] = share_base
+            m = get_mercurial_vcs_obj()
+            m.vcs_config = {'repo': self.repodir, 'dest': self.wc}
+            m.ensure_repo_and_revision()
+            self.assertEquals(get_revisions(self.repodir), get_revisions(self.wc))
+            self.assertEquals(get_revisions(self.repodir), get_revisions(sharerepo))
+        finally:
+            del os.environ['HG_SHARE_BASE_DIR']
+
+    def test_mercurial_with_existing_share(self):
+        m = get_mercurial_vcs_obj()
+        share_base = os.path.join(self.tmpdir, 'share')
+        sharerepo = os.path.join(share_base, self.repodir.lstrip("/"))
+        os.mkdir(share_base)
+        m.vcs_config = {'repo': self.repodir, 'dest': sharerepo}
+        m.ensure_repo_and_revision()
+        open(os.path.join(self.repodir, 'test.txt'), 'w').write('hello!')
+        m.run_command(['hg', 'add', 'test.txt'], cwd=self.repodir)
+        m.run_command(['hg', 'commit', '-m', 'adding changeset'], cwd=self.repodir)
+        m = get_mercurial_vcs_obj()
+        m.vcs_config = {'repo': self.repodir, 'dest': self.wc, 'share_base': share_base}
+        m.ensure_repo_and_revision()
+        self.assertEquals(get_revisions(self.repodir), get_revisions(self.wc))
+        self.assertEquals(get_revisions(self.repodir), get_revisions(sharerepo))
+
+    def test_mercurial_relative_dir(self):
+        m = get_mercurial_vcs_obj()
+        repo = os.path.basename(self.repodir)
+        wc = os.path.basename(self.wc)
+        m.vcs_config = {'repo': repo, 'dest': wc, 'revision': self.revisions[-1]}
+        m.chdir(os.path.dirname(self.repodir))
+
+        rev = m.ensure_repo_and_revision()
+        self.assertEquals(rev, self.revisions[-1])
+        m.info("Creating test.txt")
+        open(os.path.join(self.wc, 'test.txt'), 'w').write("hello!")
+
+        m = get_mercurial_vcs_obj()
+        m.vcs_config = {'repo': repo, 'dest': wc, 'revision': self.revisions[0]}
+        rev = m.ensure_repo_and_revision()
+        self.assertEquals(rev, self.revisions[0])
+        # Make sure our local file didn't go away
+        self.failUnless(os.path.exists(os.path.join(self.wc, 'test.txt')))
 
 ##### GAH
 
