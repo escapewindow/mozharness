@@ -331,7 +331,8 @@ class MercurialVCS(ShellMixin, OSMixin, LogMixin, object):
         if push_new_branches:
             cmd.append('--new-branch')
         cmd.append(remote)
-        return self.run_command(cmd, cwd=src, error_list=HgErrorList)
+        return self.run_command(cmd, cwd=src, error_list=HgErrorList,
+                                throw_exception=True)
 
     # hg share methods {{{2
     def query_can_share(self):

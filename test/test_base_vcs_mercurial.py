@@ -241,7 +241,7 @@ class TestHg(unittest.TestCase):
         # Try and update our working copy
         m = get_mercurial_vcs_obj()
         m.vcs_config = {'repo': self.repodir, 'dest': self.wc, 'share_base': share_base}
-        m.config = {'log_level': 'critical'}
+        m.config = {'log_to_console': False}
         m.ensure_repo_and_revision()
 
         self.assertEquals(get_revisions(self.repodir), get_revisions(self.wc))
@@ -278,7 +278,7 @@ class TestHg(unittest.TestCase):
         m.clone(self.repodir, self.wc, revision=self.revisions[0])
         # Hide the wanted error
         m.config = {'log_to_console': False}
-        self.assertNotEqual(0, m.push(self.repodir, self.wc, push_new_branches=False))
+        self.assertRaises(Exception, m.push, self.repodir, self.wc, push_new_branches=False)
 
     def test_mercurial_with_new_share(self):
         m = get_mercurial_vcs_obj()
@@ -390,6 +390,7 @@ class TestHg(unittest.TestCase):
 
             # Clone the new one
             m.vcs_config = {'repo': repo2, 'dest': self.wc}
+            m.config = {'log_to_console': False}
             m.ensure_repo_and_revision()
             self.assertEquals(get_revisions(self.wc), get_revisions(repo2))
             # Make sure our local file went away
@@ -435,41 +436,48 @@ class TestHg(unittest.TestCase):
         expected_url = "ssh://hg.mozilla.org/build/tools"
         self.assertEquals(repo_url, expected_url)
 
-#    def test_share_repo(self):
-#        repo3 = os.path.join(self.tmpdir, 'repo3')
-#        share(self.repodir, repo3)
-#        # make sure shared history is identical
-#        self.assertEquals(self.revisions, get_revisions(repo3))
-#
-#    def test_mercurial_share_outgoing(self):
-#        # ensure that outgoing changesets in a shared clone affect the shared history
-#        repo5 = os.path.join(self.tmpdir, 'repo5')
-#        repo6 = os.path.join(self.tmpdir, 'repo6')
-#        mercurial(self.repodir, repo5)
-#        share(repo5, repo6)
-#        open(os.path.join(repo6, 'test.txt'), 'w').write("hello!")
-#        # modify the history of the new clone
-#        run_cmd(['hg', 'add', 'test.txt'], cwd=repo6)
-#        run_cmd(['hg', 'commit', '-m', 'adding changeset'], cwd=repo6)
-#        self.assertNotEquals(self.revisions, get_revisions(repo6))
-#        self.assertNotEquals(self.revisions, get_revisions(repo5))
-#        self.assertEquals(get_revisions(repo5), get_revisions(repo6))
-#
-#    def test_apply_and_push(self):
-#        clone(self.repodir, self.wc)
-#        def c(repo, attempt):
-#            run_cmd(['hg', 'tag', '-f', 'TEST'], cwd=repo)
-#        apply_and_push(self.wc, self.repodir, c)
-#        self.assertEquals(get_revisions(self.wc), get_revisions(self.repodir))
-#
-#    def test_apply_and_push_fail(self):
-#        clone(self.repodir, self.wc)
-#        def c(repo, attempt, remote):
-#            run_cmd(['hg', 'tag', '-f', 'TEST'], cwd=repo)
-#            run_cmd(['hg', 'tag', '-f', 'CONFLICTING_TAG'], cwd=remote)
-#        self.assertRaises(HgUtilError, apply_and_push, self.wc, self.repodir,
-#                          lambda r, a: c(r, a, self.repodir), max_attempts=2)
-#
+    def test_share_repo(self):
+        m = get_mercurial_vcs_obj()
+        repo3 = os.path.join(self.tmpdir, 'repo3')
+        m.share(self.repodir, repo3)
+        # make sure shared history is identical
+        self.assertEquals(self.revisions, get_revisions(repo3))
+
+    def test_mercurial_share_outgoing(self):
+        m = get_mercurial_vcs_obj()
+        # ensure that outgoing changesets in a shared clone affect the shared history
+        repo5 = os.path.join(self.tmpdir, 'repo5')
+        repo6 = os.path.join(self.tmpdir, 'repo6')
+        m.vcs_config = {'repo': self.repodir, 'dest': repo5}
+        m.ensure_repo_and_revision()
+        m.share(repo5, repo6)
+        open(os.path.join(repo6, 'test.txt'), 'w').write("hello!")
+        # modify the history of the new clone
+        m.run_command(['hg', 'add', 'test.txt'], cwd=repo6)
+        m.run_command(['hg', 'commit', '-m', 'adding changeset'], cwd=repo6)
+        self.assertNotEquals(self.revisions, get_revisions(repo6))
+        self.assertNotEquals(self.revisions, get_revisions(repo5))
+        self.assertEquals(get_revisions(repo5), get_revisions(repo6))
+
+    def test_apply_and_push(self):
+        m = get_mercurial_vcs_obj()
+        m.clone(self.repodir, self.wc)
+        def c(repo, attempt):
+            m.run_command(['hg', 'tag', '-f', 'TEST'], cwd=repo)
+        m.apply_and_push(self.wc, self.repodir, c)
+        self.assertEquals(get_revisions(self.wc), get_revisions(self.repodir))
+
+    def test_apply_and_push_fail(self):
+        m = get_mercurial_vcs_obj()
+        m.clone(self.repodir, self.wc)
+        def c(repo, attempt, remote):
+            m.run_command(['hg', 'tag', '-f', 'TEST'], cwd=repo)
+            m.run_command(['hg', 'tag', '-f', 'CONFLICTING_TAG'], cwd=remote)
+        m.config = {'log_to_console': False}
+        self.assertRaises(errors.VCSException, m.apply_and_push, self.wc,
+                          self.repodir, lambda r, a: c(r, a, self.repodir),
+                          max_attempts=2)
+
 #    def test_apply_and_push_with_rebase(self):
 #        clone(self.repodir, self.wc)
 #        def c(repo, attempt, remote):
