@@ -10,19 +10,25 @@ except ImportError:
     import json
 
 import mozharness.base.errors as errors
+import mozharness.base.log as log
 import mozharness.base.script as script
 
 test_string = '''foo
 bar
 baz'''
 
+class CleanupObj(script.OSMixin, log.LogMixin):
+    def __init__(self):
+        super(CleanupObj, self).__init__()
+        self.log_obj = None
+        self.config = {'log_level': 'error'}
+
 def cleanup():
+    # I'm using MercurialVCS here because that gives me access to
+    #
+    c = CleanupObj()
     for f in ('test_logs', 'test_dir', 'tmpfile_stdout', 'tmpfile_stderr'):
-        if os.path.exists(f):
-            if os.path.isdir(f):
-                shutil.rmtree(f)
-            else:
-                os.remove(f)
+        c.rmtree(f)
 
 def get_debug_script_obj():
     s = script.BaseScript(config={'log_type': 'multi',
