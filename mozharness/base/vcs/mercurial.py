@@ -289,8 +289,7 @@ class MercurialVCS(ShellMixin, OSMixin, LogMixin, object):
         if update_dest:
             branch = self.vcs_config.get('branch')
             revision = self.vcs_config.get('revision')
-            return self.update(dest, branch=branch, revision=revision,
-                               throw_exception=True)
+            return self.update(dest, branch=branch, revision=revision)
 
     # Defines the places of attributes in the tuples returned by `out'
 
@@ -547,7 +546,7 @@ class MercurialVCS(ShellMixin, OSMixin, LogMixin, object):
     def cleanOutgoingRevs(self, reponame, remote, username, sshKey):
         # TODO untested
         # TODO retry
-        self.info("Wiping outgoing local changes from %s to %s." % (localrepo, remote))
+        self.info("Wiping outgoing local changes from %s to %s." % (reponame, remote))
         outgoingRevs = self.out(src=reponame, remote=remote,
                                 ssh_username=username, ssh_key=sshKey)
         for r in reversed(outgoingRevs):

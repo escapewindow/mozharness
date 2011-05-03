@@ -247,12 +247,12 @@ class TestHg(unittest.TestCase):
         self.assertEquals(get_revisions(self.repodir), get_revisions(self.wc))
         self.assertNotEqual(old_revs, get_revisions(self.wc))
 
-#    def test_push(self):
-#        m = get_mercurial_vcs_obj()
-#        m.clone(self.repodir, self.wc, revision=self.revisions[-2])
-#        m.push(src=self.repodir, remote=self.wc)
-#        self.assertEquals(get_revisions(self.wc), self.revisions)
-#
+    def test_push(self):
+        m = get_mercurial_vcs_obj()
+        m.clone(self.repodir, self.wc, revision=self.revisions[-2])
+        m.push(src=self.repodir, remote=self.wc)
+        self.assertEquals(get_revisions(self.wc), self.revisions)
+
 #    def test_push_with_branch(self):
 #        m = get_mercurial_vcs_obj()
 #        m.clone(self.repodir, self.wc, revision=self.revisions[-1])
