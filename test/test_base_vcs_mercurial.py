@@ -339,18 +339,20 @@ class TestHg(unittest.TestCase):
         # Make sure our local file didn't go away
         self.failUnless(os.path.exists(os.path.join(self.wc, 'test.txt')))
 
-##### GAH
+    def test_mercurial_update_tip(self):
+        m = get_mercurial_vcs_obj()
+        m.vcs_config = {'repo': self.repodir, 'dest': self.wc, 'revision': self.revisions[-1]}
+        rev = m.ensure_repo_and_revision()
+        self.assertEquals(rev, self.revisions[-1])
+        open(os.path.join(self.wc, 'test.txt'), 'w').write("hello!")
 
-#    def test_mercurial_update_tip(self):
-#        rev = mercurial(self.repodir, self.wc, revision=self.revisions[-1])
-#        self.assertEquals(rev, self.revisions[-1])
-#        open(os.path.join(self.wc, 'test.txt'), 'w').write("hello!")
-#
-#        rev = mercurial(self.repodir, self.wc)
-#        self.assertEquals(rev, self.revisions[0])
-#        # Make sure our local file didn't go away
-#        self.failUnless(os.path.exists(os.path.join(self.wc, 'test.txt')))
-#
+        m = get_mercurial_vcs_obj()
+        m.vcs_config = {'repo': self.repodir, 'dest': self.wc}
+        rev = m.ensure_repo_and_revision()
+        self.assertEquals(rev, self.revisions[0])
+        # Make sure our local file didn't go away
+        self.failUnless(os.path.exists(os.path.join(self.wc, 'test.txt')))
+
 #    def test_mercurial_update_rev(self):
 #        rev = mercurial(self.repodir, self.wc, revision=self.revisions[-1])
 #        self.assertEquals(rev, self.revisions[-1])
