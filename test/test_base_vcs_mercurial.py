@@ -367,71 +367,74 @@ class TestHg(unittest.TestCase):
         # Make sure our local file didn't go away
         self.failUnless(os.path.exists(os.path.join(self.wc, 'test.txt')))
 
-#    # TODO: this test doesn't seem to be compatible with mercurial()'s
-#    # share() usage, and fails when HG_SHARE_BASE_DIR is set
-#    def test_mercurial_change_repo(self):
-#        # Create a new repo
-#        old_env = os.environ.copy()
-#        if 'HG_SHARE_BASE_DIR' in os.environ:
-#            del os.environ['HG_SHARE_BASE_DIR']
-#
-#        try:
-#            repo2 = os.path.join(self.tmpdir, 'repo2')
-#            run_cmd(['%s/helper_files/init_hgrepo.sh' % os.path.dirname(__file__), repo2])
-#
-#            self.assertNotEqual(self.revisions, get_revisions(repo2))
-#
-#            # Clone the original repo
-#            mercurial(self.repodir, self.wc)
-#            self.assertEquals(get_revisions(self.wc), self.revisions)
-#            open(os.path.join(self.wc, 'test.txt'), 'w').write("hello!")
-#
-#            # Clone the new one
-#            mercurial(repo2, self.wc)
-#            self.assertEquals(get_revisions(self.wc), get_revisions(repo2))
-#            # Make sure our local file went away
-#            self.failUnless(not os.path.exists(os.path.join(self.wc, 'test.txt')))
-#        finally:
-#            os.environ.clear()
-#            os.environ.update(old_env)
-#
-#    def test_make_hg_url(self):
-#        #construct an hg url specific to revision, branch and filename and try to pull it down
-#        file_url = make_hg_url(
-#                "hg.mozilla.org",
-#                '//build/tools/',
-#                revision='FIREFOX_3_6_12_RELEASE',
-#                filename="/lib/python/util/hg.py"
-#                )
-#        expected_url = "http://hg.mozilla.org/build/tools/raw-file/FIREFOX_3_6_12_RELEASE/lib/python/util/hg.py"
-#        self.assertEquals(file_url, expected_url)
-#
-#    def test_make_hg_url_no_filename(self):
-#        file_url = make_hg_url(
-#                "hg.mozilla.org",
-#                "/build/tools",
-#                revision="default"
-#        )
-#        expected_url = "http://hg.mozilla.org/build/tools/rev/default"
-#        self.assertEquals(file_url, expected_url)
-#
-#    def test_make_hg_url_no_revision_no_filename(self):
-#        repo_url = make_hg_url(
-#                "hg.mozilla.org",
-#                "/build/tools"
-#        )
-#        expected_url = "http://hg.mozilla.org/build/tools"
-#        self.assertEquals(repo_url, expected_url)
-#
-#    def test_make_hg_url_different_protocol(self):
-#        repo_url = make_hg_url(
-#                "hg.mozilla.org",
-#                "/build/tools",
-#                protocol='ssh'
-#        )
-#        expected_url = "ssh://hg.mozilla.org/build/tools"
-#        self.assertEquals(repo_url, expected_url)
-#
+    # TODO: this test doesn't seem to be compatible with mercurial()'s
+    # share() usage, and fails when HG_SHARE_BASE_DIR is set
+    def test_mercurial_change_repo(self):
+        # Create a new repo
+        old_env = os.environ.copy()
+        if 'HG_SHARE_BASE_DIR' in os.environ:
+            del os.environ['HG_SHARE_BASE_DIR']
+
+        m = get_mercurial_vcs_obj()
+        try:
+            repo2 = os.path.join(self.tmpdir, 'repo2')
+            m.run_command(['%s/helper_files/init_hgrepo.sh' % os.path.dirname(__file__), repo2])
+
+            self.assertNotEqual(self.revisions, get_revisions(repo2))
+
+            # Clone the original repo
+            m.vcs_config = {'repo': self.repodir, 'dest': self.wc}
+            m.ensure_repo_and_revision()
+            self.assertEquals(get_revisions(self.wc), self.revisions)
+            open(os.path.join(self.wc, 'test.txt'), 'w').write("hello!")
+
+            # Clone the new one
+            m.vcs_config = {'repo': repo2, 'dest': self.wc}
+            m.ensure_repo_and_revision()
+            self.assertEquals(get_revisions(self.wc), get_revisions(repo2))
+            # Make sure our local file went away
+            self.failUnless(not os.path.exists(os.path.join(self.wc, 'test.txt')))
+        finally:
+            os.environ.clear()
+            os.environ.update(old_env)
+
+    def test_make_hg_url(self):
+        #construct an hg url specific to revision, branch and filename and try to pull it down
+        file_url = mercurial.make_hg_url(
+                "hg.mozilla.org",
+                '//build/tools/',
+                revision='FIREFOX_3_6_12_RELEASE',
+                filename="/lib/python/util/hg.py"
+                )
+        expected_url = "http://hg.mozilla.org/build/tools/raw-file/FIREFOX_3_6_12_RELEASE/lib/python/util/hg.py"
+        self.assertEquals(file_url, expected_url)
+
+    def test_make_hg_url_no_filename(self):
+        file_url = mercurial.make_hg_url(
+                "hg.mozilla.org",
+                "/build/tools",
+                revision="default"
+        )
+        expected_url = "http://hg.mozilla.org/build/tools/rev/default"
+        self.assertEquals(file_url, expected_url)
+
+    def test_make_hg_url_no_revision_no_filename(self):
+        repo_url = mercurial.make_hg_url(
+                "hg.mozilla.org",
+                "/build/tools"
+        )
+        expected_url = "http://hg.mozilla.org/build/tools"
+        self.assertEquals(repo_url, expected_url)
+
+    def test_make_hg_url_different_protocol(self):
+        repo_url = mercurial.make_hg_url(
+                "hg.mozilla.org",
+                "/build/tools",
+                protocol='ssh'
+        )
+        expected_url = "ssh://hg.mozilla.org/build/tools"
+        self.assertEquals(repo_url, expected_url)
+
 #    def test_share_repo(self):
 #        repo3 = os.path.join(self.tmpdir, 'repo3')
 #        share(self.repodir, repo3)
