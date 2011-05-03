@@ -175,6 +175,12 @@ class MercurialVCS(ShellMixin, OSMixin, LogMixin, object):
         revision on the current branch.  Local changes will be discarded.
         """
         # If we have a revision, switch to that
+        msg = "Updating %s" % dest
+        if branch:
+            msg += " to branch %s" % branch
+        if revision:
+            msg += " revision %s" % revision
+        self.info("%s." % msg)
         if revision is not None:
             cmd = ['hg', 'update', '-C', '-r', revision]
             self.run_command(cmd, cwd=dest, error_list=HgErrorList)
@@ -206,11 +212,12 @@ class MercurialVCS(ShellMixin, OSMixin, LogMixin, object):
             msg += " on branch %s" % branch
         if revision:
             msg += " to revision %s" % revision
-        self.info(msg)
+        self.info("%s." % msg)
         parent_dest = os.path.dirname(dest)
         if not os.path.exists(parent_dest):
             self.mkdir_p(parent_dest)
         if os.path.exists(dest):
+            self.info("Removing %s before clone." % dest)
             self.rmtree(dest)
 
         cmd = ['hg', 'clone']
@@ -261,18 +268,29 @@ class MercurialVCS(ShellMixin, OSMixin, LogMixin, object):
         If `update_dest` is set, then `dest` will be updated to `revision`
         if set, otherwise to `branch`, otherwise to the head of default.
         """
+        msg = "Pulling %s to %s" % (repo, dest)
+        if update_dest:
+            msg += " and updating"
+        self.info("%s." % msg)
+        if not os.path.exists(dest):
+            # Error or clone?
+            # If error, should we have a halt_on_error=False above?
+            self.error("Can't hg pull in  nonexistent directory %s." % dest)
+            return -1
         # TODO untested
         # Convert repo to an absolute path if it's a local repository
         repo = self._make_absolute(repo)
         cmd = ['hg', 'pull']
         cmd.extend(self.common_args(**kwargs))
         cmd.append(repo)
-        self.run_command(cmd, cwd=dest, error_list=HgErrorList)
+        self.run_command(cmd, cwd=dest, error_list=HgErrorList,
+                         throw_exception=True)
 
         if update_dest:
             branch = self.vcs_config.get('branch')
             revision = self.vcs_config.get('revision')
-            return self.update(dest, branch=branch, revision=revision)
+            return self.update(dest, branch=branch, revision=revision,
+                               throw_exception=True)
 
     # Defines the places of attributes in the tuples returned by `out'
 
@@ -280,13 +298,14 @@ class MercurialVCS(ShellMixin, OSMixin, LogMixin, object):
         """Check for outgoing changesets present in a repo"""
         # TODO untested
         # TODO rename?
+        self.info("Checking for outgoing changesets from %s to %s." % (src, remote))
         cmd = ['hg', '-q', 'out', '--template', '{node} {branches}\n']
         cmd.extend(self.common_args(**kwargs))
         cmd.append(remote)
         if os.path.exists(src):
             try:
                 revs = []
-                for line in self.get_output_from_command(cmd, cwd=src).rstrip().split("\n"):
+                for line in self.get_output_from_command(cmd, cwd=src, throw_exception=True).rstrip().split("\n"):
                     try:
                         rev, branch = line.split()
                     # Mercurial displays no branch at all if the revision
@@ -307,6 +326,7 @@ class MercurialVCS(ShellMixin, OSMixin, LogMixin, object):
 
     def push(self, src, remote, push_new_branches=True, **kwargs):
         # TODO untested
+        self.info("Pushing new changes from %s to %s." % (src, remote))
         cmd = ['hg', 'push']
         cmd.extend(self.common_args(**kwargs))
         if push_new_branches:
@@ -323,7 +343,8 @@ class MercurialVCS(ShellMixin, OSMixin, LogMixin, object):
         try:
             self.info("Checking if share extension works.")
             output = self.get_output_from_command(['hg', 'help', 'share'],
-                                                  silent=True)
+                                                  silent=True,
+                                                  throw_exception=True)
             if 'no commands defined' in output:
                 # Share extension is enabled, but not functional
                 self.warning("Disabling sharing since share extension doesn't seem to work (1)")
@@ -366,8 +387,12 @@ class MercurialVCS(ShellMixin, OSMixin, LogMixin, object):
         # But it can also result in pulling a different repo B into an
         # existing clone of repo A, which may have unexpected results.
         if os.path.exists(dest):
-            if not os.path.exists(os.path.join(dest, ".hg", "sharedpath")):
+            sppath = os.path.join(dest, ".hg", "sharedpath")
+            if not os.path.exists(sppath):
+                self.info("No file %s; removing %s." % (sppath, dest))
                 self.rmtree(dest)
+        if not os.path.exists(os.path.dirname(dest)):
+            self.mkdir_p(os.path.dirname(dest))
         shared_repo = os.path.join(share_base, self.get_repo_path(repo))
         dest_shared_path = os.path.join(dest, '.hg', 'sharedpath')
         if os.path.exists(dest_shared_path):
@@ -381,13 +406,15 @@ class MercurialVCS(ShellMixin, OSMixin, LogMixin, object):
 
         try:
             self.info("Updating shared repo")
-# mkdir?
-# fix hg branch in subdir?
-            self.clone(repo, shared_repo, branch=branch, revision=revision,
-                       update_dest=False)
-#aki
-            if os.path.exists(dest):
-                return self.update(dest, branch=branch, revision=revision)
+            if os.path.exists(shared_repo):
+                try:
+                    self.pull(repo, shared_repo, branch=branch, revision=revision)
+                except subprocess.CalledProcessError:
+                    self.warning("Error pulling changes into %s form %s; clobbering" % (shared_repo, repo))
+                    self.dump_exception(level='debug')
+                    self.clone(repo, shared_repo, branch=branch, revision=revision)
+            else:
+                self.clone(repo, shared_repo, branch=branch, revision=revision)
 
             try:
                 self.info("Trying to share %s to %s" % (shared_repo, dest))
@@ -407,16 +434,20 @@ class MercurialVCS(ShellMixin, OSMixin, LogMixin, object):
                 self.clone(shared_repo, dest, update_dest=False)
                 return self.update(dest, branch=branch, revision=revision)
         except subprocess.CalledProcessError:
-            self.warning("Error updating %s from shared_repo (%s): ", dest, shared_repo)
-            self.debug("Exception: " + self.dump_exception())
+            # Need better fallback
+            self.error("Error updating %s from shared_repo (%s): " % (dest, shared_repo))
+            self.dump_exception(level='error')
             self.rmtree(dest)
+
 
     def share(self, source, dest, branch=None, revision=None):
         """Creates a new working directory in "dest" that shares history
         with "source" using Mercurial's share extension
         """
+        self.info("Sharing %s to %s." % (source, dest))
         self.run_command(['hg', 'share', '-U', source, dest],
-                         error_list=HgErrorList)
+                         error_list=HgErrorList,
+                         throw_exception=True)
         return self.update(dest, branch=branch, revision=revision)
 
     # End hg share methods 2}}}
@@ -437,15 +468,33 @@ class MercurialVCS(ShellMixin, OSMixin, LogMixin, object):
         branch = c.get('branch')
         share_base = c.get('share_base',
                            os.environ.get("HG_SHARE_BASE_DIR", None))
+        msg = "Setting %s to %s" % (dest, repo)
+        if branch:
+            msg += " on branch %s" % branch
+        if revision:
+            msg += " revision %s" % revision
+        if share_base:
+            msg += " using shared directory %s" % share_base
+        self.info("%s." % msg)
         if share_base and not self.query_can_share():
             share_base = None
+
         if share_base:
             return self._ensure_shared_repo_and_revision(share_base)
 
         # Non-shared
-        if not os.path.exists(os.path.dirname(dest)):
+        if os.path.exists(dest):
+            try:
+                return self.pull(repo, dest, branch=branch, revision=revision)
+            except subprocess.CalledProcessError:
+                self.warning("Error pulling changes into %s form %s; clobbering" % (dest, repo))
+                self.dump_exception(level='debug')
+                self.rmtree(dest)
+        elif not os.path.exists(os.path.dirname(dest)):
             self.mkdir_p(os.path.dirname(dest))
         return self.clone(repo, dest, branch, revision)
+
+
 
     def apply_and_push(self, localrepo, remote, changer, max_attempts=10,
                        ssh_username=None, ssh_key=None):
@@ -456,6 +505,7 @@ class MercurialVCS(ShellMixin, OSMixin, LogMixin, object):
         ALL changesets missing from remote.
         """
         # TODO untested
+        self.info("Applying and pushing local changes from %s to %s." % (localrepo, remote))
         assert callable(changer)
         branch = self.get_branch_from_path(localrepo)
         changer(localrepo, 1)
@@ -497,6 +547,7 @@ class MercurialVCS(ShellMixin, OSMixin, LogMixin, object):
     def cleanOutgoingRevs(self, reponame, remote, username, sshKey):
         # TODO untested
         # TODO retry
+        self.info("Wiping outgoing local changes from %s to %s." % (localrepo, remote))
         outgoingRevs = self.out(src=reponame, remote=remote,
                                 ssh_username=username, ssh_key=sshKey)
         for r in reversed(outgoingRevs):

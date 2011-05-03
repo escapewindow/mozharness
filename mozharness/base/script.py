@@ -192,7 +192,7 @@ class ShellMixin(object):
 
     def run_command(self, command, cwd=None, error_list=[], parse_at_end=False,
                     halt_on_failure=False, success_codes=[0],
-                    env=None, return_type='status'):
+                    env=None, return_type='status', throw_exception=False):
         """Run a command, with logging and error parsing.
 
         TODO: parse_at_end, contextLines
@@ -206,6 +206,7 @@ class ShellMixin(object):
          {'substr': 'THE WORLD IS ENDING', level='fatal', contextLines='20:'}
         ]
         """
+        # Get rid of this when we get rid of the scratchbox stuff
         if return_type == 'output':
             return self.get_output_from_command(command=command, cwd=cwd,
                                                 halt_on_failure=halt_on_failure,
@@ -258,6 +259,8 @@ class ShellMixin(object):
         return_level = 'info'
         if p.returncode not in success_codes:
             return_level = 'error'
+            if throw_exception:
+                raise subprocess.CalledProcessError(p.returncode, command)
         self.log("Return code: %d" % p.returncode, level=return_level)
         if halt_on_failure:
             if num_errors or p.returncode not in success_codes:
@@ -270,7 +273,8 @@ class ShellMixin(object):
     def get_output_from_command(self, command, cwd=None,
                                 halt_on_failure=False, env=None,
                                 silent=False, tmpfile_base_path='tmpfile',
-                                return_type='output', save_tmpfiles=False):
+                                return_type='output', save_tmpfiles=False,
+                                throw_exception=False):
         """Similar to run_command, but where run_command is an
         os.system(command) analog, get_output_from_command is a `command`
         analog.
@@ -356,14 +360,16 @@ class ShellMixin(object):
             fh.close()
         elif p.returncode:
             return_level = 'error'
-        self.log("Return code: %d" % p.returncode, level=return_level)
-        if halt_on_failure and return_level == 'error':
-            self.fatal("Halting on failure while running %s" % command,
-                       exit_code=p.returncode)
         # Clean up.
         if not save_tmpfiles:
             self.rmtree(tmp_stderr_filename)
             self.rmtree(tmp_stdout_filename)
+        if p.returncode and throw_exception:
+            raise subprocess.CalledProcessError(p.returncode, command)
+        self.log("Return code: %d" % p.returncode, level=return_level)
+        if halt_on_failure and return_level == 'error':
+            self.fatal("Halting on failure while running %s" % command,
+                       exit_code=p.returncode)
         # Hm, options on how to return this? I bet often we'll want
         # output_lines[0] with no newline.
         if return_type != 'output':

@@ -59,10 +59,14 @@ class LogMixin(object):
    
     # Copying Bear's dumpException():
     # http://hg.mozilla.org/build/tools/annotate/1485f23c38e0/sut_tools/sut_lib.py#l23
-    def dump_exception(self, message, level='error'):
+    def dump_exception(self, message=None, level='error'):
         tb_type, tb_value, tb_traceback = sys.exc_info()
+        if message is None:
+            message = ""
+        else:
+            message = "%s\n" % message
         for s in traceback.format_exception(tb_type, tb_value, tb_traceback):
-            message += "\n%s" % s
+            message += "%s\n" % s
         # Log at the end, as a fatal will attempt to exit after the 1st line.
         self.log(message, level=level)
 

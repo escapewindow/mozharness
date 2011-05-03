@@ -1,12 +1,41 @@
 === 0.4 ===
 2011-05-02  Aki Sasaki  <aki@mozilla.com>
 
+* mozharness/base/vcs/mercurial.py (MercurialVCS.*):
+    Added self.info() calls at the beginnings of methods to announce what we're planning to do.
+
+* mozharness/base/vcs/script.py (ShellMixin.get_output_from_command):
+    Allow for throw_exception=True.
+    Clean up *before* self.fatal() or raise
+
+* mozharness/base/vcs/script.py (ShellMixin.run_command):
+    Allow for throw_exception=True
+
+* mozharness/base/vcs/mercurial.py (MercurialVCS._ensure_shared_repo_and_revision):
+    self.info() if nuking dest due to lack of DEST/.hg/sharedpath
+    Don't nuke shared_path if not needed.
+    
+* mozharness/base/vcs/mercurial.py (MercurialVCS.ensure_repo_and_revision):
+    Try to pull dest if it exists, rather than nuke/clone.  Not sure if this is the desired behavior, but it's the behavior specified in the unit tests.
+
+* mozharness/base/vcs/mercurial.py (MercurialVCS.pull):
+    self.error() if dest doesn't exist
+
+* mozharness/base/vcs/mercurial.py (MercurialVCS.clone):
+    self.info() that we're about to rmtree(dest)
+
+* mozharness/base/log.py (LogMixin.dump_exception):
+    Allow for message=None
+
 * mozharness/base/log.py (LogMixin.log):
     Changed to use _log_level_at_least and _print, so we can hide wanted errors during unittest runs.
 
 * mozharness/base/log.py (LogMixin._log_level_at_least): Added method.
 
 * mozharness/base/log.py (LogMixin._print): Added method.
+
+* mozharness/base/log.py (LogMixin.debug):
+    No longer checking to see if log_level is debug, as that check happens in log() now.
 
 * test/test_base_vcs_mercurial:
     Ported more tests from build/tools.
