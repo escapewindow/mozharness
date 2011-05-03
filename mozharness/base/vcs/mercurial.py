@@ -534,7 +534,8 @@ class MercurialVCS(ShellMixin, OSMixin, LogMixin, object):
                 # is is attempted again at the start of the loop
                 try:
                     self.run_command(['hg', 'rebase'], cwd=localrepo,
-                                     error_list=HgErrorList)
+                                     error_list=HgErrorList,
+                                     throw_exception=True)
                 except subprocess.CalledProcessError, e:
                     self.debug("Failed to rebase: %s" % str(e))
                     self.update(localrepo, branch=branch)

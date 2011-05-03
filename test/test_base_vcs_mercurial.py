@@ -478,37 +478,43 @@ class TestHg(unittest.TestCase):
                           self.repodir, lambda r, a: c(r, a, self.repodir),
                           max_attempts=2)
 
-#    def test_apply_and_push_with_rebase(self):
-#        clone(self.repodir, self.wc)
-#        def c(repo, attempt, remote):
-#            run_cmd(['hg', 'tag', '-f', 'TEST'], cwd=repo)
-#            if attempt == 1:
-#                run_cmd(['hg', 'rm', 'hello.txt'], cwd=remote)
-#                run_cmd(['hg', 'commit', '-m', 'test'], cwd=remote)
-#        apply_and_push(self.wc, self.repodir,
-#                       lambda r, a: c(r, a, self.repodir), max_attempts=2)
-#        self.assertEquals(get_revisions(self.wc), get_revisions(self.repodir))
-#
-#    def test_apply_and_push_rebase_fails(self):
-#        clone(self.repodir, self.wc)
-#        def c(repo, attempt, remote):
-#            run_cmd(['hg', 'tag', '-f', 'TEST'], cwd=repo)
-#            if attempt in (1,2):
-#                run_cmd(['hg', 'tag', '-f', 'CONFLICTING_TAG'], cwd=remote)
-#        apply_and_push(self.wc, self.repodir,
-#                       lambda r, a: c(r, a, self.repodir), max_attempts=3)
-#        self.assertEquals(get_revisions(self.wc), get_revisions(self.repodir))
-#
-#    def test_apply_and_push_on_branch(self):
-#        clone(self.repodir, self.wc)
-#        def c(repo, attempt):
-#            run_cmd(['hg', 'branch', 'branch3'], cwd=repo)
-#            run_cmd(['hg', 'tag', '-f', 'TEST'], cwd=repo)
-#        apply_and_push(self.wc, self.repodir, c)
-#        self.assertEquals(get_revisions(self.wc), get_revisions(self.repodir))
-#
-#    def test_apply_and_push_with_no_change(self):
-#        clone(self.repodir, self.wc)
-#        def c(r,a):
-#            pass
-#        self.assertRaises(HgUtilError, apply_and_push, self.wc, self.repodir, c)
+    def test_apply_and_push_with_rebase(self):
+        m = get_mercurial_vcs_obj()
+        m.clone(self.repodir, self.wc)
+        m.config = {'log_to_console': False}
+        def c(repo, attempt, remote):
+            m.run_command(['hg', 'tag', '-f', 'TEST'], cwd=repo)
+            if attempt == 1:
+                m.run_command(['hg', 'rm', 'hello.txt'], cwd=remote)
+                m.run_command(['hg', 'commit', '-m', 'test'], cwd=remote)
+        m.apply_and_push(self.wc, self.repodir,
+                       lambda r, a: c(r, a, self.repodir), max_attempts=2)
+        self.assertEquals(get_revisions(self.wc), get_revisions(self.repodir))
+
+    def test_apply_and_push_rebase_fails(self):
+        m = get_mercurial_vcs_obj()
+        m.clone(self.repodir, self.wc)
+        m.config = {'log_to_console': False}
+        def c(repo, attempt, remote):
+            m.run_command(['hg', 'tag', '-f', 'TEST'], cwd=repo)
+            if attempt in (1,2):
+                m.run_command(['hg', 'tag', '-f', 'CONFLICTING_TAG'], cwd=remote)
+        m.apply_and_push(self.wc, self.repodir,
+                       lambda r, a: c(r, a, self.repodir), max_attempts=4)
+        self.assertEquals(get_revisions(self.wc), get_revisions(self.repodir))
+
+    def test_apply_and_push_on_branch(self):
+        m = get_mercurial_vcs_obj()
+        m.clone(self.repodir, self.wc)
+        def c(repo, attempt):
+            m.run_command(['hg', 'branch', 'branch3'], cwd=repo)
+            m.run_command(['hg', 'tag', '-f', 'TEST'], cwd=repo)
+        m.apply_and_push(self.wc, self.repodir, c)
+        self.assertEquals(get_revisions(self.wc), get_revisions(self.repodir))
+
+    def test_apply_and_push_with_no_change(self):
+        m = get_mercurial_vcs_obj()
+        m.clone(self.repodir, self.wc)
+        def c(r,a):
+            pass
+        self.assertRaises(errors.VCSException, m.apply_and_push, self.wc, self.repodir, c)

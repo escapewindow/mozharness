@@ -38,7 +38,7 @@
     No longer checking to see if log_level is debug, as that check happens in log() now.
 
 * test/test_base_vcs_mercurial:
-    Ported more tests from build/tools.
+    Ported the rest of the tests from build/tools.
 
 2011-04-28  Aki Sasaki  <aki@mozilla.com>
 
