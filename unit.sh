@@ -2,8 +2,9 @@
 ###########################################################################
 # This requires coverage and nosetests:
 #
-#  easy_install nose
 #  easy_install coverage
+#  easy_install nose
+#  easy_install pylint
 ###########################################################################
 
 export PYTHONPATH=.:..:$PYTHONPATH

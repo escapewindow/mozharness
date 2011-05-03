@@ -93,21 +93,26 @@ class TestScript(unittest.TestCase):
                          msg="chdir noop noignore error")
         s.chdir(cwd)
 
-    def testLog(self):
+    def _test_log_helper(self, obj):
+        obj.debug("Testing DEBUG")
+        obj.warning("Testing WARNING")
+        obj.error("Testing ERROR")
+        obj.critical("Testing CRITICAL")
+        try:
+            obj.fatal("Testing FATAL")
+        except SystemExit:
+            pass
+        else:
+            self.assertTrue(False, msg="fatal() didn't SystemExit!")
+
+    def test_log(self):
         s = get_debug_script_obj()
         s.log_obj=None
-        s2 = script.BaseScript(initial_config_file='test/test.json')
-        for obj in (s, s2):
-            obj.debug("Testing DEBUG")
-            obj.warning("Testing WARNING")
-            obj.error("Testing ERROR")
-            obj.critical("Testing CRITICAL")
-            try:
-                obj.fatal("Testing FATAL")
-            except SystemExit:
-                pass
-            else:
-                self.assertTrue(False, msg="fatal() didn't SystemExit!")
+        self._test_log_helper(s)
+        del(s)
+        s = script.BaseScript(initial_config_file='test/test.json')
+        self._test_log_helper(s)
+        del(s)
 
     def test_run_nonexistent_command(self):
         s = get_debug_script_obj()
