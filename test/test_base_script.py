@@ -100,7 +100,7 @@ class TestScript(unittest.TestCase):
                          msg="chdir noop error")
         os.chdir(cwd)
         self.s.chdir('test_logs')
-        self.assertEqual('%s/test_logs' % cwd, os.getcwd(),
+        self.assertEqual(os.path.join(cwd, "test_logs"), os.getcwd(),
                          msg="chdir noop noignore error")
         self.s.chdir(cwd)
 
