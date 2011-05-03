@@ -353,16 +353,20 @@ class TestHg(unittest.TestCase):
         # Make sure our local file didn't go away
         self.failUnless(os.path.exists(os.path.join(self.wc, 'test.txt')))
 
-#    def test_mercurial_update_rev(self):
-#        rev = mercurial(self.repodir, self.wc, revision=self.revisions[-1])
-#        self.assertEquals(rev, self.revisions[-1])
-#        open(os.path.join(self.wc, 'test.txt'), 'w').write("hello!")
-#
-#        rev = mercurial(self.repodir, self.wc, revision=self.revisions[0])
-#        self.assertEquals(rev, self.revisions[0])
-#        # Make sure our local file didn't go away
-#        self.failUnless(os.path.exists(os.path.join(self.wc, 'test.txt')))
-#
+    def test_mercurial_update_rev(self):
+        m = get_mercurial_vcs_obj()
+        m.vcs_config = {'repo': self.repodir, 'dest': self.wc, 'revision': self.revisions[-1]}
+        rev = m.ensure_repo_and_revision()
+        self.assertEquals(rev, self.revisions[-1])
+        open(os.path.join(self.wc, 'test.txt'), 'w').write("hello!")
+
+        m = get_mercurial_vcs_obj()
+        m.vcs_config = {'repo': self.repodir, 'dest': self.wc, 'revision': self.revisions[0]}
+        rev = m.ensure_repo_and_revision()
+        self.assertEquals(rev, self.revisions[0])
+        # Make sure our local file didn't go away
+        self.failUnless(os.path.exists(os.path.join(self.wc, 'test.txt')))
+
 #    # TODO: this test doesn't seem to be compatible with mercurial()'s
 #    # share() usage, and fails when HG_SHARE_BASE_DIR is set
 #    def test_mercurial_change_repo(self):
