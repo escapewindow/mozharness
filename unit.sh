@@ -9,7 +9,7 @@
 
 export PYTHONPATH=.:..:$PYTHONPATH
 echo "### Running pylint"
-pylint -E -e F -f parseable `find mozharness -name [a-z]\*.py` `find scripts -name [a-z]\*.py`
+pylint -E -e F -f parseable `find mozharness -name [a-z]\*.py` `find scripts -name [a-z]\*.py` 2>&1 | egrep -v '(No config file found, using default configuration|Instance of .SplitResult. has no .path. member)'
 
 rm -rf upload_dir
 echo "### Testing non-networked unit tests"
