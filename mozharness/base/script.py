@@ -333,6 +333,8 @@ class ShellMixin(object):
                              cwd=cwd, stderr=tmp_stderr, env=env)
         self.debug("Temporary files: %s and %s" % (tmp_stdout_filename, tmp_stderr_filename))
         p.wait()
+        tmp_stdout.close()
+        tmp_stderr.close()
         return_level = 'debug'
         output = None
         if os.path.exists(tmp_stdout_filename) and os.path.getsize(tmp_stdout_filename):

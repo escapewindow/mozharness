@@ -200,6 +200,7 @@ class TestHelperFunctions(unittest.TestCase):
         self._create_temp_file()
         self.s = script.BaseScript(initial_config_file='test/test.json')
         contents = self.s.get_output_from_command("cat %s" % self.temp_file)
+        del(self.s)
         self.assertEqual(test_string, contents,
                          msg="get_output_from_command('cat file') differs from fh.write")
 
