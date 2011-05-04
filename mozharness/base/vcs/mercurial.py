@@ -311,7 +311,10 @@ class MercurialVCS(ShellMixin, OSMixin, LogMixin, object):
         cmd = ['hg', 'push']
         cmd.extend(self.common_args(**kwargs))
         if push_new_branches:
-            cmd.append('--new-branch')
+            if self.hg_ver() >= (1, 6, 0):
+                cmd.append('--new-branch')
+            else:
+                cmd.append('--force')
         cmd.append(remote)
         return self.run_command(cmd, cwd=src, error_list=HgErrorList,
                                 throw_exception=True)

@@ -1,12 +1,16 @@
 === 0.4 ===
 2011-05-03  Aki Sasaki  <aki@mozilla.com>
 
+* mozharness/base/vcs/mercurial.py (MercurialVCS.push):
+    If hg_ver < 1.6.0, use --force instead of --new-branch. (guessing here.) (for windows, since mozilla-build appears to have hg 1.5.4)
+
 * mozharness/base/script.py (ShellMixin.get_output_from_command):
     Explicitly closed tmp_stdout, tmp_stderr, fh filehandles for windows.
 
 * test/test_base_vcs_mercurial.py (*):
     Altered to pass some tests on windows.
     TestMakeAbsolute.* disabled on windows.
+    init_hgrepo.sh called via os.path.join and explicitly calling bash due to windows.
 
 * test/test_base_script.py (*):
     Altered to pass tests on windows.
