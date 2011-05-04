@@ -332,24 +332,25 @@ class TestHg(unittest.TestCase):
         self.assertEquals(get_revisions(self.repodir), get_revisions(sharerepo))
 
     def test_mercurial_relative_dir(self):
-        # TODO something borking windows rmtree (used by another process)
         m = get_mercurial_vcs_obj()
         repo = os.path.basename(self.repodir)
         wc = os.path.basename(self.wc)
         m.vcs_config = {'repo': repo, 'dest': wc, 'revision': self.revisions[-1]}
         m.chdir(os.path.dirname(self.repodir))
-
-        rev = m.ensure_repo_and_revision()
-        self.assertEquals(rev, self.revisions[-1])
-        m.info("Creating test.txt")
-        open(os.path.join(self.wc, 'test.txt'), 'w').write("hello!")
-
-        m = get_mercurial_vcs_obj()
-        m.vcs_config = {'repo': repo, 'dest': wc, 'revision': self.revisions[0]}
-        rev = m.ensure_repo_and_revision()
-        self.assertEquals(rev, self.revisions[0])
-        # Make sure our local file didn't go away
-        self.failUnless(os.path.exists(os.path.join(self.wc, 'test.txt')))
+        try:
+            rev = m.ensure_repo_and_revision()
+            self.assertEquals(rev, self.revisions[-1])
+            m.info("Creating test.txt")
+            open(os.path.join(self.wc, 'test.txt'), 'w').write("hello!")
+    
+            m = get_mercurial_vcs_obj()
+            m.vcs_config = {'repo': repo, 'dest': wc, 'revision': self.revisions[0]}
+            rev = m.ensure_repo_and_revision()
+            self.assertEquals(rev, self.revisions[0])
+            # Make sure our local file didn't go away
+            self.failUnless(os.path.exists(os.path.join(self.wc, 'test.txt')))
+        finally:
+            m.chdir(self.pwd)
 
     def test_mercurial_update_tip(self):
         m = get_mercurial_vcs_obj()
