@@ -20,6 +20,7 @@
 * unit.sh:
     Added pylint as a dependency in the header.
     Ignoring perma-warnings from pylint.
+    Platform detection to try to work on windows, mac, linux
 
 2011-05-02  Aki Sasaki  <aki@mozilla.com>
 

@@ -5,30 +5,74 @@
 #  easy_install coverage
 #  easy_install nose
 #  easy_install pylint
+#
+# test_base_vcs_mercurial.py requires hg >= 1.6.0 with mq, rebase, share
+# extensions to fully test.
 ###########################################################################
 
-export PYTHONPATH=.:..:$PYTHONPATH
+COVERAGE_ARGS=""
+OS_TYPE='linux'
+uname -v | grep -q Darwin
+if [ $? -eq 0 ] ; then
+  OS_TYPE='osx'
+  COVERAGE_ARGS="--omit='/Library/*,/usr/*,/opt/*'"
+fi
+uname -s | grep -q MINGW32
+if [ $? -eq 0 ] ; then
+  OS_TYPE='windows'
+fi
+if [ $OS_TYPE == 'linux' -o $OS_TYPE == 'osx' ] ; then
+  export PYTHONPATH=.:..:$PYTHONPATH
+fi
+
+echo "### Finding mozharness/ .py files..."
+files=`find mozharness -name [a-z]\*.py`
+if [ $OS_TYPE == 'windows' ] ; then
+  MOZHARNESS_PY_FILES=""
+  for f in $files; do
+    file $f | grep -q "Assembler source"
+    if [ $? -ne 0 ] ; then
+      MOZHARNESS_PY_FILES="$MOZHARNESS_PY_FILES $f"
+    fi
+  done
+else
+  MOZHARNESS_PY_FILES=$files
+fi
+echo "### Finding scripts/ .py files..."
+files=`find scripts -name [a-z]\*.py`
+if [ $OS_TYPE == 'windows' ] ; then
+  SCRIPTS_PY_FILES=""
+  for f in $files; do
+    file $f | grep -q "Assembler source"
+    if [ $? -ne 0 ] ; then
+      SCRIPTS_PY_FILES="$SCRIPTS_PY_FILES $f"
+    fi
+  done
+else
+  SCRIPTS_PY_FILES=$files
+fi
+
 echo "### Running pylint"
-pylint -E -e F -f parseable `find mozharness -name [a-z]\*.py` `find scripts -name [a-z]\*.py` 2>&1 | egrep -v '(No config file found, using default configuration|Instance of .SplitResult. has no .path. member)'
+pylint -E -e F -f parseable $MOZHARNESS_PY_FILES $SCRIPTS_PY_FILES 2>&1 | egrep -v '(No config file found, using default configuration|Instance of .SplitResult. has no .path. member)'
 
 rm -rf upload_dir
 echo "### Testing non-networked unit tests"
-coverage run -a --branch --omit='/Library/*,/usr/*,/opt/*' `which nosetests` test/test_*.py
+coverage run -a --branch $COVERAGE_ARGS `which nosetests` test/test_*.py
 echo "### Testing networked unit tests"
-coverage run -a --branch --omit='/Library/*,/usr/*,/opt/*' `which nosetests` test/networked/test_*.py
+coverage run -a --branch $COVERAGE_ARGS `which nosetests` test/networked/test_*.py
 echo "### Running *.py [--list-actions]"
-for filename in `find mozharness -name [a-z]\*.py`; do
-  coverage run -a --branch --omit='/Library/*,/usr/*,/opt/*' $filename
+for filename in $MOZHARNESS_PY_FILES; do
+  coverage run -a --branch $COVERAGE_ARGS $filename
 done
-for filename in `find scripts -name [a-z]\*.py` ; do
-  coverage run -a --branch --omit='/Library/*,/usr/*,/opt/*' $filename --list-actions | grep -v "Actions available" | grep -v "Default actions"
+for filename in $SCRIPTS_PY_FILES ; do
+  coverage run -a --branch $COVERAGE_ARGS $filename --list-actions | grep -v "Actions available" | grep -v "Default actions"
 done
 echo "### Running scripts/configtest.py --log-level warning"
-coverage run -a --branch --omit='/Library/*,/usr/*,/opt/*' scripts/configtest.py --log-level warning
+coverage run -a --branch $COVERAGE_ARGS scripts/configtest.py --log-level warning
 rm -rf upload_dir
 
 echo "### Creating coverage html"
-coverage html --omit="/Library/*,/usr/*,/opt/*" -d coverage.new
+coverage html $COVERAGE_ARGS -d coverage.new
 if [ -e coverage ] ; then
     mv coverage coverage.old
     mv coverage.new coverage
