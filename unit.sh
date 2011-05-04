@@ -10,7 +10,7 @@
 # extensions to fully test.
 ###########################################################################
 
-COVERAGE_ARGS=""
+COVERAGE_ARGS="--omit='/usr/*,/opt/*'"
 OS_TYPE='linux'
 uname -v | grep -q Darwin
 if [ $? -eq 0 ] ; then
@@ -20,17 +20,8 @@ fi
 uname -s | egrep -q MINGW32   # Cygwin will be linux in this case?
 if [ $? -eq 0 ] ; then
   OS_TYPE='windows'
-  for p in `echo $PATH | sed -e 's/:/ /g'`; do
-    if [ -f "$p/nosetests.exe" ] ; then
-      NOSETESTS="$p/nosetests"
-      break
-    fi
-  done
 fi
-if [ $OS_TYPE == 'linux' -o $OS_TYPE == 'osx' ] ; then
-  export PYTHONPATH=.:..:$PYTHONPATH
-  NOSETESTS=`which nosetests`
-fi
+NOSETESTS=`env which nosetests`
 
 echo "### Finding mozharness/ .py files..."
 files=`find mozharness -name [a-z]\*.py`
@@ -58,32 +49,38 @@ if [ $OS_TYPE == 'windows' ] ; then
 else
   SCRIPTS_PY_FILES=$files
 fi
+export PYTHONPATH=`env pwd`:$PYTHONPATH
 
 echo "### Running pylint"
 pylint -E -e F -f parseable $MOZHARNESS_PY_FILES $SCRIPTS_PY_FILES 2>&1 | egrep -v '(No config file found, using default configuration|Instance of .SplitResult. has no .path. member)'
 
 rm -rf upload_dir
+if [ $OS_TYPE != 'windows' ] ; then
 echo "### Testing non-networked unit tests"
 coverage run -a --branch $COVERAGE_ARGS $NOSETESTS test/test_*.py
 echo "### Testing networked unit tests"
 coverage run -a --branch $COVERAGE_ARGS $NOSETESTS test/networked/test_*.py
-echo "### Running *.py [--list-actions]"
-for filename in $MOZHARNESS_PY_FILES; do
-  coverage run -a --branch $COVERAGE_ARGS $filename
-done
-for filename in $SCRIPTS_PY_FILES ; do
-  coverage run -a --branch $COVERAGE_ARGS $filename --list-actions | grep -v "Actions available" | grep -v "Default actions"
-done
-echo "### Running scripts/configtest.py --log-level warning"
-coverage run -a --branch $COVERAGE_ARGS scripts/configtest.py --log-level warning
-rm -rf upload_dir
+  echo "### Running *.py [--list-actions]"
+  for filename in $MOZHARNESS_PY_FILES; do
+    coverage run -a --branch $COVERAGE_ARGS $filename
+  done
+  for filename in $SCRIPTS_PY_FILES ; do
+    coverage run -a --branch $COVERAGE_ARGS $filename --list-actions | grep -v "Actions available" | grep -v "Default actions"
+  done
+  echo "### Running scripts/configtest.py --log-level warning"
+  coverage run -a --branch $COVERAGE_ARGS scripts/configtest.py --log-level warning
 
-echo "### Creating coverage html"
-coverage html $COVERAGE_ARGS -d coverage.new
-if [ -e coverage ] ; then
-    mv coverage coverage.old
-    mv coverage.new coverage
-    rm -rf coverage.old
+  echo "### Creating coverage html"
+  coverage html $COVERAGE_ARGS -d coverage.new
+  if [ -e coverage ] ; then
+      mv coverage coverage.old
+      mv coverage.new coverage
+      rm -rf coverage.old
+  else
+      mv coverage.new coverage
+  fi
 else
-    mv coverage.new coverage
+  echo "### Running nosetests..."
+  nosetests
 fi
+rm -rf upload_dir
