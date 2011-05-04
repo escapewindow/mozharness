@@ -307,14 +307,13 @@ class MercurialVCS(ShellMixin, OSMixin, LogMixin, object):
                 raise
 
     def push(self, src, remote, push_new_branches=True, **kwargs):
+        # This doesn't appear to work with hg_ver < (1, 6, 0).
+        # Error out, or let you try?
         self.info("Pushing new changes from %s to %s." % (src, remote))
         cmd = ['hg', 'push']
         cmd.extend(self.common_args(**kwargs))
-        if push_new_branches:
-            if self.hg_ver() >= (1, 6, 0):
-                cmd.append('--new-branch')
-            else:
-                cmd.append('--force')
+        if push_new_branches and self.hg_ver() >= (1, 6, 0):
+            cmd.append('--new-branch')
         cmd.append(remote)
         return self.run_command(cmd, cwd=src, error_list=HgErrorList,
                                 throw_exception=True)

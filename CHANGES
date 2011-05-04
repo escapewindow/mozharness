@@ -2,7 +2,7 @@
 2011-05-03  Aki Sasaki  <aki@mozilla.com>
 
 * mozharness/base/vcs/mercurial.py (MercurialVCS.push):
-    If hg_ver < 1.6.0, use --force instead of --new-branch. (guessing here.) (for windows, since mozilla-build appears to have hg 1.5.4)
+    If hg_ver < 1.6.0, don't use --new-branch. (for windows, since mozilla-build appears to have hg 1.5.4. we need to decide whether we want some sort of exception or fatal here? i'll let script writers decide that.)
 
 * mozharness/base/script.py (ShellMixin.get_output_from_command):
     Explicitly closed tmp_stdout, tmp_stderr, fh filehandles for windows.

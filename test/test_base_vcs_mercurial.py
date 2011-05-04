@@ -265,10 +265,11 @@ class TestHg(unittest.TestCase):
 
     def test_push_with_branch(self):
         m = get_mercurial_vcs_obj()
-        m.clone(self.repodir, self.wc, revision=self.revisions[-1])
-        m.push(src=self.repodir, remote=self.wc, branch='branch2')
-        m.push(src=self.repodir, remote=self.wc, branch='default')
-        self.assertEquals(get_revisions(self.wc), self.revisions)
+        if m.hg_ver() >= (1,6,0):
+            m.clone(self.repodir, self.wc, revision=self.revisions[-1])
+            m.push(src=self.repodir, remote=self.wc, branch='branch2')
+            m.push(src=self.repodir, remote=self.wc, branch='default')
+            self.assertEquals(get_revisions(self.wc), self.revisions)
 
     def test_push_with_revision(self):
         m = get_mercurial_vcs_obj()
@@ -331,6 +332,7 @@ class TestHg(unittest.TestCase):
         self.assertEquals(get_revisions(self.repodir), get_revisions(sharerepo))
 
     def test_mercurial_relative_dir(self):
+        # TODO something borking windows rmtree (used by another process)
         m = get_mercurial_vcs_obj()
         repo = os.path.basename(self.repodir)
         wc = os.path.basename(self.wc)
@@ -515,12 +517,13 @@ class TestHg(unittest.TestCase):
 
     def test_apply_and_push_on_branch(self):
         m = get_mercurial_vcs_obj()
-        m.clone(self.repodir, self.wc)
-        def c(repo, attempt):
-            m.run_command(['hg', 'branch', 'branch3'], cwd=repo)
-            m.run_command(['hg', 'tag', '-f', 'TEST'], cwd=repo)
-        m.apply_and_push(self.wc, self.repodir, c)
-        self.assertEquals(get_revisions(self.wc), get_revisions(self.repodir))
+        if m.hg_ver() >= (1,6,0):
+            m.clone(self.repodir, self.wc)
+            def c(repo, attempt):
+                m.run_command(['hg', 'branch', 'branch3'], cwd=repo)
+                m.run_command(['hg', 'tag', '-f', 'TEST'], cwd=repo)
+            m.apply_and_push(self.wc, self.repodir, c)
+            self.assertEquals(get_revisions(self.wc), get_revisions(self.repodir))
 
     def test_apply_and_push_with_no_change(self):
         m = get_mercurial_vcs_obj()
