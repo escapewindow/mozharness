@@ -20,7 +20,12 @@ fi
 uname -s | egrep -q MINGW32   # Cygwin will be linux in this case?
 if [ $? -eq 0 ] ; then
   OS_TYPE='windows'
-  NOSETESTS=nosetests
+  for p in `echo $PATH | sed -e 's/:/ /g'`; do
+    if [ -f "$p/nosetests.exe" ] ; then
+      NOSETESTS="$p/nosetests"
+      break
+    fi
+  done
 fi
 if [ $OS_TYPE == 'linux' -o $OS_TYPE == 'osx' ] ; then
   export PYTHONPATH=.:..:$PYTHONPATH
