@@ -17,12 +17,14 @@ if [ $? -eq 0 ] ; then
   OS_TYPE='osx'
   COVERAGE_ARGS="--omit='/Library/*,/usr/*,/opt/*'"
 fi
-uname -s | grep -q MINGW32
+uname -s | egrep -q MINGW32   # Cygwin will be linux in this case?
 if [ $? -eq 0 ] ; then
   OS_TYPE='windows'
+  NOSETESTS=nosetests
 fi
 if [ $OS_TYPE == 'linux' -o $OS_TYPE == 'osx' ] ; then
   export PYTHONPATH=.:..:$PYTHONPATH
+  NOSETESTS=`which nosetests`
 fi
 
 echo "### Finding mozharness/ .py files..."
@@ -57,9 +59,9 @@ pylint -E -e F -f parseable $MOZHARNESS_PY_FILES $SCRIPTS_PY_FILES 2>&1 | egrep 
 
 rm -rf upload_dir
 echo "### Testing non-networked unit tests"
-coverage run -a --branch $COVERAGE_ARGS `which nosetests` test/test_*.py
+coverage run -a --branch $COVERAGE_ARGS $NOSETESTS test/test_*.py
 echo "### Testing networked unit tests"
-coverage run -a --branch $COVERAGE_ARGS `which nosetests` test/networked/test_*.py
+coverage run -a --branch $COVERAGE_ARGS $NOSETESTS test/networked/test_*.py
 echo "### Running *.py [--list-actions]"
 for filename in $MOZHARNESS_PY_FILES; do
   coverage run -a --branch $COVERAGE_ARGS $filename
