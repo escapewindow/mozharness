@@ -10,7 +10,7 @@ except ImportError:
     import json
 
 import mozharness.base.errors as errors
-import mozharness.base.vcs.mercurial as mercurial
+import mozharness.base.vcs.vcsbase as vcsbase
 
 test_string = '''foo
 bar
@@ -36,15 +36,7 @@ class TestMercurialScript(unittest.TestCase):
         cleanup()
 
     def test_mercurial_script(self):
-        s = mercurial.MercurialScript(initial_config_file='test/test.json')
-        s.mkdir_p('test_dir')
-        s.run_command("touch test_dir/tools")
-        s.scm_checkout("http://hg.mozilla.org/build/tools",
-                      parent_dir="test_dir", clobber=True)
+        s = vcsbase.MercurialScript(initial_config_file='test/test.json')
+        s.vcs_checkout(repo="http://hg.mozilla.org/build/tools",
+                       dest="test_dir/tools", clobber=True)
         self.assertTrue(os.path.isdir("test_dir/tools"))
-        s.scm_checkout("http://hg.mozilla.org/build/tools",
-                      dir_name="test_dir/tools", halt_on_failure=False)
-
-def get_mercurial_vcs_obj():
-    m = mercurial.MercurialVCS()
-    return m

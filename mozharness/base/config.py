@@ -124,6 +124,7 @@ def parse_config_file(file_name, quiet=False, search_path=None):
         config = {}
         json_config = json.load(fh)
         config = dict(json_config)
+        fh.close()
     else:
         raise RuntimeError, "Unknown config file type %s!" % file_name
     return config
