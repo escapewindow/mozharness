@@ -38,5 +38,5 @@ class TestMercurialScript(unittest.TestCase):
     def test_mercurial_script(self):
         s = vcsbase.MercurialScript(initial_config_file='test/test.json')
         s.vcs_checkout(repo="http://hg.mozilla.org/build/tools",
-                       dest="test_dir/tools", clobber=True)
+                       dest="test_dir/tools")
         self.assertTrue(os.path.isdir("test_dir/tools"))

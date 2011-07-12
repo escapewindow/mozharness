@@ -1,4 +1,24 @@
 === 0.4 ===
+2011-07-12  Aki Sasaki  <aki@mozilla.com>
+* mozharness/base/config.py (parse_config_file):
+    Explicitly close fh when using .json config files
+
+* mozharness/base/vcs/mercurial.py (MercurialMixin): removed
+
+* mozharness/base/vcs/mercurial.py (MercurialScript): removed
+
+* mozharness/base/vcs/vcsbase.py (VCSMixin):
+    Created to use MercurialVCS (or any other VCS object).
+    
+* mozharness/base/vcs/vcsbase.py (VCSScript):
+    Quick'n'dirty wrapper around VCSScript + BaseScript.
+
+* mozharness/base/vcs/vcsbase.py (MercurialScript):
+    Quick'n'dirty wrapper around VCSScript, with self.default_vcs = 'hg'
+
+* test/networked/test_base_vcs_vcsbase.py renamed from test_base_vcs_mercurial.py
+    Run a vcs_checkout.  Clobber no longer applies, though I may want to re-add.
+
 2011-05-03  Aki Sasaki  <aki@mozilla.com>
 
 * mozharness/base/vcs/mercurial.py (MercurialVCS.push):
