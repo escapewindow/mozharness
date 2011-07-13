@@ -87,6 +87,7 @@ class VCSMixin(object):
 
     def vcs_checkout_repos(self, repo_list, parent_dir=None, **kwargs):
         orig_dir = os.getcwd()
+        c = self.config
         if not parent_dir:
             parent_dir = os.path.join(c['base_work_dir'], c['work_dir'])
         self.mkdir_p(parent_dir)
