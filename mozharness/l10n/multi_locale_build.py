@@ -10,7 +10,7 @@ import sys
 sys.path.insert(1, os.path.dirname(os.path.dirname(sys.path[0])))
 
 from mozharness.base.errors import SSHErrorList, PythonErrorList, MakefileErrorList
-from mozharness.base.vcs.mercurial import MercurialScript
+from mozharness.base.vcs.vcsbase import MercurialScript
 from mozharness.l10n.locales import LocalesMixin
 
 
@@ -92,7 +92,7 @@ class MultiLocaleBuild(LocalesMixin, MercurialScript):
     def pull_build_source(self):
         c = self.config
         dirs = self.query_abs_dirs()
-        self.scm_checkout_repos(c['repos'])
+        self.vcs_checkout_repos(c['repos'])
 
     def pull_locale_source(self):
         c = self.config
@@ -108,7 +108,7 @@ class MultiLocaleBuild(LocalesMixin, MercurialScript):
                 'repo': "%s/%s" % (c['hg_l10n_base'], locale),
                 'tag': tag
             })
-        self.scm_checkout_repos(repo_list=locale_repos,
+        self.vcs_checkout_repos(repo_list=locale_repos,
                                 parent_dir=dirs['abs_l10n_dir'])
 
     def build(self):

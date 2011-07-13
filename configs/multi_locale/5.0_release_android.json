@@ -11,19 +11,19 @@
     "repos": [{
         "repo": "http://hg.mozilla.org/releases/mozilla-mobile-5.0",
         "tag": "default",
-        "dir_name": "mozilla-mobile-5.0"
+        "dest": "mozilla-mobile-5.0"
     },{
         "repo": "http://hg.mozilla.org/build/buildbot-configs",
         "tag": "default",
-        "dir_name": "configs"
+        "dest": "configs"
     },{
         "repo": "http://hg.mozilla.org/build/tools",
         "tag": "default",
-        "dir_name": "tools"
+        "dest": "tools"
     },{
         "repo": "http://hg.mozilla.org/releases/mobile-5.0",
         "tag": "default",
-        "dir_name": "mozilla-mobile-5.0/mobile"
+        "dest": "mozilla-mobile-5.0/mobile"
     },{
         "repo": "http://hg.mozilla.org/build/compare-locales",
         "tag": "RELEASE_AUTOMATION"

@@ -16,6 +16,20 @@
 * mozharness/base/vcs/vcsbase.py (MercurialScript):
     Quick'n'dirty wrapper around VCSScript, with self.default_vcs = 'hg'
 
+* mozharness/l10n/multi_locale_build.py (MultiLocaleBuild):
+    s,scm_checkout_repos,vcs_checkout_repos.
+    Pointed to the new vcsbase.MercurialScript
+
+* scripts/signdebs.py (MaemoDebSigner.create_repos):
+    s,scm_checkout_repos,vcs_checkout_repos.
+    Pointed to the new vcsbase.MercurialScript
+
+* configs/multi_locale/*:
+    s,dir_name,dest,g
+
+* configs/deb_repos/*:
+    s,dir_name,dest,g
+
 * test/networked/test_base_vcs_vcsbase.py renamed from test_base_vcs_mercurial.py
     Run a vcs_checkout.  Clobber no longer applies, though I may want to re-add.
 

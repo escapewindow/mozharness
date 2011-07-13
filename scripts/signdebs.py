@@ -20,7 +20,7 @@ sys.path.insert(1, os.path.dirname(sys.path[0]))
 
 from mozharness.base.config import parse_config_file
 from mozharness.base.errors import SSHErrorList
-from mozharness.base.vcs.mercurial import MercurialScript
+from mozharness.base.vcs.vcsbase import MercurialScript
 from mozharness.l10n.locales import LocalesMixin
 
 
@@ -181,7 +181,7 @@ components = %(section)s
         abs_work_dir = os.path.join(c['base_work_dir'], c['work_dir'])
         self.mkdir_p(abs_work_dir)
 
-        self.scm_checkout_repos(c['hg_repos'])
+        self.vcs_checkout_repos(c['hg_repos'])
 
         for platform in platforms:
             """This assumes the same deb name for each locale in a platform.

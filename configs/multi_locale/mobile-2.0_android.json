@@ -8,19 +8,19 @@
     "repos": [{
         "repo": "http://hg.mozilla.org/releases/mozilla-2.1",
         "tag": "default",
-        "dir_name": "mozilla-2.1"
+        "dest": "mozilla-2.1"
     },{
         "repo": "http://hg.mozilla.org/build/buildbot-configs",
         "tag": "default",
-        "dir_name": "buildbot-configs"
+        "dest": "buildbot-configs"
     },{
         "repo": "http://hg.mozilla.org/build/tools",
         "tag": "default",
-        "dir_name": "tools"
+        "dest": "tools"
     },{
         "repo": "http://hg.mozilla.org/releases/mobile-2.0",
         "tag": "default",
-        "dir_name": "mozilla-2.1/mobile"
+        "dest": "mozilla-2.1/mobile"
     },{
         "repo": "http://hg.mozilla.org/build/compare-locales",
         "tag": "RELEASE_AUTOMATION"

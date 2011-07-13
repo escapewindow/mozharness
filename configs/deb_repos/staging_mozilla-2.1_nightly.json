@@ -3,7 +3,7 @@
     "locales_file": "mobile-2.0/locales/all-locales",
     "hg_repos": [{
         "repo": "http://hg.mozilla.org/releases/mobile-2.0",
-        "dir_name": "mobile-2.0"
+        "dest": "mobile-2.0"
     }],
     "package_name": "fennec",
     "repo_name": "mozilla-2.1_%(locale)s",
