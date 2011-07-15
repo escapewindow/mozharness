@@ -110,12 +110,15 @@ class MozmillUpdate(MercurialScript):
     def download(self):
         dirs = self.query_abs_dirs()
         python = self.query_python()
+        # TODO platform hash; version map in configs
         self.run_command("%s download.py -p mac -v 5.0b7" % python,
                          cwd="%s/mozmill-automation" % dirs['abs_work_dir'])
 
     def run_mozmill(self):
         dirs = self.query_abs_dirs()
         python = self.query_python()
+        # TODO preflight_run_mozmill that checks to make sure we have the binaries.
+        # TODO channel/version map in configs; map that to binaries
         self.run_command("%s testrun_update.py --channel=beta --report=file://%s/report.json firefox-5.0b7.en-US.mac.dmg" % (python, dirs['abs_upload_dir']),
                          cwd="%s/mozmill-automation" % dirs['abs_work_dir'])
 
