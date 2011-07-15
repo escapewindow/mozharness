@@ -84,10 +84,6 @@ class MozmillUpdate(MercurialScript):
                                               'download',
                                               'run-mozmill',
                                              ],
-                                 default_actions=['pull',
-                                                  'download',
-                                                  'run-mozmill',
-                                                 ],
                                  require_config_file=require_config_file)
         self.python = None
 
