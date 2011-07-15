@@ -209,7 +209,7 @@ class BaseConfig(object):
         self.config_parser = ExtendedOptionParser(usage=usage)
         self.config_parser.add_option(
          "--work-dir", action="store", dest="work_dir",
-         type="string", default="work_dir",
+         type="string", default="build",
          help="Specify the work_dir (subdir of base_work_dir)"
         )
         self.config_parser.add_option(

@@ -48,30 +48,49 @@ except ImportError:
 
 sys.path.insert(1, os.path.dirname(sys.path[0]))
 
-from mozharness.base.script import BaseScript
+from mozharness.base.vcs.vcsbase import MercurialScript
 
 # MozmillUpdate {{{1
-class MozmillUpdate(BaseScript):
-#    config_options = [[
-#     ["--test-file",],
-#     {"action": "extend",
-#      "dest": "test_files",
-#      "help": "Specify which config files to test"
-#     }
-#    ]]
+class MozmillUpdate(MercurialScript):
+    config_options = [[
+     ["--ma-repo", "--mozmill-automation-repo"],
+     {"action": "store",
+      "dest": "mozmill_automation_repo",
+      "default": "http://hg.mozilla.org/qa/mozmill-automation",
+      "help": "Specify the mozmill-automation repo"
+     }
+    ],[
+     ["--ma-tag", "--mozmill-automation-tag"],
+     {"action": "store",
+      "dest": "mozmill_automation_tag",
+      "default": "default",
+      "help": "Specify the mozmill-automation tag"
+     }
+    ]]
 
     def __init__(self, require_config_file=False):
         self.config_files = []
-        BaseScript.__init__(self, #config_options=self.config_options,
-                            all_actions=['run-mozmill',
-                                         ],
-                            default_actions=['run-mozmill',
+        MercurialScript.__init__(self, config_options=self.config_options,
+                                 all_actions=['pull',
+                                              'run-mozmill',
                                              ],
-                            require_config_file=require_config_file)
+                                 default_actions=['pull',
+                                                  'run-mozmill',
+                                                 ],
+                                 require_config_file=require_config_file)
+
+    def pull(self):
+        c = self.config
+        self.vcs_checkout_repos([{
+         "repo": c['mozmill_automation_repo'],
+         "tag": c['mozmill_automation_tag'],
+         "dest": "mozmill-automation"
+        }])
 
     def run_mozmill(self):
+        dirs = self.query_abs_dirs()
         self.run_command("python testrun_update.py --channel=beta --report=file://report.json firefox-5.0b7.en-US.mac.dmg",
-                         cwd="/Users/asasaki/src/talosrunner/mozmill-automation")
+                         cwd="%s/mozmill-automation" % dirs['abs_work_dir'])
 
 # __main__ {{{1
 if __name__ == '__main__':
