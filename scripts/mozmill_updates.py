@@ -66,22 +66,37 @@ class MozmillUpdate(MercurialScript):
       "default": "default",
       "help": "Specify the mozmill-automation tag"
      }
+    ],[
+     ["--venv", "--virtualenv"],
+     {"action": "store",
+      "dest": "virtualenv",
+# TODO remove this default
+      "default": "/Users/asasaki/wrk/virtualenv/mh",
+      "help": "Specify the virtualenv"
+     }
     ]]
 
     def __init__(self, require_config_file=False):
         self.config_files = []
         MercurialScript.__init__(self, config_options=self.config_options,
                                  all_actions=['pull',
-#                                              'set-virtualenv',
                                               'download',
                                               'run-mozmill',
                                              ],
                                  default_actions=['pull',
-#                                                  'set-virtualenv',
                                                   'download',
                                                   'run-mozmill',
                                                  ],
                                  require_config_file=require_config_file)
+        self.python = None
+
+    def query_python(self):
+        if not self.python:
+            if self.config.get('virtualenv'):
+                self.python = "%s/bin/python" % self.config['virtualenv']
+            else:
+                self.python = "python"
+        return self.python
 
     def pull(self):
         c = self.config
@@ -93,12 +108,14 @@ class MozmillUpdate(MercurialScript):
 
     def download(self):
         dirs = self.query_abs_dirs()
-        self.run_command("source ~/wrk/virtualenv/mh/bin/activate && python download.py -p mac -v 5.0b7",
+        python = self.query_python()
+        self.run_command("%s download.py -p mac -v 5.0b7" % python,
                          cwd="%s/mozmill-automation" % dirs['abs_work_dir'])
 
     def run_mozmill(self):
         dirs = self.query_abs_dirs()
-        self.run_command("source ~/wrk/virtualenv/mh/bin/activate && python testrun_update.py --channel=beta --report=file://%s/report.json firefox-5.0b7.en-US.mac.dmg" % dirs['abs_upload_dir'],
+        python = self.query_python()
+        self.run_command("%s testrun_update.py --channel=beta --report=file://%s/report.json firefox-5.0b7.en-US.mac.dmg" % (python, dirs['abs_upload_dir']),
                          cwd="%s/mozmill-automation" % dirs['abs_work_dir'])
 
 # __main__ {{{1
