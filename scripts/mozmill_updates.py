@@ -72,9 +72,13 @@ class MozmillUpdate(MercurialScript):
         self.config_files = []
         MercurialScript.__init__(self, config_options=self.config_options,
                                  all_actions=['pull',
+#                                              'set-virtualenv',
+                                              'download',
                                               'run-mozmill',
                                              ],
                                  default_actions=['pull',
+#                                                  'set-virtualenv',
+                                                  'download',
                                                   'run-mozmill',
                                                  ],
                                  require_config_file=require_config_file)
@@ -87,9 +91,14 @@ class MozmillUpdate(MercurialScript):
          "dest": "mozmill-automation"
         }])
 
+    def download(self):
+        dirs = self.query_abs_dirs()
+        self.run_command("source ~/wrk/virtualenv/mh/bin/activate && python download.py -p mac -v 5.0b7",
+                         cwd="%s/mozmill-automation" % dirs['abs_work_dir'])
+
     def run_mozmill(self):
         dirs = self.query_abs_dirs()
-        self.run_command("python testrun_update.py --channel=beta --report=file://report.json firefox-5.0b7.en-US.mac.dmg",
+        self.run_command("source ~/wrk/virtualenv/mh/bin/activate && python testrun_update.py --channel=beta --report=file://%s/report.json firefox-5.0b7.en-US.mac.dmg" % dirs['abs_upload_dir'],
                          cwd="%s/mozmill-automation" % dirs['abs_work_dir'])
 
 # __main__ {{{1
