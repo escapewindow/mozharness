@@ -86,6 +86,10 @@ class MozmillUpdate(MercurialScript):
 # TODO
 #                                              'upload',
 #                                              'notify',
+# TODO clobber.
+# Hm, I wonder, since this is a list, if I could clobber at the top and at
+# the end, using the same action, or if I'm best served with
+# preclean/postclean.
                                              ],
                                  require_config_file=require_config_file)
         self.python = None
