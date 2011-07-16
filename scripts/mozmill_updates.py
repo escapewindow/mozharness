@@ -157,12 +157,12 @@ class MozmillUpdate(MercurialScript):
                 status = self.run_command(
                  [python, 'testrun_update.py',
                   '--channel=%s' % channel,
-                  '--report=file://%s/report.json' % dirs['abs_upload_dir'],
+                  '--report=file://%s/report_%s_%s.json' % (dirs['abs_upload_dir'], version, channel),
                   version_dict[version],
                  ],
                  cwd="%s/mozmill-automation" % dirs['abs_work_dir']
             )
-            self.add_summary("%s on %s : %d" % (version, channel, status))
+            self.add_summary("%s on %s : exited %d" % (version, channel, status))
         # TODO get status (from output? from report.json?) and add to summary
 
 # __main__ {{{1
