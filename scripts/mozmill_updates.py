@@ -78,21 +78,22 @@ class MozmillUpdate(MercurialScript):
     ]]
 
     def __init__(self, require_config_file=False):
-        self.config_files = []
-        MercurialScript.__init__(self, config_options=self.config_options,
-                                 all_actions=['pull',
-                                              'download',
-                                              'run-mozmill',
+        self.python = None
+        super(MozmillUpdate, self).__init__(
+         config_options=self.config_options,
+         all_actions=['pull',
+                      'download',
+                      'run-mozmill',
 # TODO
-#                                              'upload',
-#                                              'notify',
+#                      'upload',
+#                      'notify',
 # TODO clobber.
 # Hm, I wonder, since this is a list, if I could clobber at the top and at
 # the end, using the same action, or if I'm best served with
 # preclean/postclean.
-                                             ],
-                                 require_config_file=require_config_file)
-        self.python = None
+                      ],
+         require_config_file=require_config_file,
+        )
 
     def query_python(self):
         if not self.python:
