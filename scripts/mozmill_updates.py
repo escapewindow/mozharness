@@ -83,6 +83,9 @@ class MozmillUpdate(MercurialScript):
                                  all_actions=['pull',
                                               'download',
                                               'run-mozmill',
+# TODO
+#                                              'upload',
+#                                              'notify',
                                              ],
                                  require_config_file=require_config_file)
         self.python = None
@@ -117,6 +120,7 @@ class MozmillUpdate(MercurialScript):
         # TODO channel/version map in configs; map that to binaries
         self.run_command("%s testrun_update.py --channel=beta --report=file://%s/report.json firefox-5.0b7.en-US.mac.dmg" % (python, dirs['abs_upload_dir']),
                          cwd="%s/mozmill-automation" % dirs['abs_work_dir'])
+        # TODO get status (from output? from report.json?) and add to summary
 
 # __main__ {{{1
 if __name__ == '__main__':
