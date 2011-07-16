@@ -7,7 +7,7 @@
     Set default work_dir to 'build' instead of 'work_dir'
 
 * mozharness/base/script.py (query_abs_dirs):
-    Set default upload_dir to 'build/upload' instead of 'upload_dir'
+    Set default upload_dir to 'upload' instead of 'upload_dir'
 
 2011-07-12  Aki Sasaki  <aki@mozilla.com>
 * mozharness/base/config.py (parse_config_file):

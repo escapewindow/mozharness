@@ -35,8 +35,9 @@
 # the terms of any one of the MPL, the GPL or the LGPL.
 #
 # ***** END LICENSE BLOCK *****
-"""test.py
+"""mozmill_updates.py
 
+Download and update Firefox against a specific channel.
 """
 
 import os
@@ -68,11 +69,15 @@ class MozmillUpdate(MercurialScript):
       "help": "Specify the mozmill-automation tag"
      }
     ],[
+     ["--channel"],
+     {"action": "extend",
+      "dest": "channels",
+      "help": "Specify the channel"
+     }
+    ],[
      ["--venv", "--virtualenv"],
      {"action": "store",
       "dest": "virtualenv",
-# TODO remove this default
-      "default": "/Users/asasaki/wrk/virtualenv/mh",
       "help": "Specify the virtualenv"
      }
     ]]
@@ -81,7 +86,8 @@ class MozmillUpdate(MercurialScript):
         self.python = None
         super(MozmillUpdate, self).__init__(
          config_options=self.config_options,
-         all_actions=['pull',
+         all_actions=['preclean',
+                      'pull',
                       'download',
                       'run-mozmill',
 # TODO
@@ -95,6 +101,10 @@ class MozmillUpdate(MercurialScript):
          require_config_file=require_config_file,
         )
 
+    def _pre_config_lock(self, rw_config):
+        if not self.config.get("channels"):
+            self.fatal("Must specify --channel !")
+
     def query_python(self):
         if not self.python:
             if self.config.get('virtualenv'):
@@ -102,6 +112,19 @@ class MozmillUpdate(MercurialScript):
             else:
                 self.python = "python"
         return self.python
+
+    def query_versions(self):
+        return {
+                '5.0b6': 'firefox-5.0b6.en-US.mac.dmg',
+                '5.0b7': 'firefox-5.0b7.en-US.mac.dmg',
+                }
+
+    def _clobber(self):
+        dirs = self.query_abs_dirs()
+        self.rmtree(dirs['abs_work_dir'])
+
+    def preclean(self):
+        self._clobber()
 
     def pull(self):
         c = self.config
@@ -114,17 +137,32 @@ class MozmillUpdate(MercurialScript):
     def download(self):
         dirs = self.query_abs_dirs()
         python = self.query_python()
-        # TODO platform hash; version map in configs
-        self.run_command("%s download.py -p mac -v 5.0b7" % python,
+        version_dict = self.query_versions()
+        for version in version_dict.keys():
+            # TODO platform hash; version map in configs
+            # TODO ability to download file(s) that are sendchanged or
+            # specified; download.py scrapes
+            self.run_command("%s download.py -p mac -v %s" % (python, version),
                          cwd="%s/mozmill-automation" % dirs['abs_work_dir'])
 
     def run_mozmill(self):
         dirs = self.query_abs_dirs()
         python = self.query_python()
+        version_dict = self.query_versions()
         # TODO preflight_run_mozmill that checks to make sure we have the binaries.
         # TODO channel/version map in configs; map that to binaries
-        self.run_command("%s testrun_update.py --channel=beta --report=file://%s/report.json firefox-5.0b7.en-US.mac.dmg" % (python, dirs['abs_upload_dir']),
-                         cwd="%s/mozmill-automation" % dirs['abs_work_dir'])
+        for channel in self.config['channels']:
+            for version in version_dict.keys():
+                self.info("Testing %s on %s channel" % (version, channel))
+                status = self.run_command(
+                 [python, 'testrun_update.py',
+                  '--channel=%s' % channel,
+                  '--report=file://%s/report.json' % dirs['abs_upload_dir'],
+                  version_dict[version],
+                 ],
+                 cwd="%s/mozmill-automation" % dirs['abs_work_dir']
+            )
+            self.add_summary("%s on %s : %d" % (version, channel, status))
         # TODO get status (from output? from report.json?) and add to summary
 
 # __main__ {{{1
