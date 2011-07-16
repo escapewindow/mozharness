@@ -161,8 +161,8 @@ class MozmillUpdate(MercurialScript):
                   version_dict[version],
                  ],
                  cwd="%s/mozmill-automation" % dirs['abs_work_dir']
-            )
-            self.add_summary("%s on %s : exited %d" % (version, channel, status))
+                )
+                self.add_summary("%s on %s : exited %d" % (version, channel, status))
         # TODO get status (from output? from report.json?) and add to summary
 
 # __main__ {{{1
