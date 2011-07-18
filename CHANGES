@@ -1,4 +1,8 @@
 === 0.4 ===
+2011-07-18  Aki Sasaki  <aki@mozilla.com>
+* mozharness/scripts/mozmill_updates.py:
+    Added --create-virtualenv action. Not sure if this is useful or needed, but I was asked why I didn't, so here it is.
+
 2011-07-15  Aki Sasaki  <aki@mozilla.com>
 * mozharness/scripts/mozmill_updates.py:
     Added file.

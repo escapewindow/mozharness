@@ -50,6 +50,7 @@ except ImportError:
 
 sys.path.insert(1, os.path.dirname(sys.path[0]))
 
+from mozharness.base.errors import PythonErrorList
 from mozharness.base.vcs.vcsbase import MercurialScript
 
 # MozmillUpdate {{{1
@@ -78,7 +79,21 @@ class MozmillUpdate(MercurialScript):
      ["--venv", "--virtualenv"],
      {"action": "store",
       "dest": "virtualenv",
-      "help": "Specify the virtualenv"
+      "help": "Specify the virtualenv path"
+     }
+    ],[
+     ["--mercurial-url", "--mercurial-url"],
+     {"action": "store",
+      "dest": "mercurial_url",
+      "default": "http://mercurial.selenic.com/release/mercurial-1.7.3.tar.gz",
+      "help": "Specify the mercurial pip url"
+     }
+    ],[
+     ["--mozmill-url", "--mozmill-url"],
+     {"action": "store",
+      "dest": "mozmill_url",
+      "default": "http://pypi.python.org/packages/source/m/mozmill/mozmill-1.5.4b6.tar.gz#md5=ac0b0710f90012991e8cc54cf01d1010",
+      "help": "Specify the mozmill pip url"
      }
     ]]
 
@@ -88,21 +103,23 @@ class MozmillUpdate(MercurialScript):
          config_options=self.config_options,
          all_actions=['preclean',
                       'pull',
+                      'create-virtualenv',
                       'download',
                       'run-mozmill',
 # TODO
 #                      'upload',
 #                      'notify',
-# TODO clobber.
-# Hm, I wonder, since this is a list, if I could clobber at the top and at
-# the end, using the same action, or if I'm best served with
-# preclean/postclean.
                       ],
+         default_actions=['preclean',
+                          'pull',
+                          'download',
+                          'run-mozmill',
+                          ],
          require_config_file=require_config_file,
         )
 
     def _pre_config_lock(self, rw_config):
-        if not self.config.get("channels"):
+        if not self.config.get("channels") and 'run-mozmill' in self.actions:
             self.fatal("Must specify --channel !")
 
     def query_python(self):
@@ -133,6 +150,20 @@ class MozmillUpdate(MercurialScript):
          "tag": c['mozmill_automation_tag'],
          "dest": "mozmill-automation"
         }])
+
+    def create_virtualenv(self):
+        c = self.config
+        if not c.get('virtualenv'):
+            self.add_summary("No virtualenv specified; not creating virtualenv!", level="warning")
+            return -1
+        self.run_command("virtualenv --no-site-packages %s" % c['virtualenv'],
+                         error_list=PythonErrorList)
+        self.run_command("%s/bin/pip install %s" % (c['virtualenv'],
+                                                    c['mercurial_url']),
+                         error_list=PythonErrorList)
+        self.run_command("%s/bin/pip install %s" % (c['virtualenv'],
+                                                    c['mozmill_url']),
+                         error_list=PythonErrorList)
 
     def download(self):
         dirs = self.query_abs_dirs()
