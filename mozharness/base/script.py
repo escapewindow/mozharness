@@ -521,7 +521,7 @@ class BaseScript(ShellMixin, OSMixin, LogMixin, object):
     def new_log_obj(self, default_log_level="info"):
         dirs = self.query_abs_dirs()
         log_config = {"logger_name": 'Simple',
-                      "log_name": 'test',
+                      "log_name": 'log',
                       "log_dir": dirs['abs_log_dir'],
                       "log_level": default_log_level,
                       "log_format": '%(asctime)s %(levelname)8s - %(message)s',

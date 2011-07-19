@@ -16,6 +16,9 @@
 * mozharness/base/script.py (run):
     Exit self.return_code. Initialize in __init__.
 
+* mozharness/base/script.py (new_log_obj):
+    Change default log_name from 'test' to 'log'
+
 2011-07-15  Aki Sasaki  <aki@mozilla.com>
 * mozharness/scripts/mozmill_updates.py:
     Added file.
