@@ -128,6 +128,13 @@ class MozmillUpdate(VirtualenvMixin, MercurialScript):
     def _clobber(self):
         dirs = self.query_abs_dirs()
         self.rmtree(dirs['abs_work_dir'])
+        # TODO obsolete these.
+        # I think the abs_work_dir creation is automagic.
+        # The abs_upload_dir creation isn't; if I create report.json's in
+        # . and self.copy_to_upload_dir(report.json) that should be
+        # automagic.
+        self.mkdir_p(dirs['abs_work_dir'])
+        self.mkdir_p(dirs['abs_upload_dir'])
 
     def preclean(self):
         self._clobber()
