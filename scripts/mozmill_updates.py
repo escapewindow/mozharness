@@ -131,6 +131,7 @@ class MozmillUpdate(MercurialScript):
         return self.python
 
     def query_versions(self):
+        # TODO this needs to go in options + configs.
         return {
                 '5.0b6': 'firefox-5.0b6.en-US.mac.dmg',
                 '5.0b7': 'firefox-5.0b7.en-US.mac.dmg',
@@ -173,28 +174,57 @@ class MozmillUpdate(MercurialScript):
             # TODO platform hash; version map in configs
             # TODO ability to download file(s) that are sendchanged or
             # specified; download.py scrapes
-            self.run_command("%s download.py -p mac -v %s" % (python, version),
-                         cwd="%s/mozmill-automation" % dirs['abs_work_dir'])
+            self.run_command(
+             "%s download.py -p mac -v %s" % (python, version),
+             cwd="%s/mozmill-automation" % dirs['abs_work_dir'],
+             error_list=PythonErrorList,
+            )
 
     def run_mozmill(self):
         dirs = self.query_abs_dirs()
         python = self.query_python()
         version_dict = self.query_versions()
+        MozmillErrorList = PythonErrorList[:]
+        MozmillErrorList.extend([
+         {'substr': r'''ERROR''', 'level': 'error'},
+         {'substr': r'''UNEXPECTED''', 'level': 'error'},
+         {'substr': r'''failed''', 'level': 'error'},
+         {'regex': r'''Failed[:]? [^0]''', 'level': 'error'},
+        ])
         # TODO preflight_run_mozmill that checks to make sure we have the binaries.
         # TODO channel/version map in configs; map that to binaries
         for channel in self.config['channels']:
             for version in version_dict.keys():
                 self.info("Testing %s on %s channel" % (version, channel))
+                report_json = "%s/report_%s_%s.json" % (dirs['abs_upload_dir'],
+                                                        version, channel)
                 status = self.run_command(
                  [python, 'testrun_update.py',
                   '--channel=%s' % channel,
-                  '--report=file://%s/report_%s_%s.json' % (dirs['abs_upload_dir'], version, channel),
+                  '--report=file://%s' % report_json,
                   version_dict[version],
                  ],
-                 cwd="%s/mozmill-automation" % dirs['abs_work_dir']
+                 cwd="%s/mozmill-automation" % dirs['abs_work_dir'],
+                 error_list=MozmillErrorList,
                 )
-                self.add_summary("%s on %s : exited %d" % (version, channel, status))
-        # TODO get status (from output? from report.json?) and add to summary
+                if os.path.exists("%s" % (report_json)):
+                    fh = open(report_json)
+                    try:
+                        contents = json.load(fh)
+                        passed = contents['tests_passed']
+                        failed = contents['tests_failed']
+                        skipped = contents['tests_skipped']
+                        level = "info"
+                        if failed:
+                            level = "error"
+                            self.return_code += failed
+                        self.add_summary("%s on %s channel: %d passed, %d failed, %d skipped" % (version, channel, passed, failed, skipped),
+                                         level=level)
+                    except ValueError:
+                        self.add_summary("%s is invalid json!", level="error")
+                    fh.close()
+                else:
+                    self.add_summary("%s on %s channel didn't create report json!" % (version, channel), level="error")
 
 # __main__ {{{1
 if __name__ == '__main__':

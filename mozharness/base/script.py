@@ -422,6 +422,7 @@ class ShellMixin(object):
 class BaseScript(ShellMixin, OSMixin, LogMixin, object):
     def __init__(self, config_options=None, default_log_level="info", **kwargs):
         super(BaseScript, self).__init__()
+        self.return_code = 0
         self.log_obj = None
         self.abs_dirs = None
         if config_options is None:
@@ -491,6 +492,7 @@ class BaseScript(ShellMixin, OSMixin, LogMixin, object):
                 self._possibly_run_method(method_name, error_if_missing=True)
                 self._possibly_run_method("postflight_%s" % method_name)
         self.summary()
+        sys.exit(self.return_code)
 
     def query_abs_dirs(self):
         if self.abs_dirs:
