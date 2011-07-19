@@ -51,10 +51,11 @@ except ImportError:
 sys.path.insert(1, os.path.dirname(sys.path[0]))
 
 from mozharness.base.errors import PythonErrorList
+from mozharness.base.python import virtualenv_config_options, VirtualenvMixin
 from mozharness.base.vcs.vcsbase import MercurialScript
 
 # MozmillUpdate {{{1
-class MozmillUpdate(MercurialScript):
+class MozmillUpdate(VirtualenvMixin, MercurialScript):
     config_options = [[
      ["--ma-repo", "--mozmill-automation-repo"],
      {"action": "store",
@@ -76,12 +77,6 @@ class MozmillUpdate(MercurialScript):
       "help": "Specify the channel"
      }
     ],[
-     ["--venv", "--virtualenv"],
-     {"action": "store",
-      "dest": "virtualenv",
-      "help": "Specify the virtualenv path"
-     }
-    ],[
      ["--mercurial-url", "--mercurial-url"],
      {"action": "store",
       "dest": "mercurial_url",
@@ -95,7 +90,7 @@ class MozmillUpdate(MercurialScript):
       "default": "http://pypi.python.org/packages/source/m/mozmill/mozmill-1.5.4b6.tar.gz#md5=ac0b0710f90012991e8cc54cf01d1010",
       "help": "Specify the mozmill pip url"
      }
-    ]]
+    ]] + virtualenv_config_options
 
     def __init__(self, require_config_file=False):
         self.python = None
@@ -116,19 +111,12 @@ class MozmillUpdate(MercurialScript):
                           'run-mozmill',
                           ],
          require_config_file=require_config_file,
+         config={"virtualenv_modules": ["mercurial", "mozmill"]},
         )
 
     def _pre_config_lock(self, rw_config):
         if not self.config.get("channels") and 'run-mozmill' in self.actions:
             self.fatal("Must specify --channel !")
-
-    def query_python(self):
-        if not self.python:
-            if self.config.get('virtualenv'):
-                self.python = "%s/bin/python" % self.config['virtualenv']
-            else:
-                self.python = "python"
-        return self.python
 
     def query_versions(self):
         # TODO this needs to go in options + configs.
@@ -152,23 +140,9 @@ class MozmillUpdate(MercurialScript):
          "dest": "mozmill-automation"
         }])
 
-    def create_virtualenv(self):
-        c = self.config
-        if not c.get('virtualenv'):
-            self.add_summary("No virtualenv specified; not creating virtualenv!", level="warning")
-            return -1
-        self.run_command("virtualenv --no-site-packages %s" % c['virtualenv'],
-                         error_list=PythonErrorList)
-        self.run_command("%s/bin/pip install %s" % (c['virtualenv'],
-                                                    c['mercurial_url']),
-                         error_list=PythonErrorList)
-        self.run_command("%s/bin/pip install %s" % (c['virtualenv'],
-                                                    c['mozmill_url']),
-                         error_list=PythonErrorList)
-
     def download(self):
         dirs = self.query_abs_dirs()
-        python = self.query_python()
+        python = self.query_python_path()
         version_dict = self.query_versions()
         for version in version_dict.keys():
             # TODO platform hash; version map in configs
@@ -182,7 +156,7 @@ class MozmillUpdate(MercurialScript):
 
     def run_mozmill(self):
         dirs = self.query_abs_dirs()
-        python = self.query_python()
+        python = self.query_python_path()
         version_dict = self.query_versions()
         MozmillErrorList = PythonErrorList[:]
         MozmillErrorList.extend([

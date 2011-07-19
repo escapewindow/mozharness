@@ -1,5 +1,12 @@
 === 0.4 ===
 2011-07-19  Aki Sasaki  <aki@mozilla.com>
+* scripts/mozmill_updates.py (MozmillUpdate):
+    Use VirtualenvMixin and virtualenv_config_options from new mozharness/base/python.py file.
+    Specify virtualenv_modules in __init__; if this diverges between versions we can move to config files.
+
+* mozharness/base/python.py: Created file.
+    Tear out the virtualenv creation/usage generic functions from scripts/mozmill_updates.py and into this generic library.
+
 * TODO: Removed file
 
 * mozharness/base/script.py (query_abs_dirs):
