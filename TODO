@@ -1,6 +1,0 @@
-* Consider dropping --only-ACTION in favor of --action.
-** This will require changing the multilocale steps in buildbotcustom to
-   use the amended option names.
-
-* Consider splitting tests/ into network-dependent and non-network-dependent
-  tests.  This will allow for development away from the network.
