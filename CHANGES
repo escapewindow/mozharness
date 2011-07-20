@@ -1,4 +1,11 @@
 === 0.4 ===
+2011-07-20  Aki Sasaki  <aki@mozilla.com>
+* mozharness/base/script.py (OSMixin.rmtree):
+    return 0 on success, -1 on unable to remove path
+
+* mozharness/base/script.py (BaseScript.copy_to_upload_dir):
+    Quick'n'dirty.  Need to test, write tests. This has been on my todo list for a long time; glad to have it.
+
 2011-07-19  Aki Sasaki  <aki@mozilla.com>
 * scripts/mozmill_updates.py (MozmillUpdate):
     Use VirtualenvMixin and virtualenv_config_options from new mozharness/base/python.py file.

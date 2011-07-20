@@ -91,8 +91,10 @@ class OSMixin(object):
                 if os.path.exists(path):
                     self.log('Unable to remove %s!' % path, level=error_level,
                              exit_code=exit_code)
+                    return -1
         else:
             self.debug("%s doesn't exist." % path)
+        return 0
 
     def _is_windows(self):
         if platform.system() in ("Windows",):
@@ -159,10 +161,17 @@ class OSMixin(object):
             return
         return file_name
 
-    def move(self, src, dest):
+    def move(self, src, dest, error_level="error", exit_code=-1):
         self.info("Moving %s to %s" % (src, dest))
         if not self.config.get('noop'):
-            shutil.move(src, dest)
+            try:
+                shutil.move(src, dest)
+            # http://docs.python.org/tutorial/errors.html
+            except IOError as (errno, strerror):
+                self.log("IO error({0}): {1}".format(errno, strerror),
+                         level=error_level, exit_code=exit_code)
+                return -1
+        return 0
 
     def chmod(self, path, mode):
         self.info("Chmoding %s to %s" % (path, str(oct(mode))))
@@ -190,8 +199,8 @@ class ShellMixin(object):
     """These are very special but very complex methods that, together with
     logging and config, provide the base for all scripts in this harness.
 
-    This is currently dependent on LogMixin, and assumes that there is
-    a self.config of some sort.
+    This is currently dependent on LogMixin and OSMixin, and assumes that
+    there is a self.config of some sort.
     """
     def __init__(self):
         self.env = None
@@ -561,6 +570,56 @@ class BaseScript(ShellMixin, OSMixin, LogMixin, object):
         # TODO write to a summary-only log?
         # Summaries need a lot more love.
         self.log(message, level=level)
+
+    def copy_to_upload_dir(self, target, dest=None, error_level="error",
+                           rotate=True):
+        """Copy target file to upload_dir/dest.
+
+        Potentially update a manifest in the future if we go that route.
+
+        Currently only copies a single file; would be nice to allow for
+        recursive copying; that would probably done by creating a helper
+        _copy_file_to_upload_dir().
+        """
+        dirs = self.query_abs_dirs()
+        if dest is None:
+            dest = os.path.basename(target)
+        dest_file = os.path.basename(dest)
+        dest_dir = os.path.join(dirs['abs_upload_dir'], os.path.dirname(dest))
+        dest = os.path.join(dest_dir, dest_file)
+        self.info("Copying %s to %s." % (target, dest))
+        if not os.path.exists(target):
+            self.log("%s doesn't exist!" % target, level=error_level)
+            return None
+        self.mkdir_p(dest_dir)
+        if os.path.exists(dest):
+            if os.path.isdir(dest):
+                self.log("%s exists and is a directory!" % dest, level=error_level)
+                return -1
+            if rotate:
+                # Probably a better way to do this
+                max_backup = None
+                backup_regex = re.compile("^%s\.(\d+)$" % dest_file)
+                for filename in os.listdir(dest_dir):
+                    r = re.match(backup_regex, filename)
+                    if r and r.groups()[0] > max_backup:
+                        max_backup = r.groups()[0]
+                for backup_num in range(max_backup, 0, -1):
+                    self.move(os.path.join(dest_dir, dest_file, '.%d' % backup_num),
+                              os.path.join(dest_dir, dest_file, '.%d' % backup_num +1))
+                if self.move(dest, "%s.1" % dest):
+                    self.log("Unable to move %s!" % dest, level=error_level)
+                    return -1
+            else:
+                if self.rmtree(dest):
+                    self.log("Unable to remove %s!" % dest, level=error_level)
+                    return -1
+        self.copyfile(target, dest)
+        if os.path.exists(dest):
+            return dest
+        else:
+            self.log("%s doesn't exist after copy!" % dest, level=error_level)
+            return None
 
 
 
