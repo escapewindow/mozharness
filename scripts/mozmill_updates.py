@@ -206,6 +206,7 @@ class MozmillUpdate(VirtualenvMixin, MercurialScript):
                     fh.close()
                 else:
                     self.add_summary("%s on %s channel didn't create report json!" % (version, channel), level="error")
+                    self.return_code += 1
 
 # __main__ {{{1
 if __name__ == '__main__':
