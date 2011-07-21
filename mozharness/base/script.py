@@ -501,6 +501,13 @@ class BaseScript(ShellMixin, OSMixin, LogMixin, object):
                 self._possibly_run_method(method_name, error_if_missing=True)
                 self._possibly_run_method("postflight_%s" % method_name)
         self.summary()
+        dirs = self.query_abs_dirs()
+        for log_name in self.log_obj.log_files.keys():
+            log_file = self.log_obj.log_files[log_name]
+            self.copy_to_upload_dir(os.path.join(dirs['abs_log_dir'], log_file),
+                                    dest=os.path.join('logs', log_file),
+                                    short_desc='%s log' % log_name,
+                                    long_desc='%s log' % log_name)
         sys.exit(self.return_code)
 
     def query_abs_dirs(self):
@@ -571,8 +578,9 @@ class BaseScript(ShellMixin, OSMixin, LogMixin, object):
         # Summaries need a lot more love.
         self.log(message, level=level)
 
-    def copy_to_upload_dir(self, target, dest=None, error_level="error",
-                           rotate=True):
+    def copy_to_upload_dir(self, target, dest=None, short_desc="unknown",
+                           long_desc="unknown", error_level="error",
+                           rotate=False, max_backups=None):
         """Copy target file to upload_dir/dest.
 
         Potentially update a manifest in the future if we go that route.
@@ -580,14 +588,20 @@ class BaseScript(ShellMixin, OSMixin, LogMixin, object):
         Currently only copies a single file; would be nice to allow for
         recursive copying; that would probably done by creating a helper
         _copy_file_to_upload_dir().
+
+        short_desc and long_desc are placeholders for if/when we add
+        upload_dir manifests.
         """
         dirs = self.query_abs_dirs()
         if dest is None:
             dest = os.path.basename(target)
-        dest_file = os.path.basename(dest)
-        dest_dir = os.path.join(dirs['abs_upload_dir'], os.path.dirname(dest))
+        if dest.endswith('/'):
+            dest_file = os.path.basename(target)
+            dest_dir = os.path.join(dirs['abs_upload_dir'], dest)
+        else:
+            dest_file = os.path.basename(dest)
+            dest_dir = os.path.join(dirs['abs_upload_dir'], os.path.dirname(dest))
         dest = os.path.join(dest_dir, dest_file)
-        self.info("Copying %s to %s." % (target, dest))
         if not os.path.exists(target):
             self.log("%s doesn't exist!" % target, level=error_level)
             return None
@@ -598,15 +612,19 @@ class BaseScript(ShellMixin, OSMixin, LogMixin, object):
                 return -1
             if rotate:
                 # Probably a better way to do this
-                max_backup = None
+                oldest_backup = None
                 backup_regex = re.compile("^%s\.(\d+)$" % dest_file)
                 for filename in os.listdir(dest_dir):
                     r = re.match(backup_regex, filename)
-                    if r and r.groups()[0] > max_backup:
-                        max_backup = r.groups()[0]
-                for backup_num in range(max_backup, 0, -1):
-                    self.move(os.path.join(dest_dir, dest_file, '.%d' % backup_num),
-                              os.path.join(dest_dir, dest_file, '.%d' % backup_num +1))
+                    if r and r.groups()[0] > oldest_backup:
+                        oldest_backup = r.groups()[0]
+                for backup_num in range(oldest_backup, 0, -1):
+                    # TODO more error checking?
+                    if backup_num >= max_backups:
+                        self.rmtree(os.path.join(dest_dir, dest_file, backup_num))
+                    else:
+                        self.move(os.path.join(dest_dir, dest_file, '.%d' % backup_num),
+                                  os.path.join(dest_dir, dest_file, '.%d' % backup_num +1))
                 if self.move(dest, "%s.1" % dest):
                     self.log("Unable to move %s!" % dest, level=error_level)
                     return -1

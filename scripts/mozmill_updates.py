@@ -128,13 +128,6 @@ class MozmillUpdate(VirtualenvMixin, MercurialScript):
     def _clobber(self):
         dirs = self.query_abs_dirs()
         self.rmtree(dirs['abs_work_dir'])
-        # TODO obsolete these.
-        # I think the abs_work_dir creation is automagic.
-        # The abs_upload_dir creation isn't; if I create report.json's in
-        # . and self.copy_to_upload_dir(report.json) that should be
-        # automagic.
-        self.mkdir_p(dirs['abs_work_dir'])
-        self.mkdir_p(dirs['abs_upload_dir'])
 
     def preclean(self):
         self._clobber()
@@ -177,8 +170,7 @@ class MozmillUpdate(VirtualenvMixin, MercurialScript):
         for channel in self.config['channels']:
             for version in version_dict.keys():
                 self.info("Testing %s on %s channel" % (version, channel))
-                report_json = "%s/report_%s_%s.json" % (dirs['abs_upload_dir'],
-                                                        version, channel)
+                report_json = os.path.join(dirs['abs_work_dir'], "report_%s_%s.json" % (version, channel))
                 status = self.run_command(
                  [python, 'testrun_update.py',
                   '--channel=%s' % channel,
@@ -188,7 +180,7 @@ class MozmillUpdate(VirtualenvMixin, MercurialScript):
                  cwd="%s/mozmill-automation" % dirs['abs_work_dir'],
                  error_list=MozmillErrorList,
                 )
-                if os.path.exists("%s" % (report_json)):
+                if os.path.exists(report_json):
                     fh = open(report_json)
                     try:
                         contents = json.load(fh)
@@ -203,7 +195,9 @@ class MozmillUpdate(VirtualenvMixin, MercurialScript):
                                          level=level)
                     except ValueError:
                         self.add_summary("%s is invalid json!", level="error")
-                    fh.close()
+                    finally:
+                        self.copy_to_upload_dir(report_json)
+                        fh.close()
                 else:
                     self.add_summary("%s on %s channel didn't create report json!" % (version, channel), level="error")
                     self.return_code += 1

@@ -1,4 +1,23 @@
 === 0.4 ===
+2011-07-21  Aki Sasaki  <aki@mozilla.com>
+* scripts/mozmill_updates.py (MozmillUpdate.run_mozmill):
+    Created report_json in work_dir, then copied to upload_dir at the end.
+
+* scripts/mozmill_updates.py (MozmillUpdate._clobber):
+    No longer mkdir_p work_dir / upload_dir.
+
+* mozharness/base/python.py (create_virtualenv):
+    Now using abspath of virtualenv_path.
+
+* mozharness/base/script.py (BaseScript.run):
+    Copied log files to upload_dir at end of run().
+
+* mozharness/base/script.py (BaseScript.copy_to_upload_dir):
+    Added max_backups, short_desc, long_desc.
+
+* test/test_base_script.py (TestHelperFunctions._create_temp_file):
+    Allowed for custom contents
+
 2011-07-20  Aki Sasaki  <aki@mozilla.com>
 * mozharness/base/script.py (OSMixin.rmtree):
     return 0 on success, -1 on unable to remove path

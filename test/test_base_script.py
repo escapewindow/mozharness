@@ -184,10 +184,10 @@ class TestHelperFunctions(unittest.TestCase):
             del(self.s)
         cleanup()
 
-    def _create_temp_file(self):
+    def _create_temp_file(self, contents=test_string):
         os.mkdir('test_dir')
         fh = open(self.temp_file, "w+")
-        fh.write(test_string)
+        fh.write(contents)
         fh.close
 
     def test_mkdir_p(self):

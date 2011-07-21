@@ -71,7 +71,7 @@ class VirtualenvMixin(object):
             if self._is_windows():
                 bin_dir = 'Scripts'
             if self.config.get('virtualenv_path'):
-                self.python_paths[binary] = os.path.join(self.config['virtualenv_path'], bin_dir, binary)
+                self.python_paths[binary] = os.path.abspath(os.path.join(self.config['virtualenv_path'], bin_dir, binary))
             else:
                 self.python_paths[binary] = binary
         return self.python_paths[binary]
@@ -81,19 +81,20 @@ class VirtualenvMixin(object):
         if not c.get('virtualenv_path'):
             self.add_summary("No virtualenv specified; not creating virtualenv!", level="warning")
             return -1
-        self.info("Creating virtualenv %s" % c['virtualenv_path'])
+        venv_path = os.path.abspath(c['virtualenv_path'])
+        self.info("Creating virtualenv %s" % venv_path)
         self.run_command(["virtualenv", "--no-site-packages",
-                          c['virtualenv_path']],
+                          venv_path],
                          error_list=PythonErrorList,
                          halt_on_failure=True)
         pip = self.query_python_path("pip")
         for module in c.get('virtualenv_modules', []):
-            self.info("Installing %s into virtualenv %s" % (module, c['virtualenv_path']))
+            self.info("Installing %s into virtualenv %s" % (module, venv_path))
             self.run_command([pip, "install", c.get("%s_url" % module,
                                                     module)],
                              error_list=PythonErrorList,
                              halt_on_failure=True)
-        self.info("Done creating virtualenv %s." % c['virtualenv_path'])
+        self.info("Done creating virtualenv %s." % venv_path)
 
 
 
