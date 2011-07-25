@@ -164,6 +164,8 @@ class MozmillUpdate(VirtualenvMixin, MercurialScript):
          {'substr': r'''UNEXPECTED''', 'level': 'error'},
          {'substr': r'''failed''', 'level': 'error'},
          {'regex': r'''Failed[:]? [^0]''', 'level': 'error'},
+         {'substr': r'''Sorry, cannot connect''', 'level': 'error'},
+         {'substr': r'''DeprecationWarning''', 'level': 'warning'},
         ])
         # TODO preflight_run_mozmill that checks to make sure we have the binaries.
         # TODO channel/version map in configs; map that to binaries

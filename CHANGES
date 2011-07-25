@@ -1,4 +1,8 @@
 === 0.4 ===
+2011-07-24  Aki Sasaki  <aki@mozilla.com>
+* scripts/mozmill_updates.py (MozmillUpdate.run_mozmill):
+    Added more substrs to MozmillErrorList.
+
 2011-07-21  Aki Sasaki  <aki@mozilla.com>
 * scripts/mozmill_updates.py (MozmillUpdate.run_mozmill):
     Created report_json in work_dir, then copied to upload_dir at the end.
