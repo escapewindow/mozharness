@@ -163,6 +163,7 @@ def parse_config_file(file_name, quiet=False, search_path=None):
         fh.close()
     else:
         raise RuntimeError, "Unknown config file type %s!" % file_name
+    # TODO return file_path
     return config
 
 
