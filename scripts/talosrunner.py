@@ -41,6 +41,7 @@ Set up and run talos.
 """
 
 import os
+import re
 import sys
 
 sys.path.insert(1, os.path.dirname(sys.path[0]))
@@ -59,11 +60,20 @@ class TalosRunner(VirtualenvMixin, MercurialScript):
       "help": "Specify the talos repo"
      }
     ],[
-     ["--talos-tag", "--talos-tag"],
+     ["--talos-tag"],
      {"action": "store",
       "dest": "talos_tag",
       "default": "default",
       "help": "Specify the talos tag"
+     }
+    ],[
+     ["--installer-url", "--url"],
+     {"action": "store",
+      "dest": "installer_url",
+      # TODO: wildcard download?
+      # TODO: be able to specify a file on disk? (file:// or just path?)
+      "default": "http://ftp.mozilla.org/pub/mozilla.org/mobile/nightly/latest-mozilla-central-android/fennec-9.0a1.multi.android-arm.apk",
+      "help": "Specify the url to the installer"
      }
     ],[
      ["--yaml-url"],
@@ -112,12 +122,21 @@ class TalosRunner(VirtualenvMixin, MercurialScript):
         }])
 
     def download(self):
-        pass
+        # TODO: a user friendly way to do this without specifying a url?
+        c = self.config
+        dirs = self.query_abs_dirs()
+        self.mkdir_p(dirs["abs_work_dir"])
+        self.chdir(dirs["abs_work_dir"])
+        file_name = os.path.basename(c['installer_url'])
+        m = re.match(r'([a-zA-Z0-9]*).*\.([^.]*)', file_name)
+        if m.group(1) and m.group(2):
+            file_name = '%s.%s' % (m.group(1), m.group(2))
+        self.download_file(c['installer_url'], file_name=file_name,
+                           error_level="fatal")
 
     def run_talos(self):
         dirs = self.query_abs_dirs()
         python = self.query_python_path()
-        version_dict = self.query_versions()
         TalosList = PythonErrorList[:]
 
 # __main__ {{{1
