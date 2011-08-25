@@ -502,6 +502,7 @@ class BaseScript(ShellMixin, OSMixin, LogMixin, object):
                 self._possibly_run_method("postflight_%s" % method_name)
         self.summary()
         dirs = self.query_abs_dirs()
+        self.info("Copying logs to upload dir...")
         for log_name in self.log_obj.log_files.keys():
             log_file = self.log_obj.log_files[log_name]
             self.copy_to_upload_dir(os.path.join(dirs['abs_log_dir'], log_file),
