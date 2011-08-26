@@ -93,9 +93,17 @@ class SUTTalosRunner(VirtualenvMixin, SUTMixin, MercurialScript):
                       'pull',
                       'create-virtualenv',
                       'check-device',
-                      'download',
-                      'run-talos',
 # TODO
+# cleanup device
+                      'download',
+# unpack
+# tinderbox print revision
+# fennecmark for tpan/tzoom
+# pageloader
+# install app on device
+# perfconfigurator
+                      'run-talos',
+# reboot device
 #                      'upload',
 #                      'notify',
                       ],
@@ -109,6 +117,20 @@ class SUTTalosRunner(VirtualenvMixin, SUTMixin, MercurialScript):
          config={"virtualenv_modules": ["PyYAML"]},
         )
 
+    def query_abs_dirs(self):
+        if self.abs_dirs:
+            return self.abs_dirs
+        abs_dirs = super(SUTTalosRunner, self).query_abs_dirs()
+        c = self.config
+        dirs = {}
+        dirs['abs_talos_dir'] = os.path.join(abs_dirs['abs_work_dir'],
+                                             'talos')
+        for key in dirs.keys():
+            if key not in abs_dirs:
+                abs_dirs[key] = dirs[key]
+        self.abs_dirs = abs_dirs
+        return self.abs_dirs
+
     def _clobber(self):
         dirs = self.query_abs_dirs()
         self.rmtree(dirs['abs_work_dir'])
@@ -118,6 +140,7 @@ class SUTTalosRunner(VirtualenvMixin, SUTMixin, MercurialScript):
 
     def pull(self):
         c = self.config
+        # TODO allow for a talos zip
         self.vcs_checkout_repos([{
          "repo": c['talos_repo'],
          "tag": c['talos_tag'],
