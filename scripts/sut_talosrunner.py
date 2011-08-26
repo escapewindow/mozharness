@@ -35,9 +35,9 @@
 # the terms of any one of the MPL, the GPL or the LGPL.
 #
 # ***** END LICENSE BLOCK *****
-"""talosrunner.py
+"""sut_talosrunner.py
 
-Set up and run talos.
+Set up and run talos against a device running SUT Agent.
 """
 
 import os
@@ -50,8 +50,8 @@ from mozharness.base.errors import PythonErrorList
 from mozharness.base.python import virtualenv_config_options, VirtualenvMixin
 from mozharness.base.vcs.vcsbase import MercurialScript
 
-# TalosRunner {{{1
-class TalosRunner(VirtualenvMixin, MercurialScript):
+# SUTTalosRunner {{{1
+class SUTTalosRunner(VirtualenvMixin, MercurialScript):
     config_options = [[
      ["--talos-repo"],
      {"action": "store",
@@ -86,7 +86,7 @@ class TalosRunner(VirtualenvMixin, MercurialScript):
 
     def __init__(self, require_config_file=False):
         self.python = None
-        super(TalosRunner, self).__init__(
+        super(SUTTalosRunner, self).__init__(
          config_options=self.config_options,
          all_actions=['preclean',
                       'pull',
@@ -141,5 +141,5 @@ class TalosRunner(VirtualenvMixin, MercurialScript):
 
 # __main__ {{{1
 if __name__ == '__main__':
-    talos_runner = TalosRunner()
-    talos_runner.run()
+    sut_talos_runner = SUTTalosRunner()
+    sut_talos_runner.run()
