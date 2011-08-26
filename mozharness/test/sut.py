@@ -38,6 +38,8 @@
 '''Interact with SUT Agent and devicemanager.
 '''
 
+import sys
+
 from mozharness.base.errors import PythonErrorList
 
 # SUT {{{1
@@ -74,16 +76,25 @@ class SUTMixin(object):
         """
         if self.devicemanager_path:
             return self.devicemanager_path
-        if self.config['devicemanager_path']:
+        if self.config.get('devicemanager_path'):
             self.devicemanager_path = self.config['devicemanager_path']
         else:
             dirs = self.query_abs_dirs()
-            self.devicemanager_path = os.path.join(dirs['abs_talos_dir'],
-                                                   "devicemanager.py")
+            self.devicemanager_path = dirs['abs_talos_dir']
         return self.devicemanager_path
 
-    def query_devicemanager(self):
-        pass
+    def query_devicemanager(self, error_level='fatal'):
+        if self.devicemanager:
+            return self.devicemanager
+        c = self.config
+        dm_path = self.query_devicemanager_path()
+        sys.path.append(dm_path)
+        try:
+            import devicemanager
+        except ImportError, e:
+            self.log("Can't import devicemanager! %s" % e, level=error_level)
+            return None
+        self.devicemanager = devicemanager.DeviceManager(c['sut_ip'])
 
 
 
