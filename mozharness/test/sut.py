@@ -66,11 +66,21 @@ class SUTMixin(object):
      * devicemanager_path points to the devicemanager.py location on disk.
      * sut_ip holds the IP of the device.
     '''
+    devicemanager_path = None
+    devicemanager = None
 
     def query_devicemanager_path(self):
         """Return the path to devicemanager.py.
         """
-        pass
+        if self.devicemanager_path:
+            return self.devicemanager_path
+        if self.config['devicemanager_path']:
+            self.devicemanager_path = self.config['devicemanager_path']
+        else:
+            dirs = self.query_abs_dirs()
+            self.devicemanager_path = os.path.join(dirs['abs_talos_dir'],
+                                                   "devicemanager.py")
+        return self.devicemanager_path
 
     def query_devicemanager(self):
         pass
