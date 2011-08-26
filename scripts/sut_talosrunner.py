@@ -49,9 +49,10 @@ sys.path.insert(1, os.path.dirname(sys.path[0]))
 from mozharness.base.errors import PythonErrorList
 from mozharness.base.python import virtualenv_config_options, VirtualenvMixin
 from mozharness.base.vcs.vcsbase import MercurialScript
+from mozharness.test.sut import sut_config_options, SUTMixin
 
 # SUTTalosRunner {{{1
-class SUTTalosRunner(VirtualenvMixin, MercurialScript):
+class SUTTalosRunner(VirtualenvMixin, SUTMixin, MercurialScript):
     config_options = [[
      ["--talos-repo"],
      {"action": "store",
@@ -82,7 +83,7 @@ class SUTTalosRunner(VirtualenvMixin, MercurialScript):
       "default": "http://pypi.python.org/packages/source/P/PyYAML/PyYAML-3.10.tar.gz#md5=74c94a383886519e9e7b3dd1ee540247",
       "help": "Specify the mercurial pip url"
      }
-    ]] + virtualenv_config_options
+    ]] + virtualenv_config_options + sut_config_options
 
     def __init__(self, require_config_file=False):
         self.python = None
@@ -91,6 +92,7 @@ class SUTTalosRunner(VirtualenvMixin, MercurialScript):
          all_actions=['preclean',
                       'pull',
                       'create-virtualenv',
+                      'check-device',
                       'download',
                       'run-talos',
 # TODO
@@ -99,6 +101,7 @@ class SUTTalosRunner(VirtualenvMixin, MercurialScript):
                       ],
          default_actions=['preclean',
                           'pull',
+                          'check-device',
                           'download',
                           'run-talos',
                           ],
@@ -120,6 +123,10 @@ class SUTTalosRunner(VirtualenvMixin, MercurialScript):
          "tag": c['talos_tag'],
          "dest": "talos"
         }])
+
+    def check_device(self):
+        # TODO writeme
+        pass
 
     def download(self):
         # TODO: a user friendly way to do this without specifying a url?
