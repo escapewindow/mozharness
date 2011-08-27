@@ -125,6 +125,12 @@ class SUTTalosRunner(VirtualenvMixin, SUTMixin, MercurialScript):
         dirs = {}
         dirs['abs_talos_dir'] = os.path.join(abs_dirs['abs_work_dir'],
                                              'talos')
+        if c.get('sut_flag_dir'):
+            # Assumes abs_path ?
+            dirs['abs_sut_flag_dir'] = c['sut_flag_dir']
+        else:
+            # May need to revisit this default ?
+            dirs['abs_sut_flag_dir'] = c['base_work_dir']
         for key in dirs.keys():
             if key not in abs_dirs:
                 abs_dirs[key] = dirs[key]

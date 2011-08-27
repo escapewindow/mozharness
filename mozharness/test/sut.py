@@ -38,6 +38,7 @@
 '''Interact with SUT Agent and devicemanager.
 '''
 
+import os
 import sys
 
 from mozharness.base.errors import PythonErrorList
@@ -95,6 +96,65 @@ class SUTMixin(object):
             self.log("Can't import devicemanager! %s" % e, level=error_level)
             return None
         self.devicemanager = devicemanager.DeviceManager(c['sut_ip'])
+
+    # sut_flags {{{2
+    def _query_sut_flag(self, flag_file=None):
+        """Return (file_path, contents) if flag_file exists; None otherwise.
+        """
+        dirs = self.query_abs_dirs()
+        return_value = {}
+        flag_file_path = os.path.join(dirs['abs_sut_flag_dir'], flag_file)
+        self.info("Looking for %s ..." % flag_file_path)
+        if flag_file not in ('error.flg', 'proxy.flg'):
+            raise ValueError, "Unknown flag_file type %s!" % flag_file
+        if os.path.exists(flag_file_path):
+            fh = open(flag_file_path, 'r')
+            contents = fh.read()
+            fh.close()
+            return (flag_file_path, contents)
+
+    def query_sut_error_flag(self):
+        flag = self._query_sut_flag('error.flg')
+        if flag:
+            self.error("Found error flag at %s: %s!" % (flag[0], flag[1]))
+            return flag
+
+    def query_sut_proxy_flag(self):
+        flag = self._query_sut_flag('proxy.flg')
+        if flag:
+            self.info("Found proxy flag at %s: %s." % (flag[0], flag[1]))
+            return flag
+
+    def query_sut_flags(self):
+        """Return "error" or "proxy" if those flags exists; None otherwise.
+        """
+        self.info("Checking sut flags...")
+        return_value = []
+        if self.query_sut_error_flag():
+            return_value.append('error')
+        if self.query_sut_proxy_flag():
+            return_value.append('proxy')
+        if return_value:
+            return return_value
+
+    def set_sut_error_flag(self, message=""):
+        pass
+
+    def set_sut_proxy_flag(self, message=""):
+        pass
+
+    def clear_sut_error_flag(self):
+        pass
+
+    def clear_sut_proxy_flag(self):
+        pass
+
+    # devicemanager calls {{{2
+    def check_device_root(self):
+        pass
+
+    def wait_for_device(self, interval=60, max_attempts=20):
+        pass
 
 
 
