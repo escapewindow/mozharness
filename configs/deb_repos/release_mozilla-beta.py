@@ -1,14 +1,11 @@
-VERSION = "7.0b1"
+VERSION = "7.0b4"
 BUILDNUM = 1
 
 config = {
     "log_name": "signdebs",
     "locales_file": "buildbot-configs/mozilla/l10n-changesets_mobile-beta.json",
     "locales": ['en-US', 'multi'],
-    "hg_repos": [{
-        "repo": "http://hg.mozilla.org/build/buildbot-configs",
-        "tag": "FENNEC_6_0b6_RELEASE"
-    }],
+    "hg_repos": [],
     "package_name": "fennec",
     "repo_name": "%(locale)s",
     "remote_repo_path": "/home/ftp/pub/mozilla.org/mobile/candidates/%s-candidates/repos" % VERSION,
