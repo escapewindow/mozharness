@@ -503,7 +503,7 @@ class MercurialVCS(ShellMixin, OSMixin, LogMixin, object):
                 if n == max_attempts:
                     self.debug("Tried %d times, giving up" % max_attempts)
                     for r in reversed(new_revs):
-                        self.run_command(['hg', 'strip', r[REVISION]],
+                        self.run_command(['hg', 'strip', '-n', r[REVISION]],
                                          cwd=localrepo, error_list=HgErrorList)
                     raise VCSException("Failed to push")
                 self.pull(remote, localrepo, update_dest=False,
@@ -518,7 +518,7 @@ class MercurialVCS(ShellMixin, OSMixin, LogMixin, object):
                     self.debug("Failed to rebase: %s" % str(e))
                     self.update(localrepo, branch=branch)
                     for r in reversed(new_revs):
-                        self.run_command(['hg', 'strip', r[REVISION]],
+                        self.run_command(['hg', 'strip', '-n', r[REVISION]],
                                          cwd=localrepo, error_list=HgErrorList)
                     changer(localrepo, n+1)
 
@@ -529,7 +529,7 @@ class MercurialVCS(ShellMixin, OSMixin, LogMixin, object):
         outgoingRevs = self.out(src=reponame, remote=remote,
                                 ssh_username=username, ssh_key=sshKey)
         for r in reversed(outgoingRevs):
-            self.run_command(['hg', 'strip', r[REVISION]],
+            self.run_command(['hg', 'strip', '-n', r[REVISION]],
                              cwd=reponame, error_list=HgErrorList)
 
 
