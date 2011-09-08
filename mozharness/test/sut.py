@@ -174,10 +174,18 @@ class SUTMixin(object):
 
     # devicemanager calls {{{2
     def check_device_root(self):
-        pass
+        dm = self.query_devicemanager()
+        device_root = dm.getDeviceRoot()
+        self.info("Device root is %s" % device_root)
+        if not dr or dr == '/tests':
+            self.error("Bad device root; most likely the device isn't up.")
+            return None
+        return device_root
 
     def wait_for_device(self, interval=60, max_attempts=20):
-        pass
+        dm = self.query_devicemanager()
+        self.info("Waiting for device to come back...")
+        # TODO
 
 
 
