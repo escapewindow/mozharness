@@ -96,6 +96,20 @@ class MultiLocaleBuild(LocalesMixin, MercurialScript):
       "help": "Specify the L10n tag"
      }
     ],[
+     ["--tag-override",],
+     {"action": "store",
+      "dest": "tag_override",
+      "type": "string",
+      "help": "Override the tags set for all repos"
+     }
+    ],[
+     ["--user-repo-override",],
+     {"action": "store",
+      "dest": "user_repo_override",
+      "type": "string",
+      "help": "Override the user repo path for all repos"
+     }
+    ],[
      ["--l10n-dir",],
      {"action": "store",
       "dest": "l10n_dir",
@@ -128,7 +142,17 @@ class MultiLocaleBuild(LocalesMixin, MercurialScript):
     def pull_build_source(self):
         c = self.config
         dirs = self.query_abs_dirs()
-        self.vcs_checkout_repos(c['repos'])
+        repos = []
+        replace_dict = {}
+        # Replace %(user_repo_override)s with c['user_repo_override']
+        if c.get("user_repo_override"):
+            replace_dict['user_repo_override'] = c['user_repo_override']
+            for repo_dict in c['repos']:
+                repo_dict['repo'] = repo_dict['repo'] % replace_dict
+                repos.append(repo_dict)
+        else:
+            repos = c['repos']
+        self.vcs_checkout_repos(c['repos'], tag_override=c.get('tag_override'))
 
     def pull_locale_source(self):
         c = self.config
@@ -136,16 +160,20 @@ class MultiLocaleBuild(LocalesMixin, MercurialScript):
         self.mkdir_p(dirs['abs_l10n_dir'])
         locales = self.query_locales()
         locale_repos = []
+        hg_l10n_base = c['hg_l10n_base']
+        if c.get("user_repo_override"):
+            hg_l10n_base = hg_l10n_base % {"user_repo_override": c["user_repo_override"]}
         for locale in locales:
-            tag = c['hg_l10n_tag']
+            tag = c.get('hg_l10n_tag', 'default')
             if hasattr(self, 'locale_dict'):
                 tag = self.locale_dict[locale]
             locale_repos.append({
-                'repo': "%s/%s" % (c['hg_l10n_base'], locale),
+                'repo': "%s/%s" % (hg_l10n_base, locale),
                 'tag': tag
             })
         self.vcs_checkout_repos(repo_list=locale_repos,
-                                parent_dir=dirs['abs_l10n_dir'])
+                                parent_dir=dirs['abs_l10n_dir'],
+                                tag_override=c.get('tag_override'))
 
     def build(self):
         c = self.config
@@ -169,10 +197,15 @@ class MultiLocaleBuild(LocalesMixin, MercurialScript):
             command = 'make chrome-%s L10NBASEDIR=%s' % (locale, dirs['abs_l10n_dir'])
             if c['merge_locales']:
                 command += " LOCALE_MERGEDIR=%s" % dirs['abs_merge_dir']
-            self._process_command(command=command,
-                                  cwd=dirs['abs_locales_dir'],
-                                  error_list=MakefileErrorList,
-                                  halt_on_failure=True)
+            status = self._process_command(command=command,
+                                           cwd=dirs['abs_locales_dir'],
+                                           error_list=MakefileErrorList)
+            if status:
+                self.return_code += 1
+                self.add_summary("Failed to add locale %s!" % locale,
+                                 level="error")
+            else:
+                self.add_summary("Added locale %s successfully." % locale)
 
     def package_en_US(self):
         self.package(package_type='en-US')
