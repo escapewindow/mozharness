@@ -259,8 +259,11 @@ class ShellMixin(object):
         num_errors = 0
         if cwd:
             if not os.path.isdir(cwd):
-                self.error("Can't run command %s in non-existent directory %s!" % \
-                           (command, cwd))
+                level = "error"
+                if halt_on_failure:
+                    level = "fatal"
+                self.log("Can't run command %s in non-existent directory %s!" % \
+                         (command, cwd), level=level)
                 return -1
             self.info("Running command: %s in %s" % (command, cwd))
         else:
@@ -335,8 +338,11 @@ class ShellMixin(object):
         """
         if cwd:
             if not os.path.isdir(cwd):
-                self.error("Can't run command %s in non-existent directory %s!" % \
-                           (command, cwd))
+                level = 'error'
+                if halt_on_failure:
+                    level = 'fatal'
+                self.log("Can't run command %s in non-existent directory %s!" % \
+                         (command, cwd), level=level)
                 return -1
             self.info("Getting output from command: %s in %s" % (command, cwd))
         else:

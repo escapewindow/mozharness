@@ -86,7 +86,8 @@ class VCSMixin(object):
         else:
             raise VCSException, "No got_revision from ensure_repo_and_revision()"
 
-    def vcs_checkout_repos(self, repo_list, parent_dir=None, **kwargs):
+    def vcs_checkout_repos(self, repo_list, parent_dir=None,
+                           tag_override=None, **kwargs):
         orig_dir = os.getcwd()
         c = self.config
         if not parent_dir:
@@ -96,6 +97,8 @@ class VCSMixin(object):
         try:
             for repo_dict in repo_list:
                 kwargs = repo_dict.copy()
+                if tag_override:
+                    kwargs['tag'] = tag_override
                 self.vcs_checkout(**kwargs)
         finally:
             self.chdir(orig_dir)
