@@ -20,6 +20,7 @@
 # the Initial Developer. All Rights Reserved.
 #
 # Contributor(s):
+#   Mike Taylor <bear@mozilla.com>
 #   Aki Sasaki <aki@mozilla.com>
 #
 # Alternatively, the contents of this file may be used under the terms of
@@ -36,13 +37,20 @@
 #
 # ***** END LICENSE BLOCK *****
 '''Interact with SUT Agent and devicemanager.
+
+This code is largely from
+http://hg.mozilla.org/build/tools/file/default/sut_tools
 '''
 
+import datetime
 import os
 import sys
 import time
 
 from mozharness.base.errors import PythonErrorList
+
+class SUTException(Exception):
+    pass
 
 # SUT {{{1
 sut_config_options = [[
@@ -85,18 +93,20 @@ class SUTMixin(object):
             self.devicemanager_path = dirs['abs_talos_dir']
         return self.devicemanager_path
 
-    def query_devicemanager(self, error_level='fatal'):
+    def query_devicemanager(self, level='fatal'):
         if self.devicemanager:
             return self.devicemanager
         c = self.config
         dm_path = self.query_devicemanager_path()
         sys.path.append(dm_path)
         try:
-            import devicemanager
+            import devicemanagerSUT as devicemanager
         except ImportError, e:
-            self.log("Can't import devicemanager! %s" % e, level=error_level)
-            return None
+            self.log("Can't import devicemanager! %s\nDid you check out talos?" % str(e), level=level)
+            raise
         self.devicemanager = devicemanager.DeviceManager(c['sut_ip'])
+        self.devicemanager.debug = 3
+        return self.devicemanager
 
     # sut_flags {{{2
     def _query_sut_flag(self, flag_file=None):
@@ -173,19 +183,79 @@ class SUTMixin(object):
         self._clear_sut_flag("proxy.flg")
 
     # devicemanager calls {{{2
-    def check_device_root(self):
+    def query_device_root(self, silent=False):
         dm = self.query_devicemanager()
         device_root = dm.getDeviceRoot()
-        self.info("Device root is %s" % device_root)
-        if not dr or dr == '/tests':
+        if not silent:
+            self.info("Device root is %s" % device_root)
+        if not device_root or device_root == '/tests':
             self.error("Bad device root; most likely the device isn't up.")
             return None
         return device_root
 
     def wait_for_device(self, interval=60, max_attempts=20):
-        dm = self.query_devicemanager()
         self.info("Waiting for device to come back...")
-        # TODO
+        time.sleep(interval)
+        tries = 0
+        while tries <= max_attempts:
+            tries += 1
+            self.info("Try %d" % tries)
+            if self.query_device_root(silent=True) is not None:
+                return 0
+            time.sleep(interval)
+        raise SUTException, "Remote Device Error: waiting for device timed out."
+
+    def set_device_time(self, device_time=None, error_level='error'):
+        dm = self.query_devicemanager()
+        if device_time is None:
+            device_time = datetime.datetime.now().strftime('%Y/%m/%d %H:%M:%S')
+        try:
+            dm.verifySendCMD(['settime %s' % device_time])
+        except devicemanager.DMError, e:
+            self.log("Can't set device time: %s" % e, level=error_level)
+            return False
+        return True
+
+    def remove_device_dir(self, error_level='error'):
+        dm = self.query_devicemanager()
+        dev_root = dm.query_device_root()
+        if dm.dirExists(dev_root):
+            self.info("Removing device root %s." % dev_root)
+            if dm.removeDir(dev_root) is None:
+                self.log("Unable to remove device root!", level=error_level)
+                return False
+        return True
+
+    def ping_device(self):
+        # TODO make this cross-platform
+        pass
+
+    def uninstall_app(self, package_name, package_root="/data/data",
+                      error_level="error"):
+        dm = self.query_devicemanager()
+        if dm.dirExists('%s/%s' % (package_root, package_name)):
+            status = dm.uninstallAppAndReboot(package_name)
+            if status is None:
+                self.log("Failed to uninstall %s!" % package_name,
+                         level=error_level)
+
+
+
+class TegraSUTMixin(SUTMixin):
+    def remove_etc_hosts(self, hosts_file="/system/etc/hosts",
+                         error_level='error'):
+        dm = self.query_devicemanager()
+        if dm.fileExists(hosts_file):
+            self.info("Removing %s file." % hosts_file)
+            try:
+                dm.sendCMD(['exec mount -o remount,rw -t yaffs2 /dev/block/mtdblock3 /system'])
+                dm.sendCMD(['exec rm %s' % hosts_file])
+            except devicemanager.DMError, e:
+                self.log("Unable to remove %s: %s!" % (hosts_file, str(e)),
+                         level=error_level)
+                raise
+        else:
+            self.debug("%s file doesn't exist; skipping." % hosts_file)
 
 
 
