@@ -54,6 +54,15 @@ from mozharness.test.device import device_config_options, ADBDevice
 # DeviceTalosRunner {{{1
 class DeviceTalosRunner(VirtualenvMixin, MercurialScript):
     config_options = [[
+     ["--talos-zip"],
+     {"action": "store",
+      "dest": "talos_zip",
+      # TODO remove all defaults here
+#      "default": "http://people.mozilla.org/~asasaki/talos_ADB.zip",
+      "default": "file:///Users/asasaki/Desktop/talos_ADB.zip",
+      "help": "Specify a talos zipfile"
+     }
+    ],[
      ["--talos-repo"],
      {"action": "store",
       "dest": "talos_repo",
@@ -72,8 +81,8 @@ class DeviceTalosRunner(VirtualenvMixin, MercurialScript):
      {"action": "store",
       "dest": "installer_url",
       # TODO: wildcard download?
-      # TODO: be able to specify a file on disk? (file:// or just path?)
-      "default": "http://ftp.mozilla.org/pub/mozilla.org/mobile/nightly/latest-mozilla-central-android/fennec-9.0a1.multi.android-arm.apk",
+#      "default": "http://ftp.mozilla.org/pub/mozilla.org/mobile/nightly/latest-mozilla-central-android/fennec-9.0a1.multi.android-arm.apk",
+      "default": "file:///Users/asasaki/Desktop/fennec-8.0a2.multi.android-arm.apk",
       "help": "Specify the url to the installer"
      }
     ],[
@@ -116,6 +125,8 @@ class DeviceTalosRunner(VirtualenvMixin, MercurialScript):
          require_config_file=require_config_file,
          config={"virtualenv_modules": ["PyYAML"]},
         )
+        self.device_glue = ADBDevice(log_obj=self.log_obj,
+                                     config=self.config)
 
     def query_abs_dirs(self):
         if self.abs_dirs:
@@ -146,12 +157,22 @@ class DeviceTalosRunner(VirtualenvMixin, MercurialScript):
 
     def pull(self):
         c = self.config
+        dirs = self.query_abs_dirs()
         # TODO allow for a talos zip
-        self.vcs_checkout_repos([{
-         "repo": c['talos_repo'],
-         "tag": c['talos_tag'],
-         "dest": "talos"
-        }])
+        if c['talos_zip']:
+            self.mkdir_p(dirs['abs_work_dir'])
+            status = self.download_file(
+                c['talos_zip'],
+                file_name=os.path.join(dirs['abs_work_dir'],
+                                       "talos.zip")
+            )
+            # TODO extract
+        else:
+            self.vcs_checkout_repos([{
+             "repo": c['talos_repo'],
+             "tag": c['talos_tag'],
+             "dest": "talos"
+            }])
 
     def check_device(self):
         # TODO writeme

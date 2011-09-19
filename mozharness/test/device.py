@@ -253,9 +253,13 @@ class DeviceMixin(object):
                 self.log("Failed to uninstall %s!" % package_name,
                          level=error_level)
 
-    # Tegra-specific.
+    # Device-type-specific. {{{2
     def remove_etc_hosts(self, hosts_file="/system/etc/hosts",
                          error_level='error'):
+        c = self.config
+        if c['device_type'] != 'tegra250':
+            self.debug("No need to remove /etc/hosts on a non-Tegra250.")
+            return
         dm = self.query_devicemanager()
         if dm.fileExists(hosts_file):
             self.info("Removing %s file." % hosts_file)
