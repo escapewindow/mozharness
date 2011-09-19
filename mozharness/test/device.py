@@ -48,18 +48,20 @@ import sys
 import time
 
 from mozharness.base.errors import PythonErrorList
+from mozharness.base.log import LogMixin
+from mozharness.base.script import ShellMixin, OSMixin
 
-class SUTException(Exception):
+class DeviceException(Exception):
     pass
 
-# SUT {{{1
-sut_config_options = [[
- ["--sut-ip"],
+# DeviceMixin {{{1
+device_config_options = [[
+ ["--device-ip"],
  {"action": "store",
-  "dest": "sut_ip",
-  # TODO remove the default
-  # TODO adb non-ip support?
-  "default": "10.0.1.4",
+  "dest": "device_ip",
+  # TODO remove this.
+  # This should hopefully be an optional option if adb is set.
+  "default": "10.251.27.192",
   "help": "Specify the IP address of the device running SUT."
  }
 ],[
@@ -70,13 +72,13 @@ sut_config_options = [[
  }
 ]]
 
-class SUTMixin(object):
+class DeviceMixin(object):
     '''BaseScript mixin, designed to interface with SUT Agent through
     devicemanager.
 
     Config items:
      * devicemanager_path points to the devicemanager.py location on disk.
-     * sut_ip holds the IP of the device.
+     * device_ip holds the IP of the device.
     '''
     devicemanager_path = None
     devicemanager = None
@@ -104,17 +106,17 @@ class SUTMixin(object):
         except ImportError, e:
             self.log("Can't import devicemanager! %s\nDid you check out talos?" % str(e), level=level)
             raise
-        self.devicemanager = devicemanager.DeviceManager(c['sut_ip'])
+        self.devicemanager = devicemanager.DeviceManager(c['device_ip'])
         self.devicemanager.debug = 3
         return self.devicemanager
 
-    # sut_flags {{{2
-    def _query_sut_flag(self, flag_file=None):
+    # device_flags {{{2
+    def _query_device_flag(self, flag_file=None):
         """Return (file_path, contents) if flag_file exists; None otherwise.
         """
         dirs = self.query_abs_dirs()
         return_value = {}
-        flag_file_path = os.path.join(dirs['abs_sut_flag_dir'], flag_file)
+        flag_file_path = os.path.join(dirs['abs_device_flag_dir'], flag_file)
         self.info("Looking for %s ..." % flag_file_path)
         if flag_file not in ('error.flg', 'proxy.flg'):
             raise ValueError, "Unknown flag_file type %s!" % flag_file
@@ -124,63 +126,63 @@ class SUTMixin(object):
             fh.close()
             return (flag_file_path, contents)
 
-    def query_sut_error_flag(self):
-        flag = self._query_sut_flag('error.flg')
+    def query_device_error_flag(self):
+        flag = self._query_device_flag('error.flg')
         if flag:
             self.error("Found error flag at %s: %s!" % (flag[0], flag[1]))
             return flag
 
-    def query_sut_proxy_flag(self):
-        flag = self._query_sut_flag('proxy.flg')
+    def query_device_proxy_flag(self):
+        flag = self._query_device_flag('proxy.flg')
         if flag:
             self.info("Found proxy flag at %s: %s." % (flag[0], flag[1]))
             return flag
 
-    def query_sut_flags(self):
+    def query_device_flags(self):
         """Return "error" or "proxy" if those flags exists; None otherwise.
         """
         self.info("Checking sut flags...")
         flags = []
-        if self.query_sut_error_flag():
+        if self.query_device_error_flag():
             flags.append('error')
-        if self.query_sut_proxy_flag():
+        if self.query_device_proxy_flag():
             flags.append('proxy')
         if flags:
             return flags
 
-    def _set_sut_flag(self, message, flag_file=None, level="info"):
+    def _set_device_flag(self, message, flag_file=None, level="info"):
         dirs = self.query_abs_dirs()
-        flag_file_path = os.path.join(dirs['abs_sut_flag_dir'], flag_file)
+        flag_file_path = os.path.join(dirs['abs_device_flag_dir'], flag_file)
         self.log("Setting %s ..." % flag_file_path, level=level)
         if flag_file not in ('error.flg', 'proxy.flg'):
             raise ValueError, "Unknown flag_file type %s!" % flag_file
         # TODO do we need a generic way to write to a local file?
-        self.mkdir_p(dirs['abs_sut_flag_dir'])
+        self.mkdir_p(dirs['abs_device_flag_dir'])
         # TODO try/except?
         fh = open(flag_file_path, "a")
         fh.write("%s: %s" % (time.strftime("%Y/%m/%d %H:%M:%S", time.localtime()), message))
         fh.close()
         return flag_file_path
 
-    def set_sut_error_flag(self, message):
-        self._set_sut_flag(message, flag_file="error.flg", level="error")
+    def set_device_error_flag(self, message):
+        self._set_device_flag(message, flag_file="error.flg", level="error")
 
-    def set_sut_proxy_flag(self, message):
-        self._set_sut_flag(message, flag_file="proxy.flg")
+    def set_device_proxy_flag(self, message):
+        self._set_device_flag(message, flag_file="proxy.flg")
 
-    def _clear_sut_flag(self, flag_file=None):
+    def _clear_device_flag(self, flag_file=None):
         dirs = self.query_abs_dirs()
         return_value = {}
-        (flag_file_path, contents) = self._query_sut_flag(flag_file)
+        (flag_file_path, contents) = self._query_device_flag(flag_file)
         if os.path.exists(flag_file_path):
             self.info("Clearing %s..." % flag_file)
             self.rmtree(flag_file_path)
 
-    def clear_sut_error_flag(self):
-        self._clear_sut_flag("error.flg")
+    def clear_device_error_flag(self):
+        self._clear_device_flag("error.flg")
 
-    def clear_sut_proxy_flag(self):
-        self._clear_sut_flag("proxy.flg")
+    def clear_device_proxy_flag(self):
+        self._clear_device_flag("proxy.flg")
 
     # devicemanager calls {{{2
     def query_device_root(self, silent=False):
@@ -203,7 +205,7 @@ class SUTMixin(object):
             if self.query_device_root(silent=True) is not None:
                 return 0
             time.sleep(interval)
-        raise SUTException, "Remote Device Error: waiting for device timed out."
+        raise DeviceException, "Remote Device Error: waiting for device timed out."
 
     def set_device_time(self, device_time=None, error_level='error'):
         dm = self.query_devicemanager()
@@ -241,7 +243,7 @@ class SUTMixin(object):
 
 
 
-class TegraSUTMixin(SUTMixin):
+class TegraMixin(DeviceMixin):
     def remove_etc_hosts(self, hosts_file="/system/etc/hosts",
                          error_level='error'):
         dm = self.query_devicemanager()

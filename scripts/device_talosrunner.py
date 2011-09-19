@@ -35,9 +35,9 @@
 # the terms of any one of the MPL, the GPL or the LGPL.
 #
 # ***** END LICENSE BLOCK *****
-"""sut_talosrunner.py
+"""device_talosrunner.py
 
-Set up and run talos against a device running SUT Agent.
+Set up and run talos against a device running SUT Agent or ADBD.
 """
 
 import os
@@ -49,10 +49,10 @@ sys.path.insert(1, os.path.dirname(sys.path[0]))
 from mozharness.base.errors import PythonErrorList
 from mozharness.base.python import virtualenv_config_options, VirtualenvMixin
 from mozharness.base.vcs.vcsbase import MercurialScript
-from mozharness.test.sut import sut_config_options, SUTMixin
+from mozharness.test.device import device_config_options, DeviceMixin
 
-# SUTTalosRunner {{{1
-class SUTTalosRunner(VirtualenvMixin, SUTMixin, MercurialScript):
+# DeviceTalosRunner {{{1
+class DeviceTalosRunner(VirtualenvMixin, DeviceMixin, MercurialScript):
     config_options = [[
      ["--talos-repo"],
      {"action": "store",
@@ -83,11 +83,11 @@ class SUTTalosRunner(VirtualenvMixin, SUTMixin, MercurialScript):
       "default": "http://pypi.python.org/packages/source/P/PyYAML/PyYAML-3.10.tar.gz#md5=74c94a383886519e9e7b3dd1ee540247",
       "help": "Specify the mercurial pip url"
      }
-    ]] + virtualenv_config_options + sut_config_options
+    ]] + virtualenv_config_options + device_config_options
 
     def __init__(self, require_config_file=False):
         self.python = None
-        super(SUTTalosRunner, self).__init__(
+        super(DeviceTalosRunner, self).__init__(
          config_options=self.config_options,
          all_actions=['preclean',
                       'pull',
@@ -120,17 +120,17 @@ class SUTTalosRunner(VirtualenvMixin, SUTMixin, MercurialScript):
     def query_abs_dirs(self):
         if self.abs_dirs:
             return self.abs_dirs
-        abs_dirs = super(SUTTalosRunner, self).query_abs_dirs()
+        abs_dirs = super(DeviceTalosRunner, self).query_abs_dirs()
         c = self.config
         dirs = {}
         dirs['abs_talos_dir'] = os.path.join(abs_dirs['abs_work_dir'],
                                              'talos')
-        if c.get('sut_flag_dir'):
+        if c.get('device_flag_dir'):
             # Assumes abs_path ?
-            dirs['abs_sut_flag_dir'] = c['sut_flag_dir']
+            dirs['abs_device_flag_dir'] = c['device_flag_dir']
         else:
             # May need to revisit this default ?
-            dirs['abs_sut_flag_dir'] = c['base_work_dir']
+            dirs['abs_device_flag_dir'] = c['base_work_dir']
         for key in dirs.keys():
             if key not in abs_dirs:
                 abs_dirs[key] = dirs[key]
@@ -177,5 +177,5 @@ class SUTTalosRunner(VirtualenvMixin, SUTMixin, MercurialScript):
 
 # __main__ {{{1
 if __name__ == '__main__':
-    sut_talos_runner = SUTTalosRunner()
-    sut_talos_runner.run()
+    device_talos_runner = DeviceTalosRunner()
+    device_talos_runner.run()
