@@ -36,7 +36,7 @@
 # the terms of any one of the MPL, the GPL or the LGPL.
 #
 # ***** END LICENSE BLOCK *****
-'''Interact with SUT Agent and devicemanager.
+'''Interact with ADB, SUT Agent, and devicemanager.
 
 This code is largely from
 http://hg.mozilla.org/build/tools/file/default/sut_tools
@@ -62,7 +62,7 @@ device_config_options = [[
   # TODO remove this.
   # This should hopefully be an optional option if adb is set.
   "default": "10.251.27.192",
-  "help": "Specify the IP address of the device running SUT."
+  "help": "Specify the IP address of the device."
  }
 ],[
  ["--devicemanager-path"],
@@ -70,10 +70,21 @@ device_config_options = [[
   "dest": "devicemanager_path",
   "help": "Specify the path to devicemanager.py."
  }
+],[
+ ["--device-type"],
+ # A bit useless atm, but we can add new device types as we add support
+ # for them.
+ {"action": "store",
+  "type": "choice",
+  "choices": ["non-tegra", "tegra250"],
+  "default": "non-tegra",
+  "dest": "device_type",
+  "help": "Specify the device type."
+ }
 ]]
 
 class DeviceMixin(object):
-    '''BaseScript mixin, designed to interface with SUT Agent through
+    '''BaseScript mixin, designed to interface with the device through
     devicemanager.
 
     Config items:
@@ -102,7 +113,8 @@ class DeviceMixin(object):
         dm_path = self.query_devicemanager_path()
         sys.path.append(dm_path)
         try:
-            import devicemanagerSUT as devicemanager
+            # TODO import devicemanagerSUT if appropriate
+            import devicemanagerADB as devicemanager
         except ImportError, e:
             self.log("Can't import devicemanager! %s\nDid you check out talos?" % str(e), level=level)
             raise
@@ -141,7 +153,7 @@ class DeviceMixin(object):
     def query_device_flags(self):
         """Return "error" or "proxy" if those flags exists; None otherwise.
         """
-        self.info("Checking sut flags...")
+        self.info("Checking device flags...")
         flags = []
         if self.query_device_error_flag():
             flags.append('error')
@@ -241,9 +253,7 @@ class DeviceMixin(object):
                 self.log("Failed to uninstall %s!" % package_name,
                          level=error_level)
 
-
-
-class TegraMixin(DeviceMixin):
+    # Tegra-specific.
     def remove_etc_hosts(self, hosts_file="/system/etc/hosts",
                          error_level='error'):
         dm = self.query_devicemanager()
@@ -258,6 +268,16 @@ class TegraMixin(DeviceMixin):
                 raise
         else:
             self.debug("%s file doesn't exist; skipping." % hosts_file)
+
+
+
+# ADBDevice {{{1
+class ADBDevice(ShellMixin, OSMixin, LogMixin, DeviceMixin, object):
+    def __init__(self, log_obj=None, config=None, devicemanager=None):
+        super(ADBDevice, self).__init__()
+        self.log_obj = log_obj
+        self.config = config
+        self.devicemanager = devicemanager
 
 
 

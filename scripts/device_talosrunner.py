@@ -49,10 +49,10 @@ sys.path.insert(1, os.path.dirname(sys.path[0]))
 from mozharness.base.errors import PythonErrorList
 from mozharness.base.python import virtualenv_config_options, VirtualenvMixin
 from mozharness.base.vcs.vcsbase import MercurialScript
-from mozharness.test.device import device_config_options, DeviceMixin
+from mozharness.test.device import device_config_options, ADBDevice
 
 # DeviceTalosRunner {{{1
-class DeviceTalosRunner(VirtualenvMixin, DeviceMixin, MercurialScript):
+class DeviceTalosRunner(VirtualenvMixin, MercurialScript):
     config_options = [[
      ["--talos-repo"],
      {"action": "store",
