@@ -12,7 +12,14 @@
     Allow for default_actions, actions, add_actions, and no_actions to be
     set in the config file, which should allow for more cross-team utility.
 
-* mozharness/base/config.py (BaseConfig):
+    Add the volatile_config to self._config['volatile_config'], which will
+    add it to the dump_config but won't actually be used (I think). The
+    alternative was to
+        a) possibly get rid of initial_config_file,
+        b) change parse_config_file to return (config, path-to-config),
+        c) copy config_file (and initial_config_file if not removed in (a))
+           into upload_dir so we can duplicate this later.
+    I think it's cleaner this way, but it remains to be seen.
 
 2011-09-19  Aki Sasaki  <aki@mozilla.com>
 * mozharness/base/errors.py (BaseErrorList):

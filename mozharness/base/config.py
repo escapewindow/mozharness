@@ -404,6 +404,9 @@ class BaseConfig(object):
                 if action in self.actions:
                     self.actions.remove(action)
 
+        # Keep? This is for saving the volatile config in the dump_config
+        self._config['volatile_config'] = self.volatile_config
+
         self.options = options
         self.args = args
         return (self.options, self.args)
