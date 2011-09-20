@@ -54,7 +54,11 @@ class VCSException(Exception):
 # ErrorLists {{{1
 
 # For ssh, scp, rsync over ssh
-SSHErrorList=[
+BaseErrorList = [
+ {'substr': r'''command not found''', 'level': 'error'},
+]
+
+SSHErrorList = BaseErrorList + [
  {'substr': r'''Name or service not known''', 'level': 'error'},
  {'substr': r'''Could not resolve hostname''', 'level': 'error'},
  {'substr': r'''POSSIBLE BREAK-IN ATTEMPT''', 'level': 'warning'},
@@ -64,31 +68,28 @@ SSHErrorList=[
  {'substr': r'''Out of memory''', 'level': 'error'},
  {'substr': r'''Connection reset by peer''', 'level': 'warning'},
  {'substr': r'''Host key verification failed''', 'level': 'error'},
- {'substr': r'''command not found''', 'level': 'error'},
  {'substr': r'''WARNING:''', 'level': 'warning'},
  {'substr': r'''rsync error:''', 'level': 'error'},
  {'substr': r'''Broken pipe:''', 'level': 'error'},
  {'substr': r'''connection unexpectedly closed:''', 'level': 'error'},
 ]
 
-HgErrorList=[
+HgErrorList = BaseErrorList + [
  {'regex': r'''^abort:''', 'level': 'error'},
- {'substr': r'''command not found''', 'level': 'error'},
  {'substr': r'''unknown exception encountered''', 'level': 'error'},
 ]
 
-PythonErrorList=[
+PythonErrorList = BaseErrorList + [
  {'substr': r'''Traceback (most recent call last)''', 'level': 'error'},
  {'substr': r'''SyntaxError: ''', 'level': 'error'},
  {'substr': r'''TypeError: ''', 'level': 'error'},
  {'substr': r'''NameError: ''', 'level': 'error'},
  {'substr': r'''ZeroDivisionError: ''', 'level': 'error'},
- {'substr': r'''command not found''', 'level': 'error'},
 ]
 
 # We may need to have various MakefileErrorLists for differing amounts of
 # warning-ignoring-ness.
-MakefileErrorList = [
+MakefileErrorList = BaseErrorList + [
  {'substr': r'''No rule to make target ''', 'level': 'error'},
  {'regex': r'''akefile.*was not found\.''', 'level': 'error'},
  {'regex': r'''Stop\.$''', 'level': 'error'},

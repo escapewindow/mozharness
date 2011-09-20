@@ -44,10 +44,11 @@ http://hg.mozilla.org/build/tools/file/default/sut_tools
 
 import datetime
 import os
+import re
 import sys
 import time
 
-from mozharness.base.errors import PythonErrorList
+from mozharness.base.errors import PythonErrorList, BaseErrorList
 from mozharness.base.log import LogMixin
 from mozharness.base.script import ShellMixin, OSMixin
 
@@ -240,10 +241,6 @@ class DeviceMixin(object):
                 return False
         return True
 
-    def ping_device(self):
-        # TODO make this cross-platform
-        pass
-
     def uninstall_app(self, package_name, package_root="/data/data",
                       error_level="error"):
         dm = self.query_devicemanager()
@@ -253,7 +250,35 @@ class DeviceMixin(object):
                 self.log("Failed to uninstall %s!" % package_name,
                          level=error_level)
 
+    # Maintenance {{{2
+
+    def _ping_device(self):
+        c = self.config
+        if not c['device_ip']:
+            self.info("device_ip not set; not attempting to ping.")
+        else:
+            self.info("Attempting to ping device %s." % c['device_ip'])
+        # TODO cross-platform
+        return self.run_command("ping -c 5 -o %s" % c['device_ip'])
+
+    def check_for_device(self):
+        self.info("Looking for device...")
+        # TODO support non-adb
+        output = self.get_output_from_command("adb devices",
+                                              error_list=BaseErrorList)
+        if basestring in output.__bases__:
+            # TODO make this multi-device friendly?
+            m = re.search("\n(\S+)\s+(\S+)\n\n", output)
+            if m and len(m.groups()) == 2:
+                self.info("Found %s %s." % (m.group(2), m.group(1)))
+                return True
+        self.error("Can't find a device.")
+        return False
+
+
+
     # Device-type-specific. {{{2
+
     def remove_etc_hosts(self, hosts_file="/system/etc/hosts",
                          error_level='error'):
         c = self.config

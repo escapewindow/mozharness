@@ -1,5 +1,8 @@
 === 0.5 ===
 2011-09-19  Aki Sasaki  <aki@mozilla.com>
+* mozharness/base/errors.py (BaseErrorList):
+    Added.
+
 * mozharness/base/python.py (VirtualenvMixin.create_virtualenv):
     Added virtualenv_error_list. Not sure how helpful this is, but it
     works at catching warnings/errors.

@@ -120,7 +120,9 @@ class DeviceTalosRunner(VirtualenvMixin, MercurialScript):
                           'run-talos',
                           ],
          require_config_file=require_config_file,
-         config={"virtualenv_modules": ["PyYAML"]},
+         config={"virtualenv_modules": ["PyYAML"],
+                 "device_protocol": "adb"
+                },
         )
         self.device_glue = ADBDevice(log_obj=self.log_obj,
                                      config=self.config)
