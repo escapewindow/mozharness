@@ -57,9 +57,7 @@ class DeviceTalosRunner(VirtualenvMixin, MercurialScript):
      ["--talos-zip"],
      {"action": "store",
       "dest": "talos_zip",
-      # TODO remove all defaults here
 #      "default": "http://people.mozilla.org/~asasaki/talos_ADB.zip",
-      "default": "file:///Users/asasaki/Desktop/talos_ADB.zip",
       "help": "Specify a talos zipfile"
      }
     ],[
@@ -82,7 +80,6 @@ class DeviceTalosRunner(VirtualenvMixin, MercurialScript):
       "dest": "installer_url",
       # TODO: wildcard download?
 #      "default": "http://ftp.mozilla.org/pub/mozilla.org/mobile/nightly/latest-mozilla-central-android/fennec-9.0a1.multi.android-arm.apk",
-      "default": "file:///Users/asasaki/Desktop/fennec-8.0a2.multi.android-arm.apk",
       "help": "Specify the url to the installer"
      }
     ],[
