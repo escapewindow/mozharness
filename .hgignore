@@ -2,6 +2,7 @@ syntax: glob
 
 .hgignore
 .gitignore
+README.*
 *.log
 *.pyc
 *.swp

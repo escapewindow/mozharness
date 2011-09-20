@@ -1,0 +1,9 @@
+== mozharness: talosrunner ==
+
+This is the talosrunner branch; tracking [https://bugzilla.mozilla.org/show_bug.cgi?id=650890 bug 650890] (port remote talos to mozharness) in an attempt to have a simplified, common way to launch unit tests and talos for both standalone users and the Mozilla buildbot automation.
+
+Related bugs:
+
+* [https://bugzilla.mozilla.org/show_bug.cgi?id=650887 bug 650887] desktop talos runner in mozharness
+* [https://bugzilla.mozilla.org/show_bug.cgi?id=650880 bug 650880] port desktop unit tests to mozharness
+* [https://bugzilla.mozilla.org/show_bug.cgi?id=650881 bug 650881] port remote unit tests to mozharness
