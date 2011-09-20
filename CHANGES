@@ -1,4 +1,19 @@
 === 0.5 ===
+2011-09-20  Aki Sasaki  <aki@mozilla.com>
+* mozharness/base/config.py (BaseConfig.__init__):
+    Modified volatile_config, which was previously unused.
+
+* mozharness/base/config.py (BaseConfig._create_config_parser):
+    Renamed only_actions to actions.
+
+* mozharness/base/config.py (BaseConfig.parse_args):
+    Deleted any volatile_config keys from self._config.
+    Updated the comments.
+    Allow for default_actions, actions, add_actions, and no_actions to be
+    set in the config file, which should allow for more cross-team utility.
+
+* mozharness/base/config.py (BaseConfig):
+
 2011-09-19  Aki Sasaki  <aki@mozilla.com>
 * mozharness/base/errors.py (BaseErrorList):
     Added.
