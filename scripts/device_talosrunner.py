@@ -155,15 +155,16 @@ class DeviceTalosRunner(VirtualenvMixin, MercurialScript):
     def pull(self):
         c = self.config
         dirs = self.query_abs_dirs()
-        # TODO allow for a talos zip
         if c['talos_zip']:
+            self.info("Downloading %s..." % c['talos_zip'])
             self.mkdir_p(dirs['abs_work_dir'])
             status = self.download_file(
                 c['talos_zip'],
                 file_name=os.path.join(dirs['abs_work_dir'],
                                        "talos.zip")
             )
-            # TODO extract
+            self.run_command("unzip talos.zip", cwd=dirs['abs_work_dir'],
+                             error_level='fatal')
         else:
             self.vcs_checkout_repos([{
              "repo": c['talos_repo'],

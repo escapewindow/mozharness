@@ -1,3 +1,17 @@
+=== 0.5 ===
+2011-09-19  Aki Sasaki  <aki@mozilla.com>
+* mozharness/base/python.py (VirtualenvMixin.create_virtualenv):
+    Added virtualenv_error_list. Not sure how helpful this is, but it
+    works at catching warnings/errors.
+
+* mozharness/base/script.py (ShellMixin.run_command):
+    Changed halt_on_failure behavior.  Was dying if num_errors; now will
+    only die if num_errors *and* return_type == 'num_errors'.
+
+2011-08-23  Aki Sasaki  <aki@mozilla.com>
+* Started talosrunner work.
+  (Stopped updating CHANGES due to only touching new files.)
+
 === 0.4 ===
 2011-07-24  Aki Sasaki  <aki@mozilla.com>
 * scripts/mozmill_updates.py (MozmillUpdate.run_mozmill):

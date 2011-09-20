@@ -83,16 +83,21 @@ class VirtualenvMixin(object):
             return -1
         venv_path = os.path.abspath(c['virtualenv_path'])
         self.info("Creating virtualenv %s" % venv_path)
+        virtualenv_error_list = [
+         {'substr': r'''not found or a compiler error:''', 'level': 'error'},
+         {'regex': r'''\d+: error: ''', 'level': 'error'},
+         {'regex': r'''\d+: warning: ''', 'level': 'warning'},
+        ] + PythonErrorList
         self.run_command(["virtualenv", "--no-site-packages",
                           venv_path],
-                         error_list=PythonErrorList,
+                         error_list=virtualenv_error_list,
                          halt_on_failure=True)
         pip = self.query_python_path("pip")
         for module in c.get('virtualenv_modules', []):
             self.info("Installing %s into virtualenv %s" % (module, venv_path))
             self.run_command([pip, "install", c.get("%s_url" % module,
                                                     module)],
-                             error_list=PythonErrorList,
+                             error_list=virtualenv_error_list,
                              halt_on_failure=True)
         self.info("Done creating virtualenv %s." % venv_path)
 

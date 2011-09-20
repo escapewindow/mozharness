@@ -312,12 +312,14 @@ class ShellMixin(object):
             if throw_exception:
                 raise subprocess.CalledProcessError(p.returncode, command)
         self.log("Return code: %d" % p.returncode, level=return_level)
-        if halt_on_failure:
-            if num_errors or p.returncode not in success_codes:
-                self.fatal("Halting on failure while running %s" % command,
-                           exit_code=p.returncode)
         if return_type == 'num_errors':
+            if halt_on_failure and num_errors:
+                self.fatal("Halting on failure while running %s" % command,
+                           exit_code=num_errors)
             return num_errors
+        if halt_on_failure and p.returncode not in success_codes:
+            self.fatal("Halting on failure while running %s" % command,
+                       exit_code=p.returncode)
         return p.returncode
 
     def get_output_from_command(self, command, cwd=None,
