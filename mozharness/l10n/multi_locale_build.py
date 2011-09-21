@@ -46,6 +46,7 @@ import sys
 sys.path.insert(1, os.path.dirname(os.path.dirname(sys.path[0])))
 
 from mozharness.base.errors import SSHErrorList, PythonErrorList, MakefileErrorList
+from mozharness.base.log import DEBUG, INFO, WARNING, ERROR, CRITICAL, FATAL, IGNORE
 from mozharness.base.vcs.vcsbase import MercurialScript
 from mozharness.l10n.locales import LocalesMixin
 
@@ -135,7 +136,7 @@ class MultiLocaleBuild(LocalesMixin, MercurialScript):
         if c['work_dir'] != '.':
             path = os.path.join(c['base_work_dir'], c['work_dir'])
             if os.path.exists(path):
-                self.rmtree(path, error_level='fatal')
+                self.rmtree(path, error_level=FATAL)
         else:
             self.info("work_dir is '.'; skipping for now.")
 
@@ -180,7 +181,7 @@ class MultiLocaleBuild(LocalesMixin, MercurialScript):
         dirs = self.query_abs_dirs()
         self.copyfile(os.path.join(dirs['abs_work_dir'], c['mozconfig']),
                       os.path.join(dirs['abs_mozilla_dir'], 'mozconfig'),
-                      error_level='fatal')
+                      error_level=FATAL)
         command = "make -f client.mk build"
         env = self.query_env()
         self._process_command(command=command, cwd=dirs['abs_mozilla_dir'],

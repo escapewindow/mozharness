@@ -12,6 +12,7 @@ except ImportError:
 
 import mozharness.base.errors as errors
 import mozharness.base.log as log
+from mozharness.base.log import DEBUG, INFO, WARNING, ERROR, CRITICAL, FATAL, IGNORE
 import mozharness.base.script as script
 
 test_string = '''foo
@@ -22,7 +23,7 @@ class CleanupObj(script.OSMixin, log.LogMixin):
     def __init__(self):
         super(CleanupObj, self).__init__()
         self.log_obj = None
-        self.config = {'log_level': 'error'}
+        self.config = {'log_level': ERROR}
 
 def cleanup():
     gc.collect()
@@ -34,7 +35,7 @@ def cleanup():
 
 def get_debug_script_obj():
     s = script.BaseScript(config={'log_type': 'multi',
-                                  'log_level': 'debug'},
+                                  'log_level': DEBUG},
                           initial_config_file='test/test.json')
     return s
 
@@ -75,7 +76,7 @@ class TestScript(unittest.TestCase):
     def test_noop_mkdir_p(self):
         self.s = get_noop_script_obj()
         self.s.download_file("http://www.mozilla.com", file_name="test_logs/mozilla.com",
-                        error_level="ignore")
+                        error_level=IGNORE)
         self.assertFalse(os.path.exists('test_logs/mozilla.com'),
                          msg="download_file noop error")
 
@@ -161,11 +162,11 @@ class TestScript(unittest.TestCase):
         self.s = get_debug_script_obj()
         self.s.run_command(command="cat mozharness/base/errors.py",
                       error_list=[{
-                       'substr': "error", 'level': "error"
+                       'substr': "error", 'level': ERROR
                       },{
-                       'regex': ',$', 'level': "ignore",
+                       'regex': ',$', 'level': IGNORE,
                       },{
-                       'substr': ']$', 'level': "warning",
+                       'substr': ']$', 'level': WARNING,
                       }])
         error_logsize = os.path.getsize("test_logs/test_error.log")
         self.assertTrue(error_logsize > 0,
@@ -325,16 +326,16 @@ class TestScriptLogging(unittest.TestCase):
         self.s = script.BaseScript(config={'log_type': 'multi'},
                               initial_config_file='test/test.json')
         warning_logsize = os.path.getsize("test_logs/test_warning.log")
-        self.s.add_summary('two', level="warning")
+        self.s.add_summary('two', level=WARNING)
         warning_logsize2 = os.path.getsize("test_logs/test_warning.log")
         self.assertTrue(warning_logsize < warning_logsize2,
-                        msg="add_summary(level='warning') not logged in warning log")
+                        msg="add_summary(level=%s) not logged in warning log" % WARNING)
 
     def test_summary(self):
         self.s = script.BaseScript(config={'log_type': 'multi'},
                               initial_config_file='test/test.json')
         self.s.add_summary('one')
-        self.s.add_summary('two', level="warning")
+        self.s.add_summary('two', level=WARNING)
         info_logsize = os.path.getsize("test_logs/test_info.log")
         warning_logsize = os.path.getsize("test_logs/test_warning.log")
         self.s.summary()
@@ -350,7 +351,7 @@ class TestScriptLogging(unittest.TestCase):
     def _test_log_level(self, log_level, log_level_file_list):
         self.s = script.BaseScript(config={'log_type': 'multi'},
                               initial_config_file='test/test.json')
-        if log_level != "fatal":
+        if log_level != FATAL:
             self.s.log('testing', level=log_level)
         else:
             try:
@@ -370,24 +371,22 @@ class TestScriptLogging(unittest.TestCase):
         self.assertEqual(msg, "", msg=msg)
 
     def test_debug(self):
-        self._test_log_level('debug', [])
+        self._test_log_level(DEBUG, [])
 
     def test_ignore(self):
-        self._test_log_level('ignore', [])
+        self._test_log_level(IGNORE, [])
 
     def test_info(self):
-        self._test_log_level('info', ['info'])
+        self._test_log_level(INFO, [INFO])
 
     def test_warning(self):
-        self._test_log_level('warning', ['info', 'warning'])
+        self._test_log_level(WARNING, [INFO, WARNING])
 
     def test_error(self):
-        self._test_log_level('error', ['info', 'warning', 'error'])
+        self._test_log_level(ERROR, [INFO, WARNING, ERROR])
 
     def test_critical(self):
-        self._test_log_level('critical', ['info', 'warning', 'error',
-                                          'critical'])
+        self._test_log_level(CRITICAL, [INFO, WARNING, ERROR, CRITICAL])
 
     def test_fatal(self):
-        self._test_log_level('fatal', ['info', 'warning', 'error',
-                                          'critical', 'fatal'])
+        self._test_log_level(FATAL, [INFO, WARNING, ERROR, CRITICAL, FATAL])

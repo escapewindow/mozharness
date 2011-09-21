@@ -48,9 +48,13 @@ import os
 import sys
 import traceback
 
-# Define our own FATAL
-FATAL = logging.CRITICAL + 10
-logging.addLevelName(FATAL, 'FATAL')
+# Define our own FATAL_LEVEL
+FATAL_LEVEL = logging.CRITICAL + 10
+logging.addLevelName(FATAL_LEVEL, 'FATAL')
+
+# mozharness log levels.
+DEBUG, INFO, WARNING, ERROR, CRITICAL, FATAL, IGNORE = (
+    'debug', 'info', 'warning', 'error', 'critical', 'fatal', 'ignore')
 
 
 
@@ -62,10 +66,10 @@ class LogMixin(object):
     """
 
     def _log_level_at_least(self, level):
-        log_level = 'info'
-        levels = ['debug', 'info', 'warning', 'error', 'critical', 'fatal']
+        log_level = INFO
+        levels = [DEBUG, INFO, WARNING, ERROR, CRITICAL, FATAL]
         if hasattr(self, 'config'):
-            log_level = self.config.get('log_level', 'info')
+            log_level = self.config.get('log_level', INFO)
         return levels.index(level) >= levels.index(log_level)
 
     def _print(self, message, stderr=False):
@@ -75,27 +79,27 @@ class LogMixin(object):
             else:
                 print message
 
-    def log(self, message, level='info', exit_code=-1):
+    def log(self, message, level=INFO, exit_code=-1):
         if self.log_obj:
             return self.log_obj.log_message(message, level=level,
                                             exit_code=exit_code)
-        if level == 'info':
+        if level == INFO:
             if self._log_level_at_least(level):
                 self._print(message)
-        elif level == 'debug':
+        elif level == DEBUG:
             if self._log_level_at_least(level):
                 self._print('DEBUG: %s' % message)
-        elif level in ('warning', 'error', 'critical'):
+        elif level in (WARNING, ERROR, CRITICAL):
             if self._log_level_at_least(level):
                 self._print("%s: %s" % (level.upper(), message), stderr=True)
-        elif level == 'fatal':
+        elif level == FATAL:
             if self._log_level_at_least(level):
                 self._print("FATAL: %s" % message, stderr=True)
                 raise SystemExit(exit_code)
    
     # Copying Bear's dumpException():
     # http://hg.mozilla.org/build/tools/annotate/1485f23c38e0/sut_tools/sut_lib.py#l23
-    def dump_exception(self, message=None, level='error'):
+    def dump_exception(self, message=None, level=ERROR):
         tb_type, tb_value, tb_traceback = sys.exc_info()
         if message is None:
             message = ""
@@ -107,22 +111,22 @@ class LogMixin(object):
         self.log(message, level=level)
 
     def debug(self, message):
-        self.log(message, level='debug')
+        self.log(message, level=DEBUG)
 
     def info(self, message):
-        self.log(message, level='info')
+        self.log(message, level=INFO)
 
     def warning(self, message):
-        self.log(message, level='warning')
+        self.log(message, level=WARNING)
 
     def error(self, message):
-        self.log(message, level='error')
+        self.log(message, level=ERROR)
 
     def critical(self, message):
-        self.log(message, level='critical')
+        self.log(message, level=CRITICAL)
 
     def fatal(self, message, exit_code=-1):
-        self.log(message, level='fatal', exit_code=exit_code)
+        self.log(message, level=FATAL, exit_code=exit_code)
 
 
 # BaseLogger {{{1
@@ -133,15 +137,15 @@ class BaseLogger(object):
     error,critical,fatal messages for us to count up at the end (aiming
     for 0).
     """
-    LEVELS = {'debug': logging.DEBUG,
-              'info': logging.INFO,
-              'warning': logging.WARNING,
-              'error': logging.ERROR,
-              'critical': logging.CRITICAL,
-              'fatal': FATAL
+    LEVELS = {DEBUG: logging.DEBUG,
+              INFO: logging.INFO,
+              WARNING: logging.WARNING,
+              ERROR: logging.ERROR,
+              CRITICAL: logging.CRITICAL,
+              FATAL: FATAL_LEVEL
              }
 
-    def __init__(self, log_level='info',
+    def __init__(self, log_level=INFO,
                  log_format='%(message)s',
                  log_date_format='%H:%M:%S',
                  log_name='test',
@@ -247,20 +251,20 @@ class BaseLogger(object):
         self.logger.addHandler(file_handler)
         self.all_handlers.append(file_handler)
 
-    def log_message(self, message, level='info', exit_code=-1):
+    def log_message(self, message, level=INFO, exit_code=-1):
         """Generic log method.
         There should be more options here -- do or don't split by line,
         use os.linesep instead of assuming \n, be able to pass in log level
         by name or number.
 
-        Adding the "ignore" special level for runCommand.
+        Adding the IGNORE special level for runCommand.
         """
-        if level == "ignore":
+        if level == IGNORE:
             return
         for line in message.splitlines():
             self.logger.log(self.get_logger_level(level), line)
-        if level == 'fatal' and self.halt_on_failure:
-            self.logger.log(FATAL, 'Exiting %d' % exit_code)
+        if level == FATAL and self.halt_on_failure:
+            self.logger.log(FATAL_LEVEL, 'Exiting %d' % exit_code)
             raise SystemExit(exit_code)
 
 
