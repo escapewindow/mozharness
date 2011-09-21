@@ -153,9 +153,11 @@ class MercurialVCS(ShellMixin, OSMixin, LogMixin, object):
         return ver
 
     def update(self, dest, branch=None, revision=None):
-        """Updates working copy `dest` to `branch` or `revision`.  If
-        neither is set then the working copy will be updated to the latest
-        revision on the current branch.  Local changes will be discarded.
+        """Updates working copy `dest` to `branch` or `revision`.
+        If revision is set, branch will be ignored.
+        If neither is set then the working copy will be updated to the
+        latest revision on the current branch.  Local changes will be
+        discarded.
         """
         # If we have a revision, switch to that
         msg = "Updating %s" % dest
@@ -185,7 +187,7 @@ class MercurialVCS(ShellMixin, OSMixin, LogMixin, object):
         is there.  The working copy will be empty.
 
         If `revision` is set, only the specified revision and its ancestors
-        will be cloned.
+        will be cloned.  If revision is set, branch is ignored.
 
         If `update_dest` is set, then `dest` will be updated to `revision`
         if set, otherwise to `branch`, otherwise to the head of default.
