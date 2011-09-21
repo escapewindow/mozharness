@@ -390,7 +390,7 @@ class BaseConfig(object):
         """
         if self._config.get('default_actions'):
             default_actions = self.verify_actions(self._config['default_actions'])
-            self.default_actions = default_acitons
+            self.default_actions = default_actions
         self.actions = self.default_actions[:]
         if self.volatile_config['actions']:
             actions = self.verify_actions(self.volatile_config['actions'])

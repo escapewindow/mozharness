@@ -60,9 +60,15 @@ device_config_options = [[
  ["--device-ip"],
  {"action": "store",
   "dest": "device_ip",
-  # TODO remove this.
-  # This should hopefully be an optional option if adb is set.
-  "default": "10.251.27.192",
+  "help": "Specify the IP address of the device."
+ }
+],[
+ ["--device-port"],
+ {"action": "store",
+  "dest": "device_port",
+  # TODO how do I default this to 20701 if device_protocol == 'sut' ?
+  # default to 5555 / 20701 if device_protocol is adb/sut and device_port
+  # is None?
   "help": "Specify the IP address of the device."
  }
 ],[
@@ -114,8 +120,11 @@ class DeviceMixin(object):
         dm_path = self.query_devicemanager_path()
         sys.path.append(dm_path)
         try:
-            # TODO import devicemanagerSUT if appropriate
-            import devicemanagerADB as devicemanager
+            if c['device_protocol'] == 'adb':
+                import devicemanagerADB as devicemanager
+            else:
+                self.fatal("Don't know how to use device_protocol %s!" %
+                           c['device_protocol'])
         except ImportError, e:
             self.log("Can't import devicemanager! %s\nDid you check out talos?" % str(e), level=level)
             raise
