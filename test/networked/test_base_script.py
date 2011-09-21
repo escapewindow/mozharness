@@ -3,6 +3,7 @@ import shutil
 import unittest
 
 import mozharness.base.script as script
+from mozharness.base.log import DEBUG, INFO, WARNING, ERROR, CRITICAL, FATAL, IGNORE
 
 def cleanup():
     for f in ('test_logs', 'test_dir', 'tmpfile_stdout', 'tmpfile_stderr'):
@@ -33,11 +34,11 @@ class TestNetworkedHelperFunctions(unittest.TestCase):
         os.mkdir('test_dir')
         self.assertRaises(SystemExit, s.download_file,
                           "http://www.mozilla.sdfsdsdf",
-                          error_level='fatal')
+                          error_level=FATAL)
 
     def test_download_bad_file(self):
         s = script.BaseScript(initial_config_file='test/test.json')
         os.mkdir('test_dir')
         self.assertRaises(SystemExit, s.download_file,
                           "http://www.google.com/lsdkfjlsdkfjekisdilsj",
-                          error_level='fatal')
+                          error_level=FATAL)

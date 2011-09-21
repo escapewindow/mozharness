@@ -60,7 +60,9 @@ except ImportError:
     import json
 
 from mozharness.base.config import BaseConfig
-from mozharness.base.log import SimpleFileLogger, MultiFileLogger, LogMixin
+from mozharness.base.log import SimpleFileLogger, MultiFileLogger, \
+                                LogMixin, DEBUG, INFO, WARNING, ERROR, \
+                                CRITICAL, FATAL, IGNORE
 from mozharness.base.errors import HgErrorList
 
 # OSMixin {{{1
@@ -77,7 +79,7 @@ class OSMixin(object):
         else:
             self.debug("mkdir_p: %s Already exists." % path)
 
-    def rmtree(self, path, log_level='info', error_level='error',
+    def rmtree(self, path, log_level=INFO, error_level=ERROR,
                exit_code=-1):
         self.log("rmtree: %s" % path, level=log_level)
         if os.path.exists(path):
@@ -135,7 +137,7 @@ class OSMixin(object):
     # http://www.techniqal.com/blog/2008/07/31/python-file-read-write-with-urllib2/
     # TODO thinking about creating a transfer object.
     def download_file(self, url, file_name=None,
-                     error_level='error', exit_code=-1):
+                     error_level=ERROR, exit_code=-1):
         """Python wget.
         TODO: option to mkdir_p dirname(file_name) if it doesn't exist.
         TODO: should noop touch the filename? seems counter-noop.
@@ -180,7 +182,7 @@ class OSMixin(object):
         if not self.config.get('noop'):
             os.chmod(path, mode)
 
-    def copyfile(self, src, dest, log_level='info', error_level='error'):
+    def copyfile(self, src, dest, log_level=INFO, error_level=ERROR):
         self.log("Copying %s to %s" % (src, dest), level=log_level)
         if not self.config.get('noop'):
             try:
@@ -248,9 +250,9 @@ class ShellMixin(object):
         TODO: Add a copy-pastable version of |command| if it's a list.
 
         error_list example:
-        [{'regex': '^Error: LOL J/K', level='ignore'},
-         {'regex': '^Error:', level='error', contextLines='5:5'},
-         {'substr': 'THE WORLD IS ENDING', level='fatal', contextLines='20:'}
+        [{'regex': '^Error: LOL J/K', level=IGNORE},
+         {'regex': '^Error:', level=ERROR, contextLines='5:5'},
+         {'substr': 'THE WORLD IS ENDING', level=FATAL, contextLines='20:'}
         ]
         """
         # Get rid of this when we get rid of the scratchbox stuff
@@ -299,16 +301,16 @@ class ShellMixin(object):
                         self.warn("error_list: 'substr' and 'regex' not in %s" % \
                                   error_check)
                     if match:
-                        level=error_check.get('level', 'info')
+                        level=error_check.get('level', INFO)
                         self.log(' %s' % line, level=level)
-                        if level in ('error', 'critical', 'fatal'):
+                        if level in (ERROR, CRITICAL, FATAL):
                             num_errors = num_errors + 1
                         break
                 else:
                     self.info(' %s' % line)
-        return_level = 'info'
+        return_level = INFO
         if p.returncode not in success_codes:
-            return_level = 'error'
+            return_level = ERROR
             if throw_exception:
                 raise subprocess.CalledProcessError(p.returncode, command)
         self.log("Return code: %d" % p.returncode, level=return_level)
@@ -342,9 +344,9 @@ class ShellMixin(object):
         """
         if cwd:
             if not os.path.isdir(cwd):
-                level = 'error'
+                level = ERROR
                 if halt_on_failure:
-                    level = 'fatal'
+                    level = FATAL
                 self.log("Can't run command %s in non-existent directory %s!" % \
                          (command, cwd), level=level)
                 return -1
@@ -366,18 +368,18 @@ class ShellMixin(object):
         try:
             tmp_stdout = open(tmp_stdout_filename, 'w')
         except IOError:
-            level = 'error'
+            level = ERROR
             if halt_on_failure:
-                level = 'fatal'
+                level = FATAL
             self.log("Can't open %s for writing!" % tmp_stdout_filename + \
                      self.dump_exception(), level=level)
             return -1
         try:
             tmp_stderr = open(tmp_stderr_filename, 'w')
         except IOError:
-            level = 'error'
+            level = ERROR
             if halt_on_failure:
-                level = 'fatal'
+                level = FATAL
             self.log("Can't open %s for writing!" % tmp_stderr_filename + \
                      self.dump_exception(), level=level)
             return -1
@@ -390,7 +392,7 @@ class ShellMixin(object):
         p.wait()
         tmp_stdout.close()
         tmp_stderr.close()
-        return_level = 'debug'
+        return_level = DEBUG
         output = None
         if os.path.exists(tmp_stdout_filename) and os.path.getsize(tmp_stdout_filename):
             fh = open(tmp_stdout_filename)
@@ -406,7 +408,7 @@ class ShellMixin(object):
                 output = '\n'.join(output_lines)
             fh.close()
         if os.path.exists(tmp_stderr_filename) and os.path.getsize(tmp_stderr_filename):
-            return_level = 'error'
+            return_level = ERROR
             self.error("Errors received:")
             fh = open(tmp_stderr_filename)
             errors = fh.read()
@@ -417,7 +419,7 @@ class ShellMixin(object):
                 self.error(' %s' % line)
             fh.close()
         elif p.returncode:
-            return_level = 'error'
+            return_level = ERROR
         # Clean up.
         if not save_tmpfiles:
             self.rmtree(tmp_stderr_filename)
@@ -425,7 +427,7 @@ class ShellMixin(object):
         if p.returncode and throw_exception:
             raise subprocess.CalledProcessError(p.returncode, command)
         self.log("Return code: %d" % p.returncode, level=return_level)
-        if halt_on_failure and return_level == 'error':
+        if halt_on_failure and return_level == ERROR:
             self.fatal("Halting on failure while running %s" % command,
                        exit_code=p.returncode)
         # Hm, options on how to return this? I bet often we'll want
@@ -583,7 +585,7 @@ class BaseScript(ShellMixin, OSMixin, LogMixin, object):
                     when calling from __del__()"""
                     print "### Log is closed! (%s)" % item['message']
 
-    def add_summary(self, message, level='info'):
+    def add_summary(self, message, level=INFO):
         self.summary_list.append({'message': message, 'level': level})
         # TODO write to a summary-only log?
         # Summaries need a lot more love.

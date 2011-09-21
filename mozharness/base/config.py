@@ -64,6 +64,8 @@ try:
 except ImportError:
     import json
 
+from mozharness.base.log import DEBUG, INFO, WARNING, ERROR, CRITICAL, FATAL, IGNORE
+
 
 
 # optparse {{{1
@@ -232,7 +234,7 @@ class BaseConfig(object):
         log_option_group.add_option(
          "--log-level", action="store",
          type="choice", dest="log_level", default="info",
-         choices=['debug', 'info', 'warning', 'error', 'critical', 'fatal'],
+         choices=[DEBUG, INFO, WARNING, ERROR, CRITICAL, FATAL],
          help="Set log level (debug|info|warning|error|critical|fatal)"
         )
         log_option_group.add_option(
