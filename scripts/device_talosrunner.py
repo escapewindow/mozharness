@@ -57,44 +57,42 @@ class DeviceTalosRunner(VirtualenvMixin, DeviceMixin, MercurialScript):
      ["--talos-zip"],
      {"action": "store",
       "dest": "talos_zip",
-#      "default": "http://people.mozilla.org/~asasaki/talos_ADB.zip",
-      "help": "Specify a talos zipfile"
+      "help": "Specify a talos zipfile."
      }
     ],[
      ["--talos-repo"],
      {"action": "store",
       "dest": "talos_repo",
       "default": "http://hg.mozilla.org/build/talos",
-      "help": "Specify the talos repo"
+      "help": "Specify the talos repo. This is unused if --talos-zip is set."
      }
     ],[
      ["--talos-tag"],
      {"action": "store",
       "dest": "talos_tag",
       "default": "default",
-      "help": "Specify the talos tag"
+      "help": "Specify the talos tag for the talos repo."
      }
     ],[
      ["--enable-automation"],
      {"action": "store_true",
       "dest": "enable_automation",
       "default": "default",
-      "help": "Integrate with clientproxy automation (non-developer setting)"
+      "help": "Integrate with clientproxy automation (non-developer setting)."
      }
     ],[
      ["--installer-url", "--url"],
      {"action": "store",
       "dest": "installer_url",
       # TODO: wildcard download?
-#      "default": "http://ftp.mozilla.org/pub/mozilla.org/mobile/nightly/latest-mozilla-central-android/fennec-9.0a1.multi.android-arm.apk",
-      "help": "Specify the url to the installer"
+      "help": "Specify the url to the installer."
      }
     ],[
      ["--yaml-url"],
      {"action": "store",
       "dest": "mercurial_url",
       "default": "http://pypi.python.org/packages/source/P/PyYAML/PyYAML-3.10.tar.gz#md5=74c94a383886519e9e7b3dd1ee540247",
-      "help": "Specify the mercurial pip url"
+      "help": "Specify the yaml pip url for the virtualenv."
      }
     ]] + virtualenv_config_options + device_config_options
 
@@ -106,7 +104,7 @@ class DeviceTalosRunner(VirtualenvMixin, DeviceMixin, MercurialScript):
                       'preclean',
                       'pull',
                       'create-virtualenv',
-# cleanup device
+                      'cleanup-device',
                       'download',
 # unpack
 # tinderbox print revision
@@ -119,9 +117,10 @@ class DeviceTalosRunner(VirtualenvMixin, DeviceMixin, MercurialScript):
 #                      'upload',
 #                      'notify',
                       ],
-         default_actions=['preclean',
+         default_actions=['check-device',
+                          'preclean',
                           'pull',
-                          'check-device',
+                          'cleanup-device',
                           'download',
                           'run-talos',
                           ],
@@ -130,6 +129,8 @@ class DeviceTalosRunner(VirtualenvMixin, DeviceMixin, MercurialScript):
                  "device_protocol": "adb"
                 },
         )
+
+    # Helper methods {{{2
 
     def query_abs_dirs(self):
         if self.abs_dirs:
@@ -164,6 +165,23 @@ class DeviceTalosRunner(VirtualenvMixin, DeviceMixin, MercurialScript):
         if flags and 'error' in flags:
             self.fatal("Error flag %s exists: %s" % flags['error'])
 
+    def exit_on_error(self, message, exit_code=-1):
+        if self.config['enable_automation']:
+            self.set_device_error_flag(message)
+            self.fatal("Exiting due to error...", exit_code=exit_code)
+        else:
+            self.fatal(message, exit_code=exit_code)
+
+    # Actions {{{2
+
+    def check_device(self):
+        if not self.check_for_device():
+            self.exit_on_error("Can't find device!")
+        if self.query_device_root() is None:
+            self.exit_on_error("Can't connect to device!")
+        if self.config['enable_automation']:
+            self.check_for_flags()
+
     def preclean(self):
         self._clobber()
 
@@ -187,20 +205,8 @@ class DeviceTalosRunner(VirtualenvMixin, DeviceMixin, MercurialScript):
              "dest": "talos"
             }])
 
-    def exit_on_error(self, message, exit_code=-1):
-        if self.config['enable_automation']:
-            self.set_device_error_flag(message)
-            self.fatal("Exiting due to error...", exit_code=exit_code)
-        else:
-            self.fatal(message, exit_code=exit_code)
-
-    def check_device(self):
-        if not self.check_for_device():
-            self.exit_on_error("Can't find device!")
-        if self.query_device_root() is None:
-            self.exit_on_error("Can't connect to device!")
-        if self.config['enable_automation']:
-            self.check_for_flags()
+    def cleanup_device(self):
+        pass
 
     def download(self):
         # TODO: a user friendly way to do this without specifying a url?

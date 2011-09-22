@@ -55,6 +55,9 @@ from mozharness.base.script import ShellMixin, OSMixin
 class DeviceException(Exception):
     pass
 
+PROXY_FLAG = 'proxy.flg'
+ERROR_FLAG = 'error.flg'
+
 # DeviceMixin {{{1
 device_config_options = [[
  ["--device-ip"],
@@ -100,8 +103,6 @@ class DeviceMixin(object):
     '''
     devicemanager_path = None
     devicemanager = None
-    error_flag = 'error.flg'
-    proxy_flag = 'proxy.flg'
 
     def query_devicemanager_path(self):
         """Return the path to devicemanager.py.
@@ -142,7 +143,7 @@ class DeviceMixin(object):
         return_value = {}
         flag_file_path = os.path.join(dirs['abs_device_flag_dir'], flag_file)
         self.info("Looking for %s ..." % flag_file_path)
-        if flag_file not in (self.error_flag, self.proxy_flag):
+        if flag_file not in (ERROR_FLAG, PROXY_FLAG):
             raise ValueError, "Unknown flag_file type %s!" % flag_file
         if os.path.exists(flag_file_path):
             fh = open(flag_file_path, 'r')
@@ -151,19 +152,20 @@ class DeviceMixin(object):
             return (flag_file_path, contents)
 
     def query_device_error_flag(self):
-        flag = self._query_device_flag(self.error_flag)
+        flag = self._query_device_flag(ERROR_FLAG)
         if flag:
             self.error("Found error flag at %s: %s!" % (flag[0], flag[1]))
             return flag
 
     def query_device_proxy_flag(self):
-        flag = self._query_device_flag(self.proxy_flag)
+        flag = self._query_device_flag(PROXY_FLAG)
         if flag:
             self.info("Found proxy flag at %s: %s." % (flag[0], flag[1]))
             return flag
 
     def query_device_flags(self):
-        """Return "error" or "proxy" if those flags exists; None otherwise.
+        """Return a dict with 'error' or 'proxy' keys if those flags exist;
+        None otherwise.
         """
         self.info("Checking device flags...")
         flags = {}
@@ -180,7 +182,7 @@ class DeviceMixin(object):
         dirs = self.query_abs_dirs()
         flag_file_path = os.path.join(dirs['abs_device_flag_dir'], flag_file)
         self.log("Setting %s ..." % flag_file_path, level=level)
-        if flag_file not in (self.error_flag, self.proxy_flag):
+        if flag_file not in (ERROR_FLAG, PROXY_FLAG):
             raise ValueError, "Unknown flag_file type %s!" % flag_file
         # TODO do we need a generic way to write to a local file?
         self.mkdir_p(dirs['abs_device_flag_dir'])
@@ -191,13 +193,12 @@ class DeviceMixin(object):
         return flag_file_path
 
     def set_device_error_flag(self, message):
-        self.critical("Setting error flag: %s" % self.error_flag)
-        self._set_device_flag(message, flag_file=flag_file, level="error")
+        self.critical("Setting error flag: %s" % ERROR_FLAG)
+        self._set_device_flag(message, flag_file=ERROR_FLAG, level="error")
 
     def set_device_proxy_flag(self, message):
-        flag_file = self.proxy_flag
-        self.info("Setting proxy flag: %s" % flag_file)
-        self._set_device_flag(message, flag_file=flag_file)
+        self.info("Setting proxy flag: %s" % PROXY_FLAG)
+        self._set_device_flag(message, flag_file=PROXY_FLAG)
 
     def _clear_device_flag(self, flag_file=None):
         dirs = self.query_abs_dirs()
@@ -208,10 +209,10 @@ class DeviceMixin(object):
             self.rmtree(flag_file_path)
 
     def clear_device_error_flag(self):
-        self._clear_device_flag(self.error_flag)
+        self._clear_device_flag(ERROR_FLAG)
 
     def clear_device_proxy_flag(self):
-        self._clear_device_flag(self.proxy_flag)
+        self._clear_device_flag(PROXY_FLAG)
 
     # devicemanager calls {{{2
     def query_device_root(self, silent=False):
