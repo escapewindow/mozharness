@@ -229,7 +229,7 @@ class BaseConfig(object):
         log_option_group = OptionGroup(self.config_parser, "Logging")
         log_option_group.add_option(
          "--log-level", action="store",
-         type="choice", dest="log_level", default="info",
+         type="choice", dest="log_level", default=INFO,
          choices=[DEBUG, INFO, WARNING, ERROR, CRITICAL, FATAL],
          help="Set log level (debug|info|warning|error|critical|fatal)"
         )
