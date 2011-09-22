@@ -100,16 +100,14 @@ class DeviceTalosRunner(VirtualenvMixin, DeviceMixin, MercurialScript):
         self.python = None
         super(DeviceTalosRunner, self).__init__(
          config_options=self.config_options,
-         all_actions=['check-device',
-                      'preclean',
+         all_actions=['preclean',
                       'pull',
+                      'check-device',
                       'create-virtualenv',
                       'cleanup-device',
                       'download',
-# unpack
+                      'unpack',
 # tinderbox print revision
-# fennecmark for tpan/tzoom
-# pageloader
 # install app on device
 # perfconfigurator
                       'run-talos',
@@ -117,13 +115,13 @@ class DeviceTalosRunner(VirtualenvMixin, DeviceMixin, MercurialScript):
 #                      'upload',
 #                      'notify',
                       ],
-         default_actions=['check-device',
-                          'preclean',
+         default_actions=['preclean',
                           'pull',
+                          'check-device',
                           'cleanup-device',
                           'download',
-                          'run-talos',
-                          ],
+                          'unpack',
+                         ],
          require_config_file=require_config_file,
          config={"virtualenv_modules": ["PyYAML"],
                  "device_protocol": "adb"
@@ -174,12 +172,7 @@ class DeviceTalosRunner(VirtualenvMixin, DeviceMixin, MercurialScript):
             )
             self.run_command("unzip talos.zip", cwd=dirs['abs_work_dir'],
                              halt_on_failure=True)
-        else:
-            self.vcs_checkout_repos([{
-             "repo": c['talos_repo'],
-             "tag": c['talos_tag'],
-             "dest": "talos"
-            }])
+        self.vcs_checkout_repos(c['repos'], parent_dir=dirs['abs_work_dir'])
 
     def download(self):
         # TODO: a user friendly way to do this without specifying a url?
@@ -193,6 +186,9 @@ class DeviceTalosRunner(VirtualenvMixin, DeviceMixin, MercurialScript):
             file_name = '%s.%s' % (m.group(1), m.group(2))
         self.download_file(c['installer_url'], file_name=file_name,
                            error_level="fatal")
+
+    def unpack(self):
+        pass
 
     def run_talos(self):
         dirs = self.query_abs_dirs()

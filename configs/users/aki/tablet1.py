@@ -9,4 +9,17 @@ config = {
     "device_type": "non-tegra",
     "enable_automation": True,
 #    "actions": ["check-device"],
+    "repos": [{
+        "repo": "http://hg.mozilla.org/build/talos",
+        "tag": "default",
+        "dest": "hg-talos"
+    },{
+        "repo": "http://hg.mozilla.org/build/pageloader",
+        "tag": "default",
+        "dest": "pageloader@mozilla.org"
+    },{
+        "repo": "http://hg.mozilla.org/users/tglek_mozilla.com/fennecmark",
+        "tag": "default",
+        "dest": "bench@taras.glek"
+    }],
 }
