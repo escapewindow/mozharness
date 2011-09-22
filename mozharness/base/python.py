@@ -41,6 +41,7 @@
 import os
 
 from mozharness.base.errors import PythonErrorList
+from mozharness.base.log import DEBUG, INFO, WARNING, ERROR, CRITICAL, FATAL, IGNORE
 
 # Virtualenv {{{1
 virtualenv_config_options = [[
@@ -79,7 +80,7 @@ class VirtualenvMixin(object):
     def create_virtualenv(self):
         c = self.config
         if not c.get('virtualenv_path'):
-            self.add_summary("No virtualenv specified; not creating virtualenv!", level="warning")
+            self.add_summary("No virtualenv specified; not creating virtualenv!", level=FATAL)
             return -1
         venv_path = os.path.abspath(c['virtualenv_path'])
         self.info("Creating virtualenv %s" % venv_path)

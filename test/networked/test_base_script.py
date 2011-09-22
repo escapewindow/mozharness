@@ -25,7 +25,7 @@ class TestNetworkedHelperFunctions(unittest.TestCase):
         s = script.BaseScript(initial_config_file='test/test.json')
         os.mkdir('test_dir')
         s.download_file("http://www.mozilla.com", file_name=self.temp_file,
-                        error_level="ignore")
+                        error_level=IGNORE)
         self.assertTrue(os.path.exists(self.temp_file),
                         msg="error downloading mozilla.com")
 

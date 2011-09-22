@@ -263,9 +263,9 @@ class ShellMixin(object):
         num_errors = 0
         if cwd:
             if not os.path.isdir(cwd):
-                level = "error"
+                level = ERROR
                 if halt_on_failure:
-                    level = "fatal"
+                    level = FATAL
                 self.log("Can't run command %s in non-existent directory %s!" % \
                          (command, cwd), level=level)
                 return -1
