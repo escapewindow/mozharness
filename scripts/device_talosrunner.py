@@ -49,10 +49,10 @@ sys.path.insert(1, os.path.dirname(sys.path[0]))
 from mozharness.base.errors import PythonErrorList
 from mozharness.base.python import virtualenv_config_options, VirtualenvMixin
 from mozharness.base.vcs.vcsbase import MercurialScript
-from mozharness.test.device import device_config_options, ADBDevice
+from mozharness.test.device import device_config_options, DeviceMixin
 
 # DeviceTalosRunner {{{1
-class DeviceTalosRunner(VirtualenvMixin, MercurialScript):
+class DeviceTalosRunner(VirtualenvMixin, DeviceMixin, MercurialScript):
     config_options = [[
      ["--talos-zip"],
      {"action": "store",
@@ -124,8 +124,8 @@ class DeviceTalosRunner(VirtualenvMixin, MercurialScript):
                  "device_protocol": "adb"
                 },
         )
-        self.device_glue = ADBDevice(log_obj=self.log_obj,
-                                     config=self.config)
+#        self.device_glue = ADBDevice(log_obj=self.log_obj,
+#                                     config=self.config)
 
     def query_abs_dirs(self):
         if self.abs_dirs:
@@ -166,7 +166,7 @@ class DeviceTalosRunner(VirtualenvMixin, MercurialScript):
                                        "talos.zip")
             )
             self.run_command("unzip talos.zip", cwd=dirs['abs_work_dir'],
-                             error_level='fatal')
+                             halt_on_failure=True)
         else:
             self.vcs_checkout_repos([{
              "repo": c['talos_repo'],
@@ -175,8 +175,12 @@ class DeviceTalosRunner(VirtualenvMixin, MercurialScript):
             }])
 
     def check_device(self):
-        # TODO writeme
-        pass
+        if not self.check_for_device():
+            # TODO set flags if automated run
+            pass
+        if self.query_device_root() is None:
+            # TODO set flags if automated run
+            pass
 
     def download(self):
         # TODO: a user friendly way to do this without specifying a url?

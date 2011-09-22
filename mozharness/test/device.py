@@ -122,13 +122,13 @@ class DeviceMixin(object):
         try:
             if c['device_protocol'] == 'adb':
                 import devicemanagerADB as devicemanager
+                self.devicemanager = devicemanager.DeviceManagerADB()
             else:
                 self.fatal("Don't know how to use device_protocol %s!" %
                            c['device_protocol'])
         except ImportError, e:
             self.log("Can't import devicemanager! %s\nDid you check out talos?" % str(e), level=level)
             raise
-        self.devicemanager = devicemanager.DeviceManager(c['device_ip'])
         self.devicemanager.debug = 3
         return self.devicemanager
 
@@ -273,12 +273,11 @@ class DeviceMixin(object):
     def check_for_device(self):
         self.info("Looking for device...")
         # TODO support non-adb
-        output = self.get_output_from_command("adb devices",
-                                              error_list=BaseErrorList)
-        if basestring in output.__bases__:
+        output = self.get_output_from_command("adb devices")
+        if output.__class__ == str:
             # TODO make this multi-device friendly?
-            m = re.search("\n(\S+)\s+(\S+)\n\n", output)
-            if m and len(m.groups()) == 2:
+            m = re.search(r'''\n(\S+)\s+(\S+)\n*$''', output)
+            if m and len(m.groups()) >= 2:
                 self.info("Found %s %s." % (m.group(2), m.group(1)))
                 return True
         self.error("Can't find a device.")
