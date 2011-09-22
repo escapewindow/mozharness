@@ -75,6 +75,13 @@ class DeviceTalosRunner(VirtualenvMixin, DeviceMixin, MercurialScript):
       "help": "Specify the talos tag"
      }
     ],[
+     ["--enable-automation"],
+     {"action": "store_true",
+      "dest": "enable_automation",
+      "default": "default",
+      "help": "Integrate with clientproxy automation (non-developer setting)"
+     }
+    ],[
      ["--installer-url", "--url"],
      {"action": "store",
       "dest": "installer_url",
@@ -95,11 +102,10 @@ class DeviceTalosRunner(VirtualenvMixin, DeviceMixin, MercurialScript):
         self.python = None
         super(DeviceTalosRunner, self).__init__(
          config_options=self.config_options,
-         all_actions=['preclean',
+         all_actions=['check-device',
+                      'preclean',
                       'pull',
                       'create-virtualenv',
-                      'check-device',
-# TODO
 # cleanup device
                       'download',
 # unpack
@@ -124,8 +130,6 @@ class DeviceTalosRunner(VirtualenvMixin, DeviceMixin, MercurialScript):
                  "device_protocol": "adb"
                 },
         )
-#        self.device_glue = ADBDevice(log_obj=self.log_obj,
-#                                     config=self.config)
 
     def query_abs_dirs(self):
         if self.abs_dirs:
@@ -151,6 +155,15 @@ class DeviceTalosRunner(VirtualenvMixin, DeviceMixin, MercurialScript):
         dirs = self.query_abs_dirs()
         self.rmtree(dirs['abs_work_dir'])
 
+    def check_for_flags(self, clear_proxy_flag=True):
+        flags = self.query_device_flags()
+        if flags and 'proxy' in flags:
+            self.warning("Proxy flag %s exists: %s" % flags['proxy'])
+            if clear_proxy_flag:
+                self.clear_device_proxy_flag()
+        if flags and 'error' in flags:
+            self.fatal("Error flag %s exists: %s" % flags['error'])
+
     def preclean(self):
         self._clobber()
 
@@ -174,13 +187,20 @@ class DeviceTalosRunner(VirtualenvMixin, DeviceMixin, MercurialScript):
              "dest": "talos"
             }])
 
+    def exit_on_error(self, message, exit_code=-1):
+        if self.config['enable_automation']:
+            self.set_device_error_flag(message)
+            self.fatal("Exiting due to error...", exit_code=exit_code)
+        else:
+            self.fatal(message, exit_code=exit_code)
+
     def check_device(self):
         if not self.check_for_device():
-            # TODO set flags if automated run
-            pass
+            self.exit_on_error("Can't find device!")
         if self.query_device_root() is None:
-            # TODO set flags if automated run
-            pass
+            self.exit_on_error("Can't connect to device!")
+        if self.config['enable_automation']:
+            self.check_for_flags()
 
     def download(self):
         # TODO: a user friendly way to do this without specifying a url?
