@@ -49,7 +49,7 @@ import sys
 import time
 
 from mozharness.base.errors import PythonErrorList, BaseErrorList
-from mozharness.base.log import LogMixin
+from mozharness.base.log import LogMixin, DEBUG, INFO, WARNING, ERROR, CRITICAL, FATAL, IGNORE
 from mozharness.base.script import ShellMixin, OSMixin
 
 class DeviceException(Exception):
@@ -101,26 +101,14 @@ class DeviceMixin(object):
      * devicemanager_path points to the devicemanager.py location on disk.
      * device_ip holds the IP of the device.
     '''
-    devicemanager_path = None
     devicemanager = None
-
-    def query_devicemanager_path(self):
-        """Return the path to devicemanager.py.
-        """
-        if self.devicemanager_path:
-            return self.devicemanager_path
-        if self.config.get('devicemanager_path'):
-            self.devicemanager_path = self.config['devicemanager_path']
-        else:
-            dirs = self.query_abs_dirs()
-            self.devicemanager_path = dirs['abs_talos_dir']
-        return self.devicemanager_path
 
     def query_devicemanager(self, level='fatal'):
         if self.devicemanager:
             return self.devicemanager
         c = self.config
-        dm_path = self.query_devicemanager_path()
+        dirs = self.query_abs_dirs()
+        dm_path = c.get("devicemanager_path", dirs['abs_talos_dir'])
         sys.path.append(dm_path)
         try:
             if c['device_protocol'] == 'adb':
@@ -151,30 +139,39 @@ class DeviceMixin(object):
             fh.close()
             return (flag_file_path, contents)
 
-    def query_device_error_flag(self):
+    def query_device_error_flag(self, log_level=ERROR):
         flag = self._query_device_flag(ERROR_FLAG)
         if flag:
-            self.error("Found error flag at %s: %s!" % (flag[0], flag[1]))
+            self.log("Found error flag at %s: %s!" % (flag[0], flag[1]),
+                     level=log_level)
             return flag
 
-    def query_device_proxy_flag(self):
+    def query_device_proxy_flag(self, log_level=INFO):
         flag = self._query_device_flag(PROXY_FLAG)
         if flag:
-            self.info("Found proxy flag at %s: %s." % (flag[0], flag[1]))
+            self.log("Found proxy flag at %s: %s." % (flag[0], flag[1]),
+                     level=log_level)
             return flag
 
-    def query_device_flags(self):
+    def query_device_flags(self, clear_proxy_flag=True,
+                           halt_on_error_flag=True):
         """Return a dict with 'error' or 'proxy' keys if those flags exist;
         None otherwise.
         """
         self.info("Checking device flags...")
         flags = {}
-        flag = self.query_device_error_flag()
+        flag = self.query_device_proxy_flag(log_level=WARNING)
+        if flag:
+            if clear_proxy_flag:
+                self.clear_device_proxy_flag()
+            else:
+                flags['proxy'] = flag
+        level = ERROR
+        if halt_on_error_flag:
+            level = FATAL
+        flag = self.query_device_error_flag(log_level=level)
         if flag:
             flags['error'] = flag
-        flag = self.query_device_proxy_flag()
-        if flag:
-            flags['proxy'] = flag
         if flags:
             return flags
 
@@ -206,7 +203,7 @@ class DeviceMixin(object):
         (flag_file_path, contents) = self._query_device_flag(flag_file)
         if os.path.exists(flag_file_path):
             self.info("Clearing %s..." % flag_file_path)
-            self.rmtree(flag_file_path)
+            self.rmtree(flag_file_path, error_level=FATAL)
 
     def clear_device_error_flag(self):
         self._clear_device_flag(ERROR_FLAG)
@@ -248,9 +245,11 @@ class DeviceMixin(object):
             return False
         return True
 
-    def remove_device_dir(self, error_level='error'):
+    def remove_device_root(self, error_level='error'):
         dm = self.query_devicemanager()
-        dev_root = dm.query_device_root()
+        dev_root = self.query_device_root()
+        if dev_root is None:
+            self.exit_on_error("Can't connect to device!")
         if dm.dirExists(dev_root):
             self.info("Removing device root %s." % dev_root)
             if dm.removeDir(dev_root) is None:
@@ -269,36 +268,54 @@ class DeviceMixin(object):
 
     # Maintenance {{{2
 
-    def _ping_device(self):
-        c = self.config
-        if not c['device_ip']:
-            self.info("device_ip not set; not attempting to ping.")
+    def exit_on_error(self, message, **kwargs):
+        if self.config['enable_automation']:
+            self.set_device_error_flag(message)
+            self.fatal("Remote Device Error: %s" % message, **kwargs)
         else:
-            self.info("Attempting to ping device %s." % c['device_ip'])
-        # TODO cross-platform
-        return self.run_command("ping -c 5 -o %s" % c['device_ip'])
+            self.fatal(message, **kwargs)
 
-    def check_for_device(self):
-        self.info("Looking for device...")
+    def ping_device(self):
+        c = self.config
         # TODO support non-adb
-        output = self.get_output_from_command("adb devices")
-        if output.__class__ == str:
-            # TODO make this multi-device friendly?
-            m = re.search(r'''\n(\S+)\s+(\S+)\n*$''', output)
-            if m and len(m.groups()) >= 2:
-                self.info("Found %s %s." % (m.group(2), m.group(1)))
-                return True
-        self.error("Can't find a device.")
-        return False
+        if c['device_protocol'] == 'adb':
+            self.info("Looking for device...")
+            output = self.get_output_from_command("adb devices")
+            if output.__class__ == str:
+                # TODO make this multi-device friendly?
+                m = re.search(r'''\n(\S+)\s+(\S+)\n*$''', output)
+                if m and len(m.groups()) >= 2:
+                    self.info("Found %s %s." % (m.group(2), m.group(1)))
+                    return True
+            self.error("Can't find a device.")
+            return False
+        else:
+            self.fatal("Device protocol %s is unsupported!" %
+                       c['device_protocol'])
+
+    def check_device(self):
+        if not self.ping_device():
+            self.exit_on_error("Can't find device!")
+        if self.query_device_root() is None:
+            self.exit_on_error("Can't connect to device!")
+        if self.config.get('enable_automation'):
+            self.query_device_flags()
+
+    def cleanup_device(self):
+        status = self.remove_device_root()
+        if not status:
+            self.exit_on_error("Can't remove device root!")
+        self.remove_etc_hosts()
+        # TODO pid kill
+        # TODO uninstall apps
 
 
 
     # Device-type-specific. {{{2
 
-    def remove_etc_hosts(self, hosts_file="/system/etc/hosts",
-                         error_level='error'):
+    def remove_etc_hosts(self, hosts_file="/system/etc/hosts"):
         c = self.config
-        if c['device_type'] != 'tegra250':
+        if c['device_type'] not in ("tegra",):
             self.debug("No need to remove /etc/hosts on a non-Tegra250.")
             return
         dm = self.query_devicemanager()
@@ -308,9 +325,8 @@ class DeviceMixin(object):
                 dm.sendCMD(['exec mount -o remount,rw -t yaffs2 /dev/block/mtdblock3 /system'])
                 dm.sendCMD(['exec rm %s' % hosts_file])
             except devicemanager.DMError, e:
-                self.log("Unable to remove %s: %s!" % (hosts_file, str(e)),
-                         level=error_level)
-                raise
+                self.exit_on_error("Unable to remove %s: %s!" % (hosts_file,
+                                   str(e)))
         else:
             self.debug("%s file doesn't exist; skipping." % hosts_file)
 

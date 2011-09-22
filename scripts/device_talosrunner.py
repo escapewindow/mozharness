@@ -156,31 +156,7 @@ class DeviceTalosRunner(VirtualenvMixin, DeviceMixin, MercurialScript):
         dirs = self.query_abs_dirs()
         self.rmtree(dirs['abs_work_dir'])
 
-    def check_for_flags(self, clear_proxy_flag=True):
-        flags = self.query_device_flags()
-        if flags and 'proxy' in flags:
-            self.warning("Proxy flag %s exists: %s" % flags['proxy'])
-            if clear_proxy_flag:
-                self.clear_device_proxy_flag()
-        if flags and 'error' in flags:
-            self.fatal("Error flag %s exists: %s" % flags['error'])
-
-    def exit_on_error(self, message, exit_code=-1):
-        if self.config['enable_automation']:
-            self.set_device_error_flag(message)
-            self.fatal("Exiting due to error...", exit_code=exit_code)
-        else:
-            self.fatal(message, exit_code=exit_code)
-
     # Actions {{{2
-
-    def check_device(self):
-        if not self.check_for_device():
-            self.exit_on_error("Can't find device!")
-        if self.query_device_root() is None:
-            self.exit_on_error("Can't connect to device!")
-        if self.config['enable_automation']:
-            self.check_for_flags()
 
     def preclean(self):
         self._clobber()
@@ -204,9 +180,6 @@ class DeviceTalosRunner(VirtualenvMixin, DeviceMixin, MercurialScript):
              "tag": c['talos_tag'],
              "dest": "talos"
             }])
-
-    def cleanup_device(self):
-        pass
 
     def download(self):
         # TODO: a user friendly way to do this without specifying a url?
