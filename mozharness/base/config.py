@@ -35,19 +35,15 @@
 # the terms of any one of the MPL, the GPL or the LGPL.
 #
 # ***** END LICENSE BLOCK *****
-"""Generic config parsing and dumping, the way I remember it from scripts
-gone by.
+"""Generic config parsing.
 
-The config should be built from script-level defaults, overlaid by
+The config is be built from script-level defaults, overlaid by
 config-file defaults, overlaid by command line options.
 
-  (For buildbot-analogues that would be factory-level defaults,
-   builder-level defaults, and build request/scheduler settings.)
-
-The config should then be locked (set to read-only, to prevent runtime
-alterations).  Afterwards we should dump the config to a file that is
-uploaded with the build, and can be used to debug or replicate the build
-at a later time.
+The config is then locked (set to read-only, to prevent runtime
+alterations).  Afterwards we dump the config to a file that can be
+uploaded with the script artifacts, and can be used to debug or replicate
+the script at a later time.
 
 TODO:
 
@@ -95,6 +91,8 @@ class ExtendOption(Option):
 
 # ReadOnlyDict {{{1
 class ReadOnlyDict(dict):
+    """The basis of our lockable config.
+    """
     def __init__(self, dictionary):
         self._lock = False
         self.update(dictionary.copy())
@@ -138,6 +136,8 @@ class ReadOnlyDict(dict):
 # parse_config_file {{{1
 def parse_config_file(file_name, quiet=False, search_path=None):
     """Read a config file and return a dictionary.
+
+    This probably belongs in a mixin.
     """
     file_path = None
     if os.path.exists(file_name):
@@ -178,6 +178,30 @@ class BaseConfig(object):
                  all_actions=None, default_actions=None,
                  volatile_config=None,
                  require_config_file=False, usage="usage: %prog [options]"):
+        """config and initial_config_file are here to help set initial
+        defaults without having to put everything in optparse.
+
+        config_options is a set of script-specific options that we want to
+        add to the option list in optparse.
+
+        all_actions is the set of all possible actions the script can run.
+        Think of these as makefile targets: callable independently or as a
+        group.  However, they are ordered, unlike makefile targets.
+
+        default_actions is a subset of all_actions.  This represents the
+        set of actions that will run by default if we don't specify specific
+        actions to run or not-run.
+
+        volatile_config is a bit of a hack; we want to be able to pass in
+        config items or options that affect the runtime settings, but not
+        save them across runs.  By default this includes the action-specific
+        options.
+
+        require_config_file is a flag that specifies whether --config-file
+        is optional or not.
+
+        usage is here for --help or syntax errors when calling the script.
+        """
         self._config = {}
         self.actions = []
         self.config_lock = False
@@ -213,6 +237,10 @@ class BaseConfig(object):
         return ReadOnlyDict(self._config)
 
     def _create_config_parser(self, config_options, usage):
+        """Create the optparse config parser.  This will include
+        generic script options that all mozharness scripts will have,
+        as well as script-specific config options.
+        """
         self.config_parser = ExtendedOptionParser(usage=usage)
         self.config_parser.add_option(
          "--work-dir", action="store", dest="work_dir",
@@ -312,7 +340,9 @@ class BaseConfig(object):
                 self.config_parser.add_option(*option[0], **option[1])
 
     def set_config(self, config, overwrite=False):
-        """This is probably doable some other way."""
+        """Map the config passed in to the config already set in
+        self._config.
+        """
         if self._config and not overwrite:
             for key, value in config.iteritems():
                 self._config[key] = value
@@ -324,6 +354,9 @@ class BaseConfig(object):
         return self.actions
 
     def verify_actions(self, action_list, quiet=False):
+        """Verify that all the actions in action_list are valid (part of
+        all_actions).
+        """
         for action in action_list:
             if action not in self.all_actions:
                 if not quiet:
@@ -336,6 +369,25 @@ class BaseConfig(object):
         """Parse command line arguments in a generic way.
         Return the parser object after adding the basic options, so
         child objects can manipulate it.
+
+        Split volatile config vars out to avoid re-using volatile configs
+        on a second run using the dumped config file.
+
+        Actions:
+
+        First, if default_actions is specified in the config, set our
+        default actions even if the script specifies other default actions.
+
+        Without any other action-specific options, run with default actions.
+
+        If we specify --ACTION or --only-ACTION once or multiple times,
+        we want to override the default_actions list with the one(s) we list.
+
+        Otherwise, if we specify --add-action ACTION, we want to add an
+        action to the list.
+
+        Finally, if we specify --no-ACTION, remove that from the list of
+        actions to perform.
         """
         self.command_line = ' '.join(sys.argv)
         if not args:
@@ -372,24 +424,6 @@ class BaseConfig(object):
                 self.volatile_config[key] = self._config[key]
                 del(self._config[key])
 
-        """Actions.
-
-        Seems a little complex, but the logic goes:
-
-        First, if default_actions is specified in the config, set our
-        default actions even if the script specifies other default actions.
-
-        Without any other action-specific options, run with default actions.
-
-        If we specify --ACTION or --only-ACTION once or multiple times,
-        we want to override the default_actions list with the one(s) we list.
-
-        Otherwise, if we specify --add-action ACTION, we want to add an
-        action to the list.
-
-        Finally, if we specify --no-ACTION, remove that from the list of
-        actions to perform.
-        """
         if self._config.get('default_actions'):
             default_actions = self.verify_actions(self._config['default_actions'])
             self.default_actions = default_actions
