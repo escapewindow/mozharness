@@ -98,7 +98,8 @@ class DeviceTalosRunner(VirtualenvMixin, DeviceMixin, MercurialScript):
 
     def __init__(self, require_config_file=False):
         self.python = None
-        self.browser_file_name = None
+        self.download_file_name = None
+        self.browser_revision = None
         super(DeviceTalosRunner, self).__init__(
          config_options=self.config_options,
          all_actions=['preclean',
@@ -108,7 +109,7 @@ class DeviceTalosRunner(VirtualenvMixin, DeviceMixin, MercurialScript):
                       'cleanup-device',
                       'download',
                       'unpack',
-# tinderbox print revision
+                      'print-browser-revision',
 # install app on device
 # perfconfigurator
                       'run-talos',
@@ -122,10 +123,12 @@ class DeviceTalosRunner(VirtualenvMixin, DeviceMixin, MercurialScript):
                           'cleanup-device',
                           'download',
                           'unpack',
+                          'print-browser-revision',
                          ],
          require_config_file=require_config_file,
          config={"virtualenv_modules": ["PyYAML"],
-                 "device_protocol": "adb"
+                 "device_protocol": "adb",
+                 "browser_dir": "fennec",
                 },
         )
 
@@ -140,7 +143,7 @@ class DeviceTalosRunner(VirtualenvMixin, DeviceMixin, MercurialScript):
         dirs['abs_talos_dir'] = os.path.join(abs_dirs['abs_work_dir'],
                                              'talos')
         dirs['abs_browser_dir'] = os.path.join(abs_dirs['abs_work_dir'],
-                                               'browser')
+                                               c.get('browser_dir', 'browser'))
         dirs['abs_device_flag_dir'] = c.get('device_flag_dir', c['base_work_dir'])
         for key in dirs.keys():
             if key not in abs_dirs:
@@ -148,16 +151,40 @@ class DeviceTalosRunner(VirtualenvMixin, DeviceMixin, MercurialScript):
         self.abs_dirs = abs_dirs
         return self.abs_dirs
 
-    def query_browser_file_name(self):
-        if self.browser_file_name:
-            return self.browser_file_name
+    def query_download_file_name(self):
+        if self.download_file_name:
+            return self.download_file_name
         c = self.config
-        browser_file_name = os.path.basename(c['installer_url'])
-        m = re.match(r'([a-zA-Z0-9]*).*\.([^.]*)', browser_file_name)
+        download_file_name = os.path.basename(c['installer_url'])
+        m = re.match(r'([a-zA-Z0-9]*).*\.([^.]*)', download_file_name)
         if m.group(1) and m.group(2):
-            browser_file_name = '%s.%s' % (m.group(1), m.group(2))
-        self.browser_file_name = browser_file_name
-        return self.browser_file_name
+            download_file_name = '%s.%s' % (m.group(1), m.group(2))
+        self.download_file_name = download_file_name
+        return self.download_file_name
+
+    def query_browser_revision(self):
+        if self.browser_revision:
+            return self.browser_revision
+        dirs = self.query_abs_dirs()
+        file_name = os.path.join(dirs['abs_browser_dir'], 'application.ini')
+        if os.path.exists(file_name):
+            browser_revision = {}
+            # TODO generic way to read a file?
+            # TODO this probably needs to be more robust.
+            fh = open(file_name, 'r')
+            contents = fh.read()
+            fh.close()
+            m = re.search(r"""BuildID=(?P<buildid>\d+)""", contents)
+            browser_revision['buildid'] = m.group("buildid")
+            m = re.search(r"""SourceStamp=(?P<revision>\S+)""", contents)
+            browser_revision['revision'] = m.group("revision")
+            m = re.search(r"""SourceRepository=(?P<repo_path>\S+)""", contents)
+            browser_revision['repo_path'] = m.group("repo_path")
+            self.browser_revision = browser_revision
+            return self.browser_revision
+        else:
+            self.warning("Can't find browser revision: %s doesn't exist!" % \
+                          file_name)
 
     def _clobber(self):
         dirs = self.query_abs_dirs()
@@ -194,18 +221,28 @@ class DeviceTalosRunner(VirtualenvMixin, DeviceMixin, MercurialScript):
         orig_dir = os.getcwd()
         self.mkdir_p(dirs["abs_work_dir"])
         self.chdir(dirs["abs_work_dir"])
-        file_name = self.query_browser_file_name()
+        file_name = self.query_download_file_name()
         self.download_file(c['installer_url'], file_name=file_name,
                            error_level="fatal")
         self.chdir(orig_dir)
 
     def unpack(self):
         dirs = self.query_abs_dirs()
-        file_name = self.query_browser_file_name()
+        file_name = self.query_download_file_name()
         self.mkdir_p(dirs['abs_browser_dir'])
         self.run_command("unzip -o %s" % os.path.join(dirs['abs_work_dir'],
                                                       file_name),
                          cwd=dirs['abs_browser_dir'])
+
+    def print_browser_revision(self):
+        browser_revision = self.query_browser_revision()
+        if not browser_revision:
+            self.warning("Can't print browser revision!")
+            return -1
+        if self.config.get("enable_automation"):
+            self.info("""TinderboxPrint: <a href="%(repo_path)s/rev/%(revision)s" title="Built from Mozilla revision %(revision)s">moz:%(revision)s</a> <br />""" % browser_revision)
+        else:
+            self.info("Built from %(repo_path)s/rev/%(revision)s." % browser_revision)
 
     def run_talos(self):
         dirs = self.query_abs_dirs()
