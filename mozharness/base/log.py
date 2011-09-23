@@ -35,7 +35,12 @@
 # the terms of any one of the MPL, the GPL or the LGPL.
 #
 # ***** END LICENSE BLOCK *****
-"""Generic logging, the way I remember it from scripts gone by.
+"""Generic logging based off the python logging module.
+
+We add two levels to the default set of debug, info, warning, error, and
+critical:  'fatal', which implies it's a critical error that should cause
+immediate termination of the script, and 'ignore', which should only be used
+for very verbose logs with lines that *are not* and *will never be* useful.
 
 TODO:
 - network logging support.
