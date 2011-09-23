@@ -520,7 +520,11 @@ class BaseScript(ShellMixin, OSMixin, LogMixin, object):
             self.copy_to_upload_dir(os.path.join(dirs['abs_log_dir'], log_file),
                                     dest=os.path.join('logs', log_file),
                                     short_desc='%s log' % log_name,
-                                    long_desc='%s log' % log_name)
+                                    long_desc='%s log' % log_name,
+                                    rotate=True)
+        self.copy_to_upload_dir(os.path.join(self.config['base_work_dir'],
+                                             'localconfig.json'),
+                                rotate=True)
         sys.exit(self.return_code)
 
     def query_abs_dirs(self):
@@ -535,11 +539,10 @@ class BaseScript(ShellMixin, OSMixin, LogMixin, object):
         return self.abs_dirs
 
     def dump_config(self, file_path=None):
-        dirs = self.query_abs_dirs()
+        c = self.config
         if not file_path:
-            file_path = os.path.join(dirs['abs_upload_dir'], "localconfig.json")
+            file_path = os.path.join(c['base_work_dir'], "localconfig.json")
         self.info("Dumping config to %s." % file_path)
-        self.mkdir_p(dirs['abs_upload_dir'])
         json_config = json.dumps(self.config, sort_keys=True, indent=4)
         fh = codecs.open(file_path, encoding='utf-8', mode='w+')
         fh.write(json_config)
@@ -592,8 +595,9 @@ class BaseScript(ShellMixin, OSMixin, LogMixin, object):
         self.log(message, level=level)
 
     def copy_to_upload_dir(self, target, dest=None, short_desc="unknown",
-                           long_desc="unknown", error_level="error",
-                           rotate=False, max_backups=None):
+                           long_desc="unknown",
+                           log_level=DEBUG, error_level=ERROR,
+                           rotate=False, max_backups=10):
         """Copy target file to upload_dir/dest.
 
         Potentially update a manifest in the future if we go that route.
@@ -625,29 +629,31 @@ class BaseScript(ShellMixin, OSMixin, LogMixin, object):
                 return -1
             if rotate:
                 # Probably a better way to do this
-                oldest_backup = None
+                oldest_backup = 0
                 backup_regex = re.compile("^%s\.(\d+)$" % dest_file)
                 for filename in os.listdir(dest_dir):
                     r = re.match(backup_regex, filename)
                     if r and r.groups()[0] > oldest_backup:
                         oldest_backup = r.groups()[0]
-                for backup_num in range(oldest_backup, 0, -1):
-                    # TODO more error checking?
-                    if backup_num >= max_backups:
-                        self.rmtree(os.path.join(dest_dir, dest_file, backup_num),
-                                    log_level='debug')
-                    else:
-                        self.move(os.path.join(dest_dir, dest_file, '.%d' % backup_num),
-                                  os.path.join(dest_dir, dest_file, '.%d' % backup_num +1),
-                                  log_level='debug')
-                if self.move(dest, "%s.1" % dest, log_level='debug'):
+                if oldest_backup > 0:
+                    for backup_num in range(int(oldest_backup), 0, -1):
+                        # TODO more error checking?
+                        if backup_num >= max_backups:
+                            self.rmtree(os.path.join(dest_dir, dest_file,
+                                                     str(backup_num)),
+                                        log_level=DEBUG)
+                        else:
+                            self.move(os.path.join(dest_dir, '%s.%s' % (dest_file, str(backup_num))),
+                                      os.path.join(dest_dir, '%s.%s' % (dest_file, str(backup_num + 1))),
+                                      log_level=DEBUG)
+                if self.move(dest, "%s.1" % dest, log_level=DEBUG):
                     self.log("Unable to move %s!" % dest, level=error_level)
                     return -1
             else:
-                if self.rmtree(dest, log_level='debug'):
+                if self.rmtree(dest, log_level=DEBUG):
                     self.log("Unable to remove %s!" % dest, level=error_level)
                     return -1
-        self.copyfile(target, dest, log_level='debug')
+        self.copyfile(target, dest, log_level=DEBUG)
         if os.path.exists(dest):
             return dest
         else:
