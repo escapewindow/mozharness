@@ -98,6 +98,7 @@ class DeviceTalosRunner(VirtualenvMixin, DeviceMixin, MercurialScript):
 
     def __init__(self, require_config_file=False):
         self.python = None
+        self.browser_file_name = None
         super(DeviceTalosRunner, self).__init__(
          config_options=self.config_options,
          all_actions=['preclean',
@@ -138,17 +139,25 @@ class DeviceTalosRunner(VirtualenvMixin, DeviceMixin, MercurialScript):
         dirs = {}
         dirs['abs_talos_dir'] = os.path.join(abs_dirs['abs_work_dir'],
                                              'talos')
-        if c.get('device_flag_dir'):
-            # Assumes abs_path ?
-            dirs['abs_device_flag_dir'] = c['device_flag_dir']
-        else:
-            # May need to revisit this default ?
-            dirs['abs_device_flag_dir'] = c['base_work_dir']
+        dirs['abs_browser_dir'] = os.path.join(abs_dirs['abs_work_dir'],
+                                               'browser')
+        dirs['abs_device_flag_dir'] = c.get('device_flag_dir', c['base_work_dir'])
         for key in dirs.keys():
             if key not in abs_dirs:
                 abs_dirs[key] = dirs[key]
         self.abs_dirs = abs_dirs
         return self.abs_dirs
+
+    def query_browser_file_name(self):
+        if self.browser_file_name:
+            return self.browser_file_name
+        c = self.config
+        browser_file_name = os.path.basename(c['installer_url'])
+        m = re.match(r'([a-zA-Z0-9]*).*\.([^.]*)', browser_file_name)
+        if m.group(1) and m.group(2):
+            browser_file_name = '%s.%s' % (m.group(1), m.group(2))
+        self.browser_file_name = browser_file_name
+        return self.browser_file_name
 
     def _clobber(self):
         dirs = self.query_abs_dirs()
@@ -163,32 +172,40 @@ class DeviceTalosRunner(VirtualenvMixin, DeviceMixin, MercurialScript):
         c = self.config
         dirs = self.query_abs_dirs()
         if c['talos_zip']:
-            self.info("Downloading %s..." % c['talos_zip'])
             self.mkdir_p(dirs['abs_work_dir'])
             status = self.download_file(
                 c['talos_zip'],
                 file_name=os.path.join(dirs['abs_work_dir'],
                                        "talos.zip")
             )
+            self.rmtree(os.path.join(dirs['abs_work_dir'], "talos"))
             self.run_command("unzip talos.zip", cwd=dirs['abs_work_dir'],
                              halt_on_failure=True)
         self.vcs_checkout_repos(c['repos'], parent_dir=dirs['abs_work_dir'])
+
+    # check_device defined in DeviceMixin
+    # create_virtualenv defined in VirtualenvMixin
+    # cleanup_device defined in DeviceMixin
 
     def download(self):
         # TODO: a user friendly way to do this without specifying a url?
         c = self.config
         dirs = self.query_abs_dirs()
+        orig_dir = os.getcwd()
         self.mkdir_p(dirs["abs_work_dir"])
         self.chdir(dirs["abs_work_dir"])
-        file_name = os.path.basename(c['installer_url'])
-        m = re.match(r'([a-zA-Z0-9]*).*\.([^.]*)', file_name)
-        if m.group(1) and m.group(2):
-            file_name = '%s.%s' % (m.group(1), m.group(2))
+        file_name = self.query_browser_file_name()
         self.download_file(c['installer_url'], file_name=file_name,
                            error_level="fatal")
+        self.chdir(orig_dir)
 
     def unpack(self):
-        pass
+        dirs = self.query_abs_dirs()
+        file_name = self.query_browser_file_name()
+        self.mkdir_p(dirs['abs_browser_dir'])
+        self.run_command("unzip -o %s" % os.path.join(dirs['abs_work_dir'],
+                                                      file_name),
+                         cwd=dirs['abs_browser_dir'])
 
     def run_talos(self):
         dirs = self.query_abs_dirs()

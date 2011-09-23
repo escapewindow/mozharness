@@ -9,6 +9,7 @@ config = {
     "device_type": "non-tegra",
     "enable_automation": True,
 #    "actions": ["check-device"],
+    "no_actions": ["preclean", "pull", "download", "unpack"],
     "repos": [{
         "repo": "http://hg.mozilla.org/build/talos",
         "tag": "default",
