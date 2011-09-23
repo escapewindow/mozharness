@@ -35,19 +35,36 @@
 # the terms of any one of the MPL, the GPL or the LGPL.
 #
 # ***** END LICENSE BLOCK *****
-'''Generic error regexes.
-'''
+"""Generic error lists.
+
+ErrorLists are used to parse output from commands in
+mozharness.base.script.ShellMixin.run_command().
+
+Each line of output is matched against each substring or regular expression
+in the ErrorList.  On a match, we determine the 'level' of that line,
+whether IGNORE, DEBUG, INFO, WARNING, ERROR, CRITICAL, or FATAL.
+
+TODO: Context lines (requires work on the run_command side)
+
+TODO: Optional explanations of these lines.  These would translate generic,
+abstract, or otherwise non-intuitive error messages into human-readable
+meanings.  E.g., if we hit a specific unhelpful error message when we
+run out of disk,
+
+  {'substr': r'''unhelpful error message!!!111''', 'level': ERROR,
+   'explanation': r'''We ran out of disk. Please clean up.'''}
+
+would give:
+
+TIMESTAMP -  ERROR - unhelpful error message!!!111
+TIMESTAMP -  ERROR - We ran out of disk. Please clean up.
+
+TODO: We could also create classes that generate these, but with the
+appropriate level (please don't die on any errors; please die on any
+warning; etc.) or platform or language or whatever.
+"""
 
 from mozharness.base.log import DEBUG, INFO, WARNING, ERROR, CRITICAL, FATAL, IGNORE
-
-# TODO: We could also create classes that generate these, but with the
-# appropriate level (please don't die on any errors; please die on any
-# warning; etc.) or platform or language or whatever.
-#
-# TODO: Context lines (requires work on the runCommand side)
-#
-# TODO:  We could have a generic shell command error list
-# (e.g. File not found, permission denied) that others could be based on.
 
 # Exceptions
 class VCSException(Exception):
