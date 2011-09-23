@@ -40,6 +40,9 @@
 #
 # ***** END LICENSE BLOCK *****
 """Mercurial VCS support.
+
+Largely copied/ported from
+http://hg.mozilla.org/build/tools/file/cf265ea8fb5e/lib/python/util/hg.py .
 """
 
 import os
