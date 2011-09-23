@@ -182,9 +182,8 @@ class DeviceTalosRunner(VirtualenvMixin, DeviceMixin, MercurialScript):
             browser_revision['repo_path'] = m.group("repo_path")
             self.browser_revision = browser_revision
             return self.browser_revision
-        else:
-            self.warning("Can't find browser revision: %s doesn't exist!" % \
-                          file_name)
+        self.warning("Can't find browser revision: %s doesn't exist!" % \
+                     file_name)
 
     def _clobber(self):
         dirs = self.query_abs_dirs()
