@@ -37,11 +37,8 @@
 # ***** END LICENSE BLOCK *****
 """Generic script objects.
 
-TODO: The various mixins assume that they're used by BaseScript.
-Either every child object will need self.config, or these need some
-work.
-
-TODO: The mixin names kind of need work too?
+script.py, along with config.py and log.py, represents the core of
+mozharness.
 """
 
 import codecs
@@ -63,7 +60,6 @@ from mozharness.base.config import BaseConfig
 from mozharness.base.log import SimpleFileLogger, MultiFileLogger, \
                                 LogMixin, DEBUG, INFO, WARNING, ERROR, \
                                 CRITICAL, FATAL, IGNORE
-from mozharness.base.errors import HgErrorList
 
 # OSMixin {{{1
 class OSMixin(object):
@@ -72,6 +68,9 @@ class OSMixin(object):
     Currently dependent on LogMixin, and a self.config of some sort.
     """
     def mkdir_p(self, path):
+        """ mkdir -p equivalent.
+        It's not clear to me whether we need a non-recursive option.
+        """
         if not os.path.exists(path):
             self.info("mkdir: %s" % path)
             if not self.config.get('noop'):
@@ -81,6 +80,10 @@ class OSMixin(object):
 
     def rmtree(self, path, log_level=INFO, error_level=ERROR,
                exit_code=-1):
+        """ rm -rf equivalent.
+        As with mkdir_p(), it's not clear to me whether we need a
+        non-recursive option.
+        """
         self.log("rmtree: %s" % path, level=log_level)
         if os.path.exists(path):
             if not self.config.get('noop'):
@@ -100,6 +103,9 @@ class OSMixin(object):
         return 0
 
     def _is_windows(self):
+        """ Mainly here to determine whether we need to run _rmdir_recursive
+        for rmtree.
+        """
         if platform.system() in ("Windows",):
             return True
         if platform.system().startswith("CYGWIN"):
@@ -251,9 +257,10 @@ class ShellMixin(object):
 
         error_list example:
         [{'regex': '^Error: LOL J/K', level=IGNORE},
-         {'regex': '^Error:', level=ERROR, contextLines='5:5'},
-         {'substr': 'THE WORLD IS ENDING', level=FATAL, contextLines='20:'}
+         {'regex': '^Error:', level=ERROR, context_lines='5:5'},
+         {'substr': 'THE WORLD IS ENDING', level=FATAL, context_lines='20:'}
         ]
+        (context_lines isn't written yet)
         """
         # Get rid of this when we get rid of the scratchbox stuff
         if return_type == 'output':
@@ -474,12 +481,20 @@ class BaseScript(ShellMixin, OSMixin, LogMixin, object):
         self.info("Run as %s" % rw_config.command_line)
 
     def _pre_config_lock(self, rw_config):
+        """This empty method can allow for config checking and manipulation
+        before the config lock, when overridden in scripts.
+        """
         pass
 
     def _config_lock(self):
+        """After this point, the config is locked and should not be
+        manipulated (based on mozharness.base.config.ReadOnlyDict)
+        """
         self.config.lock()
 
     def _possibly_run_method(self, method_name, error_if_missing=False):
+        """This is here for run().
+        """
         if hasattr(self, method_name) and callable(getattr(self, method_name)):
             return getattr(self, method_name)()
         elif error_if_missing:
@@ -528,6 +543,16 @@ class BaseScript(ShellMixin, OSMixin, LogMixin, object):
         sys.exit(self.return_code)
 
     def query_abs_dirs(self):
+        """We want to be able to determine where all the important things
+        are.  Absolute paths lend themselves well to this, though I wouldn't
+        be surprised if this causes some issues somewhere.
+
+        This should be overridden in any script that has additional dirs
+        to query.
+
+        The query_* methods tend to set self.VAR variables as their
+        runtime cache.
+        """
         if self.abs_dirs:
             return self.abs_dirs
         c = self.config
@@ -539,6 +564,9 @@ class BaseScript(ShellMixin, OSMixin, LogMixin, object):
         return self.abs_dirs
 
     def dump_config(self, file_path=None):
+        """Dump self.config to localconfig.json, which we'll
+        copy_to_upload_dir at the end of the script.
+        """
         c = self.config
         if not file_path:
             file_path = os.path.join(c['base_work_dir'], "localconfig.json")
@@ -578,6 +606,11 @@ class BaseScript(ShellMixin, OSMixin, LogMixin, object):
         self.info("#####")
 
     def summary(self):
+        """Print out all the summary lines added via add_summary()
+        throughout the script.
+
+        I'd like to revisit how to do this in a prettier fashion.
+        """
         self.action_message("%s summary:" % self.__class__.__name__)
         if self.summary_list:
             for item in self.summary_list:
@@ -589,6 +622,8 @@ class BaseScript(ShellMixin, OSMixin, LogMixin, object):
                     print "### Log is closed! (%s)" % item['message']
 
     def add_summary(self, message, level=INFO):
+        """Add a summary line.
+        """
         self.summary_list.append({'message': message, 'level': level})
         # TODO write to a summary-only log?
         # Summaries need a lot more love.
