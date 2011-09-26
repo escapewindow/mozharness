@@ -37,6 +37,9 @@
 # ***** END LICENSE BLOCK *****
 """signdebs.py
 
+Create deb repos for Fennec on Maemo N900.
+To be EOLed after Fx 7.0.
+
 Usage:
     signdebs.py [args]
 

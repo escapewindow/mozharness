@@ -38,6 +38,8 @@
 """maemo_multi_locale_build.py
 
 Override MultiLocaleBuild with Maemo- and scratchbox-isms.
+
+To be EOLed once Maemo is relegated to tier 3 post-Fx7.
 """
 
 import hashlib

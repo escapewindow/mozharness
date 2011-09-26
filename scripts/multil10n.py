@@ -37,6 +37,8 @@
 # ***** END LICENSE BLOCK *****
 """multil10n.py
 
+Multilocale builds for Android Fennec.
+To be EOLed once the locale picker is the default and we only ship en-US again.
 """
 
 import os
