@@ -112,7 +112,7 @@ class DeviceTalosRunner(VirtualenvMixin, DeviceMixin, MercurialScript):
                       'download',
                       'unpack',
                       'print-browser-revision',
-# install app on device
+                      'install-app',
 # perfconfigurator
                       'run-talos',
 # reboot device
@@ -126,6 +126,7 @@ class DeviceTalosRunner(VirtualenvMixin, DeviceMixin, MercurialScript):
                           'download',
                           'unpack',
                           'print-browser-revision',
+                          'install-app',
                          ],
          require_config_file=require_config_file,
          config={"virtualenv_modules": ["PyYAML"],
@@ -244,6 +245,20 @@ class DeviceTalosRunner(VirtualenvMixin, DeviceMixin, MercurialScript):
             self.info("""TinderboxPrint: <a href="%(repo_path)s/rev/%(revision)s" title="Built from Mozilla revision %(revision)s">moz:%(revision)s</a> <br />""" % browser_revision)
         else:
             self.info("Built from %(repo_path)s/rev/%(revision)s." % browser_revision)
+
+    def install_app(self):
+        c = self.config
+        if c['enable_automation']:
+            if c['device_protocol'] == 'sut' and c['device_type'] in \
+                                                 ("tegra250",):
+                self.set_device_time()
+        # set proxyFlag
+        # dm.getInfo('process')
+        # dm.getInfo('memory')
+        # dm.getInfo('uptime')
+        # getResolution
+        # dm.adjustResolution(1024, 768, 'crt')
+        # reboot; waitfordevice
 
     def run_talos(self):
         dirs = self.query_abs_dirs()

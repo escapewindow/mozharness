@@ -40,6 +40,10 @@
 
 This code is largely from
 http://hg.mozilla.org/build/tools/file/default/sut_tools
+
+Since devicemanagerSUT and devicemanagerADB have divergent APIs, it's
+questionable whether we'll support both.  Currently angling for ADB support
+only.
 '''
 
 import datetime
@@ -112,8 +116,10 @@ class DeviceMixin(object):
         sys.path.append(dm_path)
         try:
             if c['device_protocol'] == 'adb':
-                import devicemanagerADB as devicemanager
-                self.devicemanager = devicemanager.DeviceManagerADB()
+                import devicemanagerADB
+                from devicemanagerADB import DeviceManagerADB
+                from devicemanagerADB import DMError
+                self.devicemanager = devicemanagerADB.DeviceManagerADB()
             else:
                 self.fatal("Don't know how to use device_protocol %s!" %
                            c['device_protocol'])
@@ -234,13 +240,32 @@ class DeviceMixin(object):
             time.sleep(interval)
         raise DeviceException, "Remote Device Error: waiting for device timed out."
 
+    def query_device_time(self):
+        """ Not currently ported to DeviceManagerADB.
+        """
+        c = self.config
+        if c['device_protocol'] != "sut" or c['device_type'] not in ("tegra250",):
+            return
+        dm = self.query_devicemanager()
+        ts = int(dm.getCurrentTime()) # epoch time in milliseconds
+        dt = datetime.datetime.utcfromtimestamp(ts / 1000)
+        self.info("Current device time is %s" % dt.strftime('%Y/%m/%d %H:%M:%S'))
+        return dt
+
     def set_device_time(self, device_time=None, error_level='error'):
+        """ Not currently ported to DeviceManagerADB.
+        """
+        c = self.config
+        if c['device_protocol'] != "sut" or c['device_type'] not in ("tegra250",):
+            self.debug("Not setting date/time...")
         dm = self.query_devicemanager()
         if device_time is None:
             device_time = datetime.datetime.now().strftime('%Y/%m/%d %H:%M:%S')
         try:
-            dm.verifySendCMD(['settime %s' % device_time])
-        except devicemanager.DMError, e:
+            dm.query_device_time()
+            status = dm.verifySendCMD(['settime %s' % device_time])
+            dm.query_device_time()
+        except DMError, e:
             self.log("Can't set device time: %s" % e, level=error_level)
             return False
         return True
@@ -315,7 +340,7 @@ class DeviceMixin(object):
 
     def remove_etc_hosts(self, hosts_file="/system/etc/hosts"):
         c = self.config
-        if c['device_type'] not in ("tegra",):
+        if c['device_type'] not in ("tegra250",):
             self.debug("No need to remove /etc/hosts on a non-Tegra250.")
             return
         dm = self.query_devicemanager()
@@ -324,7 +349,7 @@ class DeviceMixin(object):
             try:
                 dm.sendCMD(['exec mount -o remount,rw -t yaffs2 /dev/block/mtdblock3 /system'])
                 dm.sendCMD(['exec rm %s' % hosts_file])
-            except devicemanager.DMError, e:
+            except DMError, e:
                 self.exit_on_error("Unable to remove %s: %s!" % (hosts_file,
                                    str(e)))
         else:
