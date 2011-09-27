@@ -92,7 +92,7 @@ class DeviceTalosRunner(VirtualenvMixin, DeviceMixin, MercurialScript):
     ],[
      ["--yaml-url"],
      {"action": "store",
-      "dest": "mercurial_url",
+      "dest": "yaml_url",
       "default": "http://pypi.python.org/packages/source/P/PyYAML/PyYAML-3.10.tar.gz#md5=74c94a383886519e9e7b3dd1ee540247",
       "help": "Specify the yaml pip url for the virtualenv."
      }
