@@ -48,7 +48,7 @@ import sys
 
 sys.path.insert(1, os.path.dirname(sys.path[0]))
 
-from mozharness.base.errors import PythonErrorList
+from mozharness.base.errors import PythonErrorList, ADBErrorList
 from mozharness.base.python import virtualenv_config_options, VirtualenvMixin
 from mozharness.base.vcs.vcsbase import MercurialScript
 from mozharness.test.device import device_config_options, DeviceMixin
@@ -247,6 +247,9 @@ class DeviceTalosRunner(VirtualenvMixin, DeviceMixin, MercurialScript):
             self.info("Built from %(repo_path)s/rev/%(revision)s." % browser_revision)
 
     def install_app(self):
+        dm = self.query_devicemanager()
+        file_name = self.query_download_file_name()
+        dirs = self.query_abs_dirs()
         c = self.config
         if c['enable_automation']:
             if c['device_protocol'] == 'sut' and c['device_type'] in \
@@ -259,6 +262,20 @@ class DeviceTalosRunner(VirtualenvMixin, DeviceMixin, MercurialScript):
         # getResolution
         # dm.adjustResolution(1024, 768, 'crt')
         # reboot; waitfordevice
+        # TODO sut support?
+        cmd = None
+        # TODO error checking
+        if not c['enable_automation']:
+            # -s to install on sdcard? Needs to be config driven
+            self.run_command(["adb", "install", '-r', os.path.join(dirs['abs_work_dir'], file_name)], error_list=ADBErrorList)
+        else:
+            output = self.get_output_from_command("adb shell ls -d /data/data/%s" % c['device_package_name'])
+            if "No such file" not in output:
+                self.run_command(["adb", "uninstall", c['device_package_name']],
+                                 error_list=ADBErrorList)
+            self.run_command(["adb", "install", '-r',
+                              os.path.join(dirs['abs_work_dir'], file_name)],
+                             error_list=ADBErrorList)
 
     def run_talos(self):
         dirs = self.query_abs_dirs()

@@ -1,4 +1,8 @@
 === 0.5 ===
+2011-09-26  Aki Sasaki  <aki@mozilla.com>
+* mozharness/base/errros.py (ADBErrorList):
+    Added.
+
 2011-09-20  Aki Sasaki  <aki@mozilla.com>
 * mozharness/base/config.py (BaseConfig.__init__):
     Modified volatile_config, which was previously unused.

@@ -119,7 +119,9 @@ class DeviceMixin(object):
                 import devicemanagerADB
                 from devicemanagerADB import DeviceManagerADB
                 from devicemanagerADB import DMError
-                self.devicemanager = devicemanagerADB.DeviceManagerADB()
+                self.devicemanager = devicemanagerADB.DeviceManagerADB(
+                    packageName=c.get('device_package_name'),
+                )
             else:
                 self.fatal("Don't know how to use device_protocol %s!" %
                            c['device_protocol'])

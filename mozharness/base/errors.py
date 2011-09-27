@@ -118,6 +118,11 @@ MakefileErrorList = BaseErrorList + [
  {'substr': r'''Warning: ''', 'level': WARNING},
 ]
 
+ADBErrorList = BaseErrorList + [
+ {'substr': r'''INSTALL_FAILED_INSUFFICIENT_STORAGE''', 'level': ERROR,},
+ {'substr': r'''Android Debug Bridge version''', 'level': ERROR,},
+]
+
 
 
 # __main__ {{{1
