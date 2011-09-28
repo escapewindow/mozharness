@@ -53,19 +53,19 @@ class TestMakeAbsolute(unittest.TestCase):
         def test_absolute_path(self):
             m = get_mercurial_vcs_obj()
             self.assertEquals(m._make_absolute("/foo/bar"), "/foo/bar")
-    
+
         def test_relative_path(self):
             m = get_mercurial_vcs_obj()
             self.assertEquals(m._make_absolute("foo/bar"), os.path.abspath("foo/bar"))
-    
+
         def test_HTTP_paths(self):
             m = get_mercurial_vcs_obj()
             self.assertEquals(m._make_absolute("http://foo/bar"), "http://foo/bar")
-    
+
         def test_absolute_file_path(self):
             m = get_mercurial_vcs_obj()
             self.assertEquals(m._make_absolute("file:///foo/bar"), "file:///foo/bar")
-    
+
         def test_relative_file_path(self):
             m = get_mercurial_vcs_obj()
             self.assertEquals(m._make_absolute("file://foo/bar"), "file://%s/foo/bar" % os.getcwd())
@@ -342,7 +342,7 @@ class TestHg(unittest.TestCase):
             self.assertEquals(rev, self.revisions[-1])
             m.info("Creating test.txt")
             open(os.path.join(self.wc, 'test.txt'), 'w').write("hello!")
-    
+
             m = get_mercurial_vcs_obj()
             m.vcs_config = {'repo': repo, 'dest': wc, 'revision': self.revisions[0]}
             rev = m.ensure_repo_and_revision()

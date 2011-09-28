@@ -101,7 +101,7 @@ class LogMixin(object):
             if self._log_level_at_least(level):
                 self._print("FATAL: %s" % message, stderr=True)
                 raise SystemExit(exit_code)
-   
+
     # Copying Bear's dumpException():
     # http://hg.mozilla.org/build/tools/annotate/1485f23c38e0/sut_tools/sut_lib.py#l23
     def dump_exception(self, message=None, level=ERROR):

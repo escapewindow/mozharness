@@ -119,7 +119,7 @@
 
 * mozharness/base/vcs/vcsbase.py (VCSMixin):
     Created to use MercurialVCS (or any other VCS object).
-    
+
 * mozharness/base/vcs/vcsbase.py (VCSScript):
     Quick'n'dirty wrapper around VCSScript + BaseScript.
 
@@ -181,7 +181,7 @@
 * mozharness/base/vcs/mercurial.py (MercurialVCS._ensure_shared_repo_and_revision):
     self.info() if nuking dest due to lack of DEST/.hg/sharedpath
     Don't nuke shared_path if not needed.
-    
+
 * mozharness/base/vcs/mercurial.py (MercurialVCS.ensure_repo_and_revision):
     Try to pull dest if it exists, rather than nuke/clone.  Not sure if this is the desired behavior, but it's the behavior specified in the unit tests.
 
