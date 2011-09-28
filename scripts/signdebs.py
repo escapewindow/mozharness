@@ -208,7 +208,7 @@ components = %(section)s
         fh = open(file_path, 'w')
         fh.write("%s\n" % contents)
         fh.close()
-        
+
 
     def create_repos(self):
         c = self.config

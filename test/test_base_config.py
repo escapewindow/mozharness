@@ -32,13 +32,13 @@ class TestParseConfigFile(unittest.TestCase):
         local_dict = {}
         execfile(filename, global_dict, local_dict)
         return local_dict['config']
-    
+
     def test_json_config(self):
         c = config.BaseConfig(initial_config_file='test/test.json')
         content_dict = self._get_json_config()
         for key in content_dict.keys():
             self.assertEqual(content_dict[key], c._config[key])
-    
+
     def test_python_config(self):
         c = config.BaseConfig(initial_config_file='test/test.py')
         config_dict = self._get_python_config()
@@ -61,7 +61,7 @@ class TestParseConfigFile(unittest.TestCase):
         self.assertRaises(SyntaxError, config.parse_config_file, "test/test_malformed.py")
 
 
-    
+
 class TestReadOnlyDict(unittest.TestCase):
     control_dict = {
      'b':'2',
