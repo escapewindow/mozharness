@@ -177,8 +177,8 @@ class OSMixin(object):
             try:
                 shutil.move(src, dest)
             # http://docs.python.org/tutorial/errors.html
-            except IOError as (errno, strerror):
-                self.log("IO error({0}): {1}".format(errno, strerror),
+            except IOError, e:
+                self.log("IO error: %s" % str(e),
                          level=error_level, exit_code=exit_code)
                 return -1
         return 0
