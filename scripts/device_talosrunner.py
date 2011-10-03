@@ -253,9 +253,7 @@ class DeviceTalosRunner(VirtualenvMixin, DeviceMixin, MercurialScript):
         file_path = os.path.join(dirs['abs_work_dir'], file_name)
         c = self.config
         if c['enable_automation']:
-            if c['device_protocol'] == 'sut' and c['device_type'] in \
-                                                 ("tegra250",):
-                self.set_device_time()
+            self.set_device_time()
             self.set_device_proxy_flag("installing %s" % file_path)
         # dm.getInfo('process')
         # dm.getInfo('memory')
