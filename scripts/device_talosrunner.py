@@ -250,12 +250,13 @@ class DeviceTalosRunner(VirtualenvMixin, DeviceMixin, MercurialScript):
         dm = self.query_devicemanager()
         file_name = self.query_download_file_name()
         dirs = self.query_abs_dirs()
+        file_path = os.path.join(dirs['abs_work_dir'], file_name)
         c = self.config
         if c['enable_automation']:
             if c['device_protocol'] == 'sut' and c['device_type'] in \
                                                  ("tegra250",):
                 self.set_device_time()
-        # set proxyFlag
+            self.set_device_proxy_flag("installing %s" % file_path)
         # dm.getInfo('process')
         # dm.getInfo('memory')
         # dm.getInfo('uptime')
@@ -273,8 +274,7 @@ class DeviceTalosRunner(VirtualenvMixin, DeviceMixin, MercurialScript):
             if "No such file" not in output:
                 self.run_command(["adb", "uninstall", c['device_package_name']],
                                  error_list=ADBErrorList)
-            self.run_command(["adb", "install", '-r',
-                              os.path.join(dirs['abs_work_dir'], file_name)],
+            self.run_command(["adb", "install", '-r', file_path],
                              error_list=ADBErrorList)
 
     def run_talos(self):
