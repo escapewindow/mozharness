@@ -245,11 +245,8 @@ class DeviceMixin(object):
         """ Not currently ported to DeviceManagerADB.
         """
         c = self.config
-        if c['device_protocol'] != "sut" or c['device_type'] not in ("tegra250",):
-            return
         # adb shell 'date' will give a date string
-        date_string = self.get_output_from_command(["adb", "shell", "date"],
-                                                   error_list=ADBErrorList)
+        date_string = self.get_output_from_command(["adb", "shell", "date"])
         # TODO what to do when we error?
         return date_string
 
@@ -259,15 +256,12 @@ class DeviceMixin(object):
         """
         # adb shell date UNIXTIMESTAMP will set date
         c = self.config
-        if c['device_protocol'] != "sut" or c['device_type'] not in ("tegra250",):
-            self.debug("Not setting date/time...")
-        dm = self.query_devicemanager()
         if device_time is None:
             device_time = time.time()
-        self.query_device_time()
-        status = self.run_command(['adb', 'shell', 'date', device_time],
+        self.info(self.query_device_time())
+        status = self.run_command(['adb', 'shell', 'date', str(device_time)],
                                   error_list=ADBErrorList)
-        self.query_device_time()
+        self.info(self.query_device_time())
         return status
 
     def remove_device_root(self, error_level='error'):
@@ -284,6 +278,9 @@ class DeviceMixin(object):
 
     def uninstall_app(self, package_name, package_root="/data/data",
                       error_level="error"):
+        # adb shell ls -d /data/data/package_name
+        # (0 if exists; 1 if not)
+        # adb uninstall package_name
         dm = self.query_devicemanager()
         if dm.dirExists('%s/%s' % (package_root, package_name)):
             status = dm.uninstallAppAndReboot(package_name)
@@ -343,6 +340,10 @@ class DeviceMixin(object):
         if c['device_type'] not in ("tegra250",):
             self.debug("No need to remove /etc/hosts on a non-Tegra250.")
             return
+        # output = get_output_from_command adb shell ls -d /etc/hosts
+        # if 'No such file or directory' not in output:
+        # adb shell mount -o remount,rw -t yaffs2 /dev/block/mtdblock3 /system
+        # adb shell rm /etc/hosts
         dm = self.query_devicemanager()
         if dm.fileExists(hosts_file):
             self.info("Removing %s file." % hosts_file)

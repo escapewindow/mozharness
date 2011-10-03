@@ -11,6 +11,10 @@ Going to start CHANGES-noting *device* changes
 * scripts/device_talosrunner.py (DeviceTalosRunner.install_app)
     set_device_time() if enable_automation
 
+* mozharness/base/vcs/mercurial.py (MercurialVCS._ensure_shared_repo_and_revision)
+    Update existing dest if it's clone from HG_SHARE_BASE_DIR (trying to
+    share to an existing dest will fail).
+
 2011-09-26  Aki Sasaki  <aki@mozilla.com>
 * mozharness/base/errors.py (ADBErrorList):
     Added.
