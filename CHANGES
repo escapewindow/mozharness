@@ -1,6 +1,18 @@
 === 0.5 ===
+2011-10-03  Aki Sasaki  <aki@mozilla.com>
+Going to start CHANGES-noting *device* changes
+
+* mozharness/test/device.py (DeviceMixin.query_device_time)
+    switched to adb date
+
+* mozharness/test/device.py (DeviceMixin.set_device_time)
+    switched to adb date
+
+* scripts/device_talosrunner.py (DeviceTalosRunner.install_app)
+    set_device_time() if enable_automation
+
 2011-09-26  Aki Sasaki  <aki@mozilla.com>
-* mozharness/base/errros.py (ADBErrorList):
+* mozharness/base/errors.py (ADBErrorList):
     Added.
 
 2011-09-20  Aki Sasaki  <aki@mozilla.com>

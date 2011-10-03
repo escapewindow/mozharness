@@ -46,13 +46,12 @@ questionable whether we'll support both.  Currently angling for ADB support
 only.
 '''
 
-import datetime
 import os
 import re
 import sys
 import time
 
-from mozharness.base.errors import PythonErrorList, BaseErrorList
+from mozharness.base.errors import PythonErrorList, BaseErrorList, ADBErrorList
 from mozharness.base.log import LogMixin, DEBUG, INFO, WARNING, ERROR, CRITICAL, FATAL, IGNORE
 from mozharness.base.script import ShellMixin, OSMixin
 
@@ -248,29 +247,28 @@ class DeviceMixin(object):
         c = self.config
         if c['device_protocol'] != "sut" or c['device_type'] not in ("tegra250",):
             return
-        dm = self.query_devicemanager()
-        ts = int(dm.getCurrentTime()) # epoch time in milliseconds
-        dt = datetime.datetime.utcfromtimestamp(ts / 1000)
-        self.info("Current device time is %s" % dt.strftime('%Y/%m/%d %H:%M:%S'))
-        return dt
+        # adb shell 'date' will give a date string
+        date_string = self.get_output_from_command(["adb", "shell", "date"],
+                                                   error_list=ADBErrorList)
+        # TODO what to do when we error?
+        return date_string
 
     def set_device_time(self, device_time=None, error_level='error'):
         """ Not currently ported to DeviceManagerADB.
+        device_time is seconds since epoch.
         """
+        # adb shell date UNIXTIMESTAMP will set date
         c = self.config
         if c['device_protocol'] != "sut" or c['device_type'] not in ("tegra250",):
             self.debug("Not setting date/time...")
         dm = self.query_devicemanager()
         if device_time is None:
-            device_time = datetime.datetime.now().strftime('%Y/%m/%d %H:%M:%S')
-        try:
-            dm.query_device_time()
-            status = dm.verifySendCMD(['settime %s' % device_time])
-            dm.query_device_time()
-        except DMError, e:
-            self.log("Can't set device time: %s" % e, level=error_level)
-            return False
-        return True
+            device_time = time.time()
+        self.query_device_time()
+        status = self.run_command(['adb', 'shell', 'date', device_time],
+                                  error_list=ADBErrorList)
+        self.query_device_time()
+        return status
 
     def remove_device_root(self, error_level='error'):
         dm = self.query_devicemanager()
