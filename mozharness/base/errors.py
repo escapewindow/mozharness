@@ -104,6 +104,8 @@ PythonErrorList = BaseErrorList + [
  {'substr': r'''TypeError: ''', 'level': ERROR},
  {'substr': r'''NameError: ''', 'level': ERROR},
  {'substr': r'''ZeroDivisionError: ''', 'level': ERROR},
+ {'regex': r'''raise \w*Exception: ''', 'level': CRITICAL},
+ {'regex': r'''raise \w*Error: ''', 'level': CRITICAL},
 ]
 
 # We may need to have various MakefileErrorLists for differing amounts of

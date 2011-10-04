@@ -50,6 +50,7 @@ import time
 sys.path.insert(1, os.path.dirname(sys.path[0]))
 
 from mozharness.base.errors import PythonErrorList, ADBErrorList
+from mozharness.base.log import DEBUG, INFO, WARNING, ERROR, CRITICAL, FATAL, IGNORE
 from mozharness.base.python import virtualenv_config_options, VirtualenvMixin
 from mozharness.base.vcs.vcsbase import MercurialScript
 from mozharness.test.device import device_config_options, DeviceMixin
@@ -313,6 +314,8 @@ class DeviceTalosRunner(VirtualenvMixin, DeviceMixin, MercurialScript):
         TalosErrorList = PythonErrorList[:]
         TalosErrorList += [
          {'regex': r'''run-as: Package '.*' is unknown''', 'level': DEBUG},
+         {'substr': r'''FAIL: Graph server unreachable''', 'level': CRITICAL},
+         {'regex': r'''No machine_name called '.*' can be found''', 'level': CRITICAL},
         ]
         self.run_command([python, 'run_tests.py', '--noisy', '--debug',
                           'local.yml'],
