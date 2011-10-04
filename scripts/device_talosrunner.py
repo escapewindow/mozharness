@@ -202,7 +202,7 @@ class DeviceTalosRunner(VirtualenvMixin, DeviceMixin, MercurialScript):
     def pull(self):
         c = self.config
         dirs = self.query_abs_dirs()
-        if c['talos_zip']:
+        if c.get('talos_zip'):
             self.mkdir_p(dirs['abs_work_dir'])
             status = self.download_file(
                 c['talos_zip'],
