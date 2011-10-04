@@ -54,6 +54,9 @@ from mozharness.base.python import virtualenv_config_options, VirtualenvMixin
 from mozharness.base.vcs.vcsbase import MercurialScript
 from mozharness.test.device import device_config_options, DeviceMixin
 
+# Stop buffering!
+sys.stdout = os.fdopen(sys.stdout.fileno(), 'w', 0)
+
 # DeviceTalosRunner {{{1
 class DeviceTalosRunner(VirtualenvMixin, DeviceMixin, MercurialScript):
     config_options = [[
@@ -318,6 +321,22 @@ class DeviceTalosRunner(VirtualenvMixin, DeviceMixin, MercurialScript):
         self.run_command(command, cwd=dirs['abs_talos_dir'],
                          error_list=PythonErrorList,
                          halt_on_failure=True)
+
+    def preflight_run_talos(self):
+        if 'install-app' not in self.actions:
+            c = self.config
+            procs = self.get_output_from_command(['adb', 'shell', 'ps'])
+            if c['device_package_name'] in procs:
+                self.info("Found %s running... attempting to kill." %
+                          c['device_package_name'])
+                # TODO this needs to kill the pid
+                # TODO verify it's gone
+                for line in procs.splitlines():
+                    line_contents = re.split('\W+', line)
+                    if line_contents[8] == c['device_package_name']:
+                        self.run_command(['adb', 'shell', 'kill',
+                                          line_contents[1]],
+                                         error_list=ADBErrorList)
 
     def run_talos(self):
         dirs = self.query_abs_dirs()
