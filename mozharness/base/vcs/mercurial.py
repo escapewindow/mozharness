@@ -394,7 +394,7 @@ class MercurialVCS(ShellMixin, OSMixin, LogMixin, object):
                 try:
                     self.pull(repo, shared_repo, branch=branch, revision=revision)
                 except subprocess.CalledProcessError:
-                    self.warning("Error pulling changes into %s form %s; clobbering" % (shared_repo, repo))
+                    self.warning("Error pulling changes into %s from %s; clobbering" % (shared_repo, repo))
                     self.dump_exception(level='debug')
                     self.clone(repo, shared_repo, branch=branch, revision=revision)
             else:
@@ -474,7 +474,7 @@ class MercurialVCS(ShellMixin, OSMixin, LogMixin, object):
             try:
                 return self.pull(repo, dest, branch=branch, revision=revision)
             except subprocess.CalledProcessError:
-                self.warning("Error pulling changes into %s form %s; clobbering" % (dest, repo))
+                self.warning("Error pulling changes into %s from %s; clobbering" % (dest, repo))
                 self.dump_exception(level='debug')
                 self.rmtree(dest)
         elif not os.path.exists(os.path.dirname(dest)):
