@@ -10,7 +10,7 @@ config = {
     "results_link": "/server/collect.cgi",
     "talos_suites": ["ts"],
     "talos_config_file": "remote.config",
-    "talos_web_server": "10.251.28.55:8000",
+    "talos_web_server": "10.251.27.230:8000",
     "virtualenv_path": "/src/talosrunner/venv",
     "device_protocol": "adb",
     "device_port": 5555,

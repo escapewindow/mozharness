@@ -285,7 +285,7 @@ class DeviceTalosRunner(VirtualenvMixin, DeviceMixin, MercurialScript):
                    '--browserWait', '60',
 # TODO Only run this if we want a webserver
                    '--develop',
-                   '--webServer', '',
+                   '--webServer', c['talos_web_server'],
 # TODO otherwise
 #                   '--webServer', c['talos_web_server'],
                   ]
@@ -304,8 +304,8 @@ class DeviceTalosRunner(VirtualenvMixin, DeviceMixin, MercurialScript):
                 # TODO this needs to kill the pid
                 # TODO verify it's gone
                 for line in procs.splitlines():
-                    line_contents = re.split('\W+', line)
-                    if line_contents[8] == c['device_package_name']:
+                    line_contents = re.split('\s+', line)
+                    if line_contents[-1].startswith(c['device_package_name']):
                         self.run_command(['adb', 'shell', 'kill',
                                           line_contents[1]],
                                          error_list=ADBErrorList)
