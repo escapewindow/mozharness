@@ -333,7 +333,8 @@ class ShellMixin(object):
 
     def get_output_from_command(self, command, cwd=None,
                                 halt_on_failure=False, env=None,
-                                silent=False, tmpfile_base_path='tmpfile',
+                                silent=False, log_level=INFO,
+                                tmpfile_base_path='tmpfile',
                                 return_type='output', save_tmpfiles=False,
                                 throw_exception=False):
         """Similar to run_command, but where run_command is an
@@ -405,7 +406,7 @@ class ShellMixin(object):
             fh = open(tmp_stdout_filename)
             output = fh.read()
             if not silent:
-                self.info("Output received:")
+                self.log("Output received:", level=log_level)
                 output_lines = output.rstrip().splitlines()
                 for line in output_lines:
                     if not line or line.isspace():

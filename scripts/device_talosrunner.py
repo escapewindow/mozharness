@@ -295,7 +295,8 @@ class DeviceTalosRunner(VirtualenvMixin, DeviceMixin, MercurialScript):
     def preflight_run_talos(self):
         if 'install-app' not in self.actions:
             c = self.config
-            procs = self.get_output_from_command(['adb', 'shell', 'ps'])
+            procs = self.get_output_from_command(['adb', 'shell', 'ps'],
+                                                 log_level=DEBUG)
             if c['device_package_name'] in procs:
                 self.info("Found %s running... attempting to kill." %
                           c['device_package_name'])
