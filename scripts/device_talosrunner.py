@@ -105,7 +105,6 @@ class DeviceTalosRunner(VirtualenvMixin, DeviceMixin, MercurialScript):
     def __init__(self, require_config_file=False):
         self.python = None
         self.download_file_name = None
-        self.browser_revision = None
         super(DeviceTalosRunner, self).__init__(
          config_options=self.config_options,
          all_actions=['preclean',
@@ -115,7 +114,6 @@ class DeviceTalosRunner(VirtualenvMixin, DeviceMixin, MercurialScript):
                       'cleanup-device',
                       'download',
                       'unpack',
-                      'print-browser-revision',
                       'install-app',
                       'configure',
 # create profile
@@ -130,7 +128,6 @@ class DeviceTalosRunner(VirtualenvMixin, DeviceMixin, MercurialScript):
                           'cleanup-device',
                           'download',
                           'unpack',
-                          'print-browser-revision',
                           'install-app',
                           'configure',
                          ],
@@ -170,29 +167,6 @@ class DeviceTalosRunner(VirtualenvMixin, DeviceMixin, MercurialScript):
             download_file_name = '%s.%s' % (m.group(1), m.group(2))
         self.download_file_name = download_file_name
         return self.download_file_name
-
-    def query_browser_revision(self):
-        if self.browser_revision:
-            return self.browser_revision
-        dirs = self.query_abs_dirs()
-        file_name = os.path.join(dirs['abs_browser_dir'], 'application.ini')
-        if os.path.exists(file_name):
-            browser_revision = {}
-            # TODO generic way to read a file?
-            # TODO this probably needs to be more robust.
-            fh = open(file_name, 'r')
-            contents = fh.read()
-            fh.close()
-            m = re.search(r"""BuildID=(?P<buildid>\d+)""", contents)
-            browser_revision['buildid'] = m.group("buildid")
-            m = re.search(r"""SourceStamp=(?P<revision>\S+)""", contents)
-            browser_revision['revision'] = m.group("revision")
-            m = re.search(r"""SourceRepository=(?P<repo_path>\S+)""", contents)
-            browser_revision['repo_path'] = m.group("repo_path")
-            self.browser_revision = browser_revision
-            return self.browser_revision
-        self.warning("Can't find browser revision: %s doesn't exist!" % \
-                     file_name)
 
     def _clobber(self):
         dirs = self.query_abs_dirs()
@@ -242,16 +216,6 @@ class DeviceTalosRunner(VirtualenvMixin, DeviceMixin, MercurialScript):
                                                       file_name),
                          cwd=dirs['abs_browser_dir'])
 
-    def print_browser_revision(self):
-        browser_revision = self.query_browser_revision()
-        if not browser_revision:
-            self.warning("Can't print browser revision!")
-            return -1
-        if self.config.get("enable_automation"):
-            self.info("""TinderboxPrint: <a href="%(repo_path)s/rev/%(revision)s" title="Built from Mozilla revision %(revision)s">moz:%(revision)s</a> <br />""" % browser_revision)
-        else:
-            self.info("Built from %(repo_path)s/rev/%(revision)s." % browser_revision)
-
     def install_app(self):
         dm = self.query_devicemanager()
         file_name = self.query_download_file_name()
@@ -261,9 +225,11 @@ class DeviceTalosRunner(VirtualenvMixin, DeviceMixin, MercurialScript):
         if c['enable_automation']:
             self.set_device_time()
             self.set_device_proxy_flag("installing %s" % file_path)
-        self.run_command('adb shell ps', error_list=ADBErrorList)
+        if self._log_level_at_least(DEBUG):
+            self.run_command('adb shell ps', error_list=ADBErrorList)
         # TODO dm.getInfo('memory')
-        self.run_command('adb shell uptime', error_list=ADBErrorList)
+        if self._log_level_at_least(DEBUG):
+            self.run_command('adb shell uptime', error_list=ADBErrorList)
         # TODO getResolution
         # dm.adjustResolution(1024, 768, 'crt')
         # reboot; waitfordevice
@@ -315,8 +281,11 @@ class DeviceTalosRunner(VirtualenvMixin, DeviceMixin, MercurialScript):
                    '--remotePort', '-1',
                    '--sampleConfig', c['talos_config_file'],
                    '--output', 'local.yml',
-                   '--webServer', c['talos_web_server'],
                    '--browserWait', '60',
+# TODO Only run this if we want a webserver
+                   '--develop',
+# TODO otherwise
+#                   '--webServer', c['talos_web_server'],
                   ]
         self.run_command(command, cwd=dirs['abs_talos_dir'],
                          error_list=PythonErrorList,
@@ -342,6 +311,9 @@ class DeviceTalosRunner(VirtualenvMixin, DeviceMixin, MercurialScript):
         dirs = self.query_abs_dirs()
         python = self.query_python_path()
         TalosErrorList = PythonErrorList[:]
+        TalosErrorList += [
+         {'regex': r'''run-as: Package '.*' is unknown''', 'level': DEBUG},
+        ]
         self.run_command([python, 'run_tests.py', '--noisy', '--debug',
                           'local.yml'],
                           error_list=TalosErrorList,
