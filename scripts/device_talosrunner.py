@@ -113,7 +113,8 @@ class DeviceTalosRunner(VirtualenvMixin, DeviceMixin, MercurialScript):
                       'unpack',
                       'print-browser-revision',
                       'install-app',
-# perfconfigurator
+                      'configure',
+# create profile
                       'run-talos',
 # reboot device
 #                      'upload',
@@ -127,6 +128,7 @@ class DeviceTalosRunner(VirtualenvMixin, DeviceMixin, MercurialScript):
                           'unpack',
                           'print-browser-revision',
                           'install-app',
+                          'configure',
                          ],
          require_config_file=require_config_file,
          config={"virtualenv_modules": ["PyYAML"],
@@ -255,13 +257,12 @@ class DeviceTalosRunner(VirtualenvMixin, DeviceMixin, MercurialScript):
         if c['enable_automation']:
             self.set_device_time()
             self.set_device_proxy_flag("installing %s" % file_path)
-        # dm.getInfo('process')
-        # dm.getInfo('memory')
-        # dm.getInfo('uptime')
-        # getResolution
+        self.run_command('adb shell ps', error_list=ADBErrorList)
+        # TODO dm.getInfo('memory')
+        self.run_command('adb shell uptime', error_list=ADBErrorList)
+        # TODO getResolution
         # dm.adjustResolution(1024, 768, 'crt')
         # reboot; waitfordevice
-        # TODO sut support?
         cmd = None
         # TODO error checking
         if not c['enable_automation']:
@@ -274,6 +275,40 @@ class DeviceTalosRunner(VirtualenvMixin, DeviceMixin, MercurialScript):
                                  error_list=ADBErrorList)
             self.run_command(["adb", "install", '-r', file_path],
                              error_list=ADBErrorList)
+            file_name = os.path.join(dirs['abs_browser_dir'], 'application.ini')
+            self.run_command(["adb", "push", file_name,
+                              '/data/data/%s/application.ini' % c['device_package_name']])
+
+    def configure(self):
+        c = self.config
+        dirs = self.query_abs_dirs()
+        python = self.query_python_path()
+        no_chrome = "--noChrome"
+        # TODO set no_chrome based on active tests
+        command = [python, 'remotePerfConfigurator.py',
+                   '-v',
+                   '-e', c['device_package_name'],
+                   '-t', c['device_name'],
+                   '-b', c['talos_branch'],
+                   '--branchName', c['talos_branch'],
+                   '--resultsServer', c['graph_server'],
+                   '--resultsLink', c['results_link'],
+                   '--activeTests', ','.join(c['talos_suites']),
+                   no_chrome,
+# TODO how do i just use the adb device?
+#                   '--remoteDevice', "%s:%s" % (c['device_ip'], str(c.get('device_port', 5555))),
+#                   '--remoteDevice', c['device_ip'],
+                   '--remoteDevice', '',
+# remotePort of -1 for ADB
+                   '--remotePort', '-1',
+                   '--sampleConfig', c['talos_config_file'],
+                   '--output', 'local.yml',
+                   '--webServer', c['talos_web_server'],
+                   '--browserWait', '60',
+                  ]
+        self.run_command(command, cwd=dirs['abs_talos_dir'],
+                         error_list=PythonErrorList,
+                         halt_on_failure=True)
 
     def run_talos(self):
         dirs = self.query_abs_dirs()
