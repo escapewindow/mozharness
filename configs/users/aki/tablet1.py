@@ -6,7 +6,7 @@ config = {
     "device_package_name": "org.mozilla.fennec_aurora",
     "talos_branch": "mobile",
 #    "graph_server": "graphs-stage.mozilla.org",
-    "graph_server": "",
+    "graph_server": "''",
     "results_link": "/server/collect.cgi",
     "talos_suites": ["ts"],
     "talos_config_file": "remote.config",
