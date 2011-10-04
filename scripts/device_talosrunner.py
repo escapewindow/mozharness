@@ -45,6 +45,7 @@ WIP.
 import os
 import re
 import sys
+import time
 
 sys.path.insert(1, os.path.dirname(sys.path[0]))
 
@@ -279,6 +280,14 @@ class DeviceTalosRunner(VirtualenvMixin, DeviceMixin, MercurialScript):
             self.run_command(["adb", "push", file_name,
                               '/data/data/%s/application.ini' % c['device_package_name']])
 
+    def preflight_configure(self):
+        if 'install-app' in self.actions:
+            c = self.config
+            time_to_sleep = c.get("post_install_sleep", 60)
+            self.info("Sleeping %d to avoid post-install errors" %
+                      time_to_sleep)
+            time.sleep(time_to_sleep)
+
     def configure(self):
         c = self.config
         dirs = self.query_abs_dirs()
@@ -296,7 +305,7 @@ class DeviceTalosRunner(VirtualenvMixin, DeviceMixin, MercurialScript):
                    '--activeTests', ','.join(c['talos_suites']),
                    no_chrome,
 # TODO how do i just use the adb device?
-#                   '--remoteDevice', "%s:%s" % (c['device_ip'], str(c.get('device_port', 5555))),
+                   '--remoteDevice', "%s:%s" % (c['device_ip'], str(c.get('device_port', 5555))),
 #                   '--remoteDevice', c['device_ip'],
                    '--remoteDevice', '',
 # remotePort of -1 for ADB
