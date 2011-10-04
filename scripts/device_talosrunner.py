@@ -285,6 +285,7 @@ class DeviceTalosRunner(VirtualenvMixin, DeviceMixin, MercurialScript):
                    '--browserWait', '60',
 # TODO Only run this if we want a webserver
                    '--develop',
+                   '--webServer', '',
 # TODO otherwise
 #                   '--webServer', c['talos_web_server'],
                   ]
@@ -316,6 +317,7 @@ class DeviceTalosRunner(VirtualenvMixin, DeviceMixin, MercurialScript):
         TalosErrorList += [
          {'regex': r'''run-as: Package '.*' is unknown''', 'level': DEBUG},
          {'substr': r'''FAIL: Graph server unreachable''', 'level': CRITICAL},
+         {'substr': r'''erfConfigurator.py: Unknown error''', 'level': CRITICAL},
          {'regex': r'''No machine_name called '.*' can be found''', 'level': CRITICAL},
         ]
         self.run_command([python, 'run_tests.py', '--noisy', '--debug',

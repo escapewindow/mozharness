@@ -24,7 +24,7 @@ Going to start CHANGES-noting *device* changes
     Added.
 
 * scripts/device_talosrunner.py (DeviceTalosRunner.run_talos):
-    Fleshed out.
+    Fleshed out.  Fleshed out TalosErrorList.
 
 * mozharness/base/errors.py (PythonErrorList):
     added 'raise \w*(Exception|Error)' regexes as ERRORs.
