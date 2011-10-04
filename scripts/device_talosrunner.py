@@ -249,6 +249,7 @@ class DeviceTalosRunner(VirtualenvMixin, DeviceMixin, MercurialScript):
             file_name = os.path.join(dirs['abs_browser_dir'], 'application.ini')
             self.run_command(["adb", "push", file_name,
                               '/data/data/%s/application.ini' % c['device_package_name']])
+            self.clear_device_proxy_flag("installing %s" % file_path)
 
     def preflight_configure(self):
         if 'install-app' in self.actions:
