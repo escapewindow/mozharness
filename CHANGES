@@ -2,14 +2,35 @@
 2011-10-03  Aki Sasaki  <aki@mozilla.com>
 Going to start CHANGES-noting *device* changes
 
-* mozharness/test/device.py (DeviceMixin.query_device_time)
+* mozharness/test/device.py (DeviceMixin.query_device_time):
     switched to adb date
 
-* mozharness/test/device.py (DeviceMixin.set_device_time)
+* mozharness/test/device.py (DeviceMixin.set_device_time):
     switched to adb date
 
-* scripts/device_talosrunner.py (DeviceTalosRunner.install_app)
+* scripts/device_talosrunner.py (__main__):
+    stop buffering.
+
+* scripts/device_talosrunner.py (DeviceTalosRunner.install_app):
     set_device_time() if enable_automation
+
+* scripts/device_talosrunner.py (DeviceTalosRunner.print_browser_revision,
+                                 query_browser_revision):
+    Removed.
+
+* scripts/device_talosrunner.py (DeviceTalosRunner.configure,
+                                 preflight_configure,
+                                 preflight_run_talos):
+    Added.
+
+* scripts/device_talosrunner.py (DeviceTalosRunner.run_talos):
+    Fleshed out.
+
+* mozharness/base/errors.py (PythonErrorList):
+    added 'raise \w*(Exception|Error)' regexes as ERRORs.
+
+* mozharness/base/script.py (ShellMixin.get_output_from_command():
+    added a log_level to get_output_from_command that defaults to INFO.
 
 * mozharness/base/vcs/mercurial.py (MercurialVCS._ensure_shared_repo_and_revision)
     Update existing dest if it's clone from HG_SHARE_BASE_DIR (trying to
