@@ -412,7 +412,7 @@ class ShellMixin(object):
                     if not line or line.isspace():
                         continue
                     line = line.decode("utf-8")
-                    self.info(' %s' % line)
+                    self.log(' %s' % line, level=log_level)
                 output = '\n'.join(output_lines)
             fh.close()
         if os.path.exists(tmp_stderr_filename) and os.path.getsize(tmp_stderr_filename):
