@@ -58,6 +58,18 @@ from mozharness.test.device import device_config_options, DeviceMixin
 # Stop buffering!
 sys.stdout = os.fdopen(sys.stdout.fileno(), 'w', 0)
 
+KNOWN_SUITES = (
+    'ts',
+    'tdhtml',
+    'tgfx',
+    'tp4m',
+    'tpan',
+    'tsspider',
+    'tsvg',
+    'twinopen',
+    'tzoom',
+)
+
 # DeviceTalosRunner {{{1
 class DeviceTalosRunner(VirtualenvMixin, DeviceMixin, MercurialScript):
     config_options = [[
@@ -79,6 +91,13 @@ class DeviceTalosRunner(VirtualenvMixin, DeviceMixin, MercurialScript):
       "dest": "talos_tag",
       "default": "default",
       "help": "Specify the talos tag for the talos repo."
+     }
+    ],[
+     ["--talos-suite",],
+     {"action": "extend",
+      "dest": "talos_suites",
+      "type": "string",
+      "help": "Specify the talos suite(s) to run"
      }
     ],[
      ["--enable-automation"],
@@ -140,6 +159,14 @@ class DeviceTalosRunner(VirtualenvMixin, DeviceMixin, MercurialScript):
         )
 
     # Helper methods {{{2
+
+    def _pre_config_lock(self, rw_config):
+        c = self.config
+        if 'talos_suites' not in c:
+            self.fatal("Must specify --talos-suites!")
+        for suite in c['talos_suites']:
+            if suite not in KNOWN_SUITES:
+                self.fatal("Unknown suite %s! Choose from %s" % (suite, KNOWN_SUITES))
 
     def query_abs_dirs(self):
         if self.abs_dirs:
