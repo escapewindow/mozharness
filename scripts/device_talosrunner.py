@@ -97,7 +97,14 @@ class DeviceTalosRunner(VirtualenvMixin, DeviceMixin, MercurialScript):
      {"action": "extend",
       "dest": "talos_suites",
       "type": "string",
-      "help": "Specify the talos suite(s) to run"
+      "help": "Specify the talos suite(s) to run."
+     }
+    ],[
+     ["--tp-zip",],
+     {"action": "store",
+      "dest": "tp_zip",
+      "type": "string",
+      "help": "Specify the a page load test zip if setting up a local webserver."
      }
     ],[
      ["--enable-automation"],
@@ -290,7 +297,9 @@ class DeviceTalosRunner(VirtualenvMixin, DeviceMixin, MercurialScript):
         c = self.config
         dirs = self.query_abs_dirs()
         python = self.query_python_path()
-        no_chrome = "--noChrome"
+        additional_options = []
+        if c['disable_chrome']:
+            additional_options.append("--noChrome")
         # TODO set no_chrome based on active tests
         command = [python, 'remotePerfConfigurator.py',
                    '-v',
@@ -301,9 +310,7 @@ class DeviceTalosRunner(VirtualenvMixin, DeviceMixin, MercurialScript):
                    '--resultsServer', c['graph_server'],
                    '--resultsLink', c['results_link'],
                    '--activeTests', ','.join(c['talos_suites']),
-                   no_chrome,
-# TODO how do i just use the adb device?
-                   '--remoteDevice', "%s:%s" % (c['device_ip'], str(c.get('device_port', 5555))),
+#                   '--remoteDevice', "%s:%s" % (c['device_ip'], str(c.get('device_port', 5555))),
 #                   '--remoteDevice', c['device_ip'],
                    '--remoteDevice', '',
 # remotePort of -1 for ADB
@@ -314,9 +321,7 @@ class DeviceTalosRunner(VirtualenvMixin, DeviceMixin, MercurialScript):
 # TODO Only run this if we want a webserver
                    '--develop',
                    '--webServer', c['talos_web_server'],
-# TODO otherwise
-#                   '--webServer', c['talos_web_server'],
-                  ]
+                  ] + additional_options
         self.run_command(command, cwd=dirs['abs_talos_dir'],
                          error_list=PythonErrorList,
                          halt_on_failure=True)
