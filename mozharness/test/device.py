@@ -105,6 +105,7 @@ class DeviceMixin(object):
      * device_ip holds the IP of the device.
     '''
     devicemanager = None
+    device_serial = None
 
     def query_devicemanager(self, level='fatal'):
         if self.devicemanager:
@@ -129,6 +130,32 @@ class DeviceMixin(object):
             raise
         self.devicemanager.debug = 3
         return self.devicemanager
+
+    def query_device_serial(self):
+        """ADB-specific device serial number.
+        """
+        if self.device_serial:
+            return self.device_serial
+        c = self.config
+        device_serial = None
+        if 'device_serial' in c:
+            device_serial = c['device_serial']
+        elif c.get('device_ip') and c.get('device_port'):
+            device_serial = "%s:%s" % (c['device_ip'], str(c['device_port']))
+        else:
+            self.info("Trying to find device...")
+            output = self.get_output_from_command("adb devices")
+            if not str(output).startswith("List of devices attached"):
+                self.fatal("Can't determine device serial!  Is the device connected by adb?")
+            device_list = output.splitlines()
+            if len(device_list) < 3:
+                self.fatal("No device attached via adb! Use 'adb connect'!")
+            elif len(device_list) > 3:
+                self.warning("""More than one device detected; specify 'device_serial' or both\n'device_port' and 'device_ip' to target a specific device!""")
+            device_serial = device_list[1].split(' ')[0]
+            self.info("Found %s." % device_serial)
+        self.device_serial = device_serial
+        return self.device_serial
 
     # device_flags {{{2
     def _query_device_flag(self, flag_file=None):
