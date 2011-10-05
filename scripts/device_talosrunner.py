@@ -268,7 +268,11 @@ class DeviceTalosRunner(VirtualenvMixin, DeviceMixin, MercurialScript):
             self.run_command(["adb", "-s", "shell", "uptime"],
                              error_list=ADBErrorList)
         # TODO getResolution ?
+        # for tegra250:
+        # adb shell getprop persist.tegra.dpy3.mode.width
+        # adb shell getprop persist.tegra.dpy3.mode.height
         #
+        # for non-tegra250, this ugliness:
         # adb -s serial shell screencap /mnt/sdcard/tests/foo.png
         # adb -s serial shell ls -l /mnt/sdcard/tests/foo.png
         # -rw-rw-r-- root     sdcard_rw   207187 2011-10-04 18:12 foo.png
