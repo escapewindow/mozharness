@@ -307,7 +307,7 @@ class DeviceTalosRunner(VirtualenvMixin, DeviceMixin, MercurialScript):
         dirs = self.query_abs_dirs()
         python = self.query_python_path()
         additional_options = []
-        if c['disable_chrome']:
+        if c.get('disable_chrome'):
             additional_options.append("--noChrome")
         # TODO set no_chrome based on active tests
         command = [python, 'remotePerfConfigurator.py',
