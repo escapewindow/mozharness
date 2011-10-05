@@ -267,9 +267,21 @@ class DeviceTalosRunner(VirtualenvMixin, DeviceMixin, MercurialScript):
         if self._log_level_at_least(DEBUG):
             self.run_command(["adb", "-s", "shell", "uptime"],
                              error_list=ADBErrorList)
-        # TODO getResolution
-        # dm.adjustResolution(1024, 768, 'crt')
-        # reboot; waitfordevice
+        # TODO getResolution ?
+        #
+        # adb -s serial shell screencap /mnt/sdcard/tests/foo.png
+        # adb -s serial shell ls -l /mnt/sdcard/tests/foo.png
+        # -rw-rw-r-- root     sdcard_rw   207187 2011-10-04 18:12 foo.png
+        # adb pull /mnt/sdcard/tests/foo.png
+        # Can do via PIL:
+        # import Image
+        # Image.open("foo.png").size
+        # (1280, 800)
+        # I hate requiring another module just for this, if we can help it.
+        #
+        # adb -s serial shell am display-size 1024x768
+        # reboot; adb wait-for-device; sleep
+        # (later) adb -s serial shell am display-size 1680:1050
         cmd = None
         # TODO error checking
         if not c['enable_automation']:
