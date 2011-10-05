@@ -272,8 +272,10 @@ class DeviceMixin(object):
         """ Not currently ported to DeviceManagerADB.
         """
         c = self.config
+        serial = self.query_device_serial()
         # adb shell 'date' will give a date string
-        date_string = self.get_output_from_command(["adb", "shell", "date"])
+        date_string = self.get_output_from_command(["adb", "-s", serial,
+                                                    "shell", "date"])
         # TODO what to do when we error?
         return date_string
 
@@ -283,10 +285,12 @@ class DeviceMixin(object):
         """
         # adb shell date UNIXTIMESTAMP will set date
         c = self.config
+        serial = self.query_device_serial()
         if device_time is None:
             device_time = time.time()
         self.info(self.query_device_time())
-        status = self.run_command(['adb', 'shell', 'date', str(device_time)],
+        status = self.run_command(["adb", "-s", serial,  "shell", "date",
+                                   str(device_time)],
                                   error_list=ADBErrorList)
         self.info(self.query_device_time())
         return status
@@ -328,14 +332,13 @@ class DeviceMixin(object):
         c = self.config
         # TODO support non-adb
         if c['device_protocol'] == 'adb':
-            self.info("Looking for device...")
-            output = self.get_output_from_command("adb devices")
-            if output.__class__ == str:
-                # TODO make this multi-device friendly?
-                m = re.search(r'''\n(\S+)\s+(\S+)\n*$''', output)
-                if m and len(m.groups()) >= 2:
-                    self.info("Found %s %s." % (m.group(2), m.group(1)))
-                    return True
+            self.info("Determining device connectivity over adb...")
+            serial = self.query_device_serial()
+            output = self.get_output_from_command("adb", "-s", serial,
+                                                  "uptime")
+            if str(output).startswith("up time:"):
+                self.info("Found %s." % serial)
+                return True
             self.error("Can't find a device.")
             return False
         else:
@@ -367,10 +370,10 @@ class DeviceMixin(object):
         if c['device_type'] not in ("tegra250",):
             self.debug("No need to remove /etc/hosts on a non-Tegra250.")
             return
-        # output = get_output_from_command adb shell ls -d /etc/hosts
+        # output = get_output_from_command adb -s serial shell ls -d /etc/hosts
         # if 'No such file or directory' not in output:
-        # adb shell mount -o remount,rw -t yaffs2 /dev/block/mtdblock3 /system
-        # adb shell rm /etc/hosts
+        # adb -s serial shell mount -o remount,rw -t yaffs2 /dev/block/mtdblock3 /system
+        # adb -s serial shell rm /etc/hosts
         dm = self.query_devicemanager()
         if dm.fileExists(hosts_file):
             self.info("Removing %s file." % hosts_file)

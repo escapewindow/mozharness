@@ -252,19 +252,21 @@ class DeviceTalosRunner(VirtualenvMixin, DeviceMixin, MercurialScript):
                          cwd=dirs['abs_browser_dir'])
 
     def install_app(self):
-        dm = self.query_devicemanager()
+        c = self.config
+        serial = self.query_device_serial()
         file_name = self.query_download_file_name()
         dirs = self.query_abs_dirs()
         file_path = os.path.join(dirs['abs_work_dir'], file_name)
-        c = self.config
         if c['enable_automation']:
             self.set_device_time()
             self.set_device_proxy_flag("installing %s" % file_path)
         if self._log_level_at_least(DEBUG):
-            self.run_command('adb shell ps', error_list=ADBErrorList)
+            self.run_command(["adb", "-s", serial, "shell", "ps"],
+                             error_list=ADBErrorList)
         # TODO dm.getInfo('memory')
         if self._log_level_at_least(DEBUG):
-            self.run_command('adb shell uptime', error_list=ADBErrorList)
+            self.run_command(["adb", "-s", "shell", "uptime"],
+                             error_list=ADBErrorList)
         # TODO getResolution
         # dm.adjustResolution(1024, 768, 'crt')
         # reboot; waitfordevice
@@ -272,16 +274,23 @@ class DeviceTalosRunner(VirtualenvMixin, DeviceMixin, MercurialScript):
         # TODO error checking
         if not c['enable_automation']:
             # -s to install on sdcard? Needs to be config driven
-            self.run_command(["adb", "install", '-r', os.path.join(dirs['abs_work_dir'], file_name)], error_list=ADBErrorList)
+            self.run_command(["adb", "-s", serial, "install", '-r',
+                              os.path.join(dirs['abs_work_dir'], file_name)],
+                             error_list=ADBErrorList)
         else:
-            output = self.get_output_from_command("adb shell ls -d /data/data/%s" % c['device_package_name'])
+            output = self.get_output_from_command(["adb", "-s", serial,
+                                                   "shell",
+                                                   "ls -d /data/data/%s" % \
+                                                   c['device_package_name']])
             if "No such file" not in output:
-                self.run_command(["adb", "uninstall", c['device_package_name']],
+                self.run_command(["adb", "-s", serial, "uninstall",
+                                  c['device_package_name']],
                                  error_list=ADBErrorList)
-            self.run_command(["adb", "install", '-r', file_path],
+            self.run_command(["adb", "-s", serial, "install", '-r',
+                              file_path],
                              error_list=ADBErrorList)
             file_name = os.path.join(dirs['abs_browser_dir'], 'application.ini')
-            self.run_command(["adb", "push", file_name,
+            self.run_command(["adb", "-s", serial, "push", file_name,
                               '/data/data/%s/application.ini' % c['device_package_name']])
             self.clear_device_proxy_flag("installing %s" % file_path)
 
@@ -329,7 +338,9 @@ class DeviceTalosRunner(VirtualenvMixin, DeviceMixin, MercurialScript):
     def preflight_run_talos(self):
         if 'install-app' not in self.actions:
             c = self.config
-            procs = self.get_output_from_command(['adb', 'shell', 'ps'],
+            serial = self.query_device_serial()
+            procs = self.get_output_from_command(['adb', "-s", serial,
+                                                  'shell', 'ps'],
                                                  log_level=DEBUG)
             if c['device_package_name'] in procs:
                 self.info("Found %s running... attempting to kill." %
@@ -339,8 +350,8 @@ class DeviceTalosRunner(VirtualenvMixin, DeviceMixin, MercurialScript):
                 for line in procs.splitlines():
                     line_contents = re.split('\s+', line)
                     if line_contents[-1].startswith(c['device_package_name']):
-                        self.run_command(['adb', 'shell', 'kill',
-                                          line_contents[1]],
+                        self.run_command(['adb', "-s", serial, 'shell',
+                                          'kill', line_contents[1]],
                                          error_list=ADBErrorList)
 
     def run_talos(self):
