@@ -142,17 +142,21 @@ class DeviceMixin(object):
             device_serial = c['device_serial']
         elif c.get('device_ip') and c.get('device_port'):
             device_serial = "%s:%s" % (c['device_ip'], str(c['device_port']))
+            # TODO We currently assume that if the IP/port are specified,
+            # the device is attached via adb.
+            # It would be friendly of us to attempt to connect to said
+            # IP:port if the device is not connected.
         else:
             self.info("Trying to find device...")
             output = self.get_output_from_command("adb devices")
             if not str(output).startswith("List of devices attached"):
                 self.fatal("Can't determine device serial!  Is the device connected by adb?")
             device_list = output.splitlines()
-            if len(device_list) < 3:
+            if len(device_list) < 2:
                 self.fatal("No device attached via adb! Use 'adb connect'!")
-            elif len(device_list) > 3:
+            elif len(device_list) > 2:
                 self.warning("""More than one device detected; specify 'device_serial' or both\n'device_port' and 'device_ip' to target a specific device!""")
-            device_serial = device_list[1].split(' ')[0]
+            device_serial = re.split('\s+', device_list[1])[0]
             self.info("Found %s." % device_serial)
         self.device_serial = device_serial
         return self.device_serial
@@ -334,8 +338,8 @@ class DeviceMixin(object):
         if c['device_protocol'] == 'adb':
             self.info("Determining device connectivity over adb...")
             serial = self.query_device_serial()
-            output = self.get_output_from_command("adb", "-s", serial,
-                                                  "uptime")
+            output = self.get_output_from_command(["adb", "-s", serial,
+                                                   "shell", "uptime"])
             if str(output).startswith("up time:"):
                 self.info("Found %s." % serial)
                 return True

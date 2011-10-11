@@ -1,4 +1,19 @@
 === 0.5 ===
+2011-10-10  Aki Sasaki  <aki@mozilla.com>
+* configs/users/aki/tablet1.py:
+    Fixed my web server IP.  I'd love to be able to figure this out without gacking on the VMWeb interface.
+    Commented out device_port and device_ip since we're now detecting !
+
+* mozharness/test/device.py (DeviceMixin.query_device_serial):
+    Added TODO to adb connect to a specified IP:port if we're not connected.
+    Fixed the device detection.
+
+* scripts/device_talosrunner.py(DeviceTalosRunner.__init__):
+    Re-added the run-talos action as a default.
+
+* scripts/device_talosrunner.py(DeviceTalosRunner.install_app):
+    Fixed the clear_device_proxy_flag.
+
 2011-10-04  Aki Sasaki  <aki@mozilla.com>
 * scripts/device_talosrunner.py:
     Added KNOWN_SUITES
