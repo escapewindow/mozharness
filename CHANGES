@@ -3,6 +3,9 @@
 * mozharness/base/errors.py:
     Added "error: protocol fault" to adb error list.
 
+* scripts/device_talosrunner.py (DeviceTalosRunner.run_talos):
+    Hacked the PATH for run_tests.py since talos calls python directly (bug 697535), which was breaking virtualenvs.
+
 2011-10-10  Aki Sasaki  <aki@mozilla.com>
 * configs/users/aki/tablet1.py:
     Fixed my web server IP.  I'd love to be able to figure this out without gacking on the VMWeb interface.

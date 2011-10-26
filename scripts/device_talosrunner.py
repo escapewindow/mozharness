@@ -374,6 +374,7 @@ class DeviceTalosRunner(VirtualenvMixin, DeviceMixin, MercurialScript):
     def run_talos(self):
         dirs = self.query_abs_dirs()
         python = self.query_python_path()
+        python_dir = os.path.dirname(python)
         TalosErrorList = PythonErrorList[:]
         TalosErrorList += [
          {'regex': r'''run-as: Package '.*' is unknown''', 'level': DEBUG},
@@ -384,7 +385,9 @@ class DeviceTalosRunner(VirtualenvMixin, DeviceMixin, MercurialScript):
         self.run_command([python, 'run_tests.py', '--noisy', '--debug',
                           'local.yml'],
                           error_list=TalosErrorList,
-                          cwd=dirs['abs_talos_dir'])
+                          cwd=dirs['abs_talos_dir'],
+                          # TODO does this work on windows? possibly ';'
+                          env={'PATH': '%s:%s' % (python_dir, os.environ['PATH'])})
 
 # __main__ {{{1
 if __name__ == '__main__':
