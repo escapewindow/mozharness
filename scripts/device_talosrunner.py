@@ -337,7 +337,7 @@ class DeviceTalosRunner(VirtualenvMixin, DeviceMixin, MercurialScript):
                    '--branchName', c['talos_branch'],
                    '--resultsServer', c['graph_server'],
                    '--resultsLink', c['results_link'],
-                   '--activeTests', ','.join(c['talos_suites']),
+                   '--activeTests', ':'.join(c['talos_suites']),
 #                   '--remoteDevice', "%s:%s" % (c['device_ip'], str(c.get('device_port', 5555))),
 #                   '--remoteDevice', c['device_ip'],
                    '--remoteDevice', '',
@@ -392,7 +392,7 @@ class DeviceTalosRunner(VirtualenvMixin, DeviceMixin, MercurialScript):
                                   # TODO does this work on windows? possibly ';'
                                   env={'PATH': '%s:%s' % (python_dir, os.environ['PATH'])})
         self.add_summary("Ran talos suite(s) %s with exit status %s." % (
-                         (','.join(c['talos_suites'], str(status)))
+                         ','.join(c['talos_suites']), str(status)))
 
     def reboot_device(self):
         pass
