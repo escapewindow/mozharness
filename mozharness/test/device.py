@@ -360,7 +360,7 @@ class DeviceMixin(object):
             if device_serial in devices:
                 # TODO is this the right behavior?
                 self.disconnect_device()
-            cmd = ["adb", "-s", device_serial, "connect"]
+            cmd.append(device_serial)
         status = self.run_command(cmd, error_list=ADBErrorList)
 
     def disconnect_device(self):

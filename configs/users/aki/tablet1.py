@@ -14,7 +14,7 @@ config = {
     "virtualenv_path": "/src/talosrunner/venv",
     "device_protocol": "adb",
 #    "device_port": 5555,
-#    "device_ip": "10.251.28.128",
+    "device_ip": "10.251.28.128",
     "device_type": "non-tegra",
     "enable_automation": True,
 #    "actions": ["check-device"],
