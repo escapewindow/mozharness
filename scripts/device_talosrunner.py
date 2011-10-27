@@ -138,21 +138,21 @@ class DeviceTalosRunner(VirtualenvMixin, DeviceMixin, MercurialScript):
                       'pull',
                       'check-device',
                       'create-virtualenv',
-                      'cleanup-device',
+                      'pre-cleanup-device',
                       'download',
                       'unpack',
                       'install-app',
                       'configure',
-# create profile
                       'run-talos',
-# reboot device
+#                      'post-cleanup-device',
 #                      'upload',
 #                      'notify',
+#                      'reboot',
                       ],
          default_actions=['preclean',
                           'pull',
                           'check-device',
-                          'cleanup-device',
+                          'pre-cleanup-device',
                           'download',
                           'unpack',
                           'install-app',
@@ -230,7 +230,9 @@ class DeviceTalosRunner(VirtualenvMixin, DeviceMixin, MercurialScript):
 
     # check_device defined in DeviceMixin
     # create_virtualenv defined in VirtualenvMixin
-    # cleanup_device defined in DeviceMixin
+
+    def pre_cleanup_device(self):
+        self.cleanup_device()
 
     def download(self):
         # TODO: a user friendly way to do this without specifying a url?
@@ -388,6 +390,12 @@ class DeviceTalosRunner(VirtualenvMixin, DeviceMixin, MercurialScript):
                           cwd=dirs['abs_talos_dir'],
                           # TODO does this work on windows? possibly ';'
                           env={'PATH': '%s:%s' % (python_dir, os.environ['PATH'])})
+
+    def reboot_device(self):
+        pass
+        # TODO 'adb shell reboot' hangs. thinking about 'adb shell reboot &'
+        # and then verifying it's gone, disconnecting, then waiting for device.
+        # this doesn't seem ideal.
 
 # __main__ {{{1
 if __name__ == '__main__':

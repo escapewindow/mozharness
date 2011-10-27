@@ -85,6 +85,14 @@ class LogMixin(object):
                 print message
 
     def log(self, message, level=INFO, exit_code=-1):
+        # We want to be able to do some pre-FATAL cleanup, sometimes.
+        # TODO I've got issues with the naming and behavior here, but
+        # I'm not quite sure how to do it better right now.
+        if level == FATAL and hasattr(self, 'exit_on_error') and \
+                              callable(getattr(self, 'exit_on_error')):
+            (message, level, exit_code) = self.exit_on_error(message, level,
+                                                             exit_code)
+
         if self.log_obj:
             return self.log_obj.log_message(message, level=level,
                                             exit_code=exit_code)

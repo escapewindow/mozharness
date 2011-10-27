@@ -1,4 +1,37 @@
 === 0.5 ===
+2011-10-27  Aki Sasaki  <aki@mozilla.com>
+* mozharness/base/log.py (LogMixin.log):
+    If logging a fatal error message, call self.exit_on_error() if it
+    exists and is callable (I may want to rename this).
+
+* mozharness/test/device.py (DeviceMixin._query_config_device_serial):
+    Added to make query_device_serial less of a mess.
+
+* mozharness/test/device.py (DeviceMixin._query_attached_devices):
+    Added to make query_device_serial less of a mess.
+
+* mozharness/test/device.py (DeviceMixin.query_device_serial):
+    Took logic out of here and into helper functions; added auto_connect functionality.
+
+* mozharness/test/device.py (DeviceMixin.exit_on_error):
+    Changed this from being a replacement for self.fatal() to a function
+    to call before logging in self.fatal().
+
+* mozharness/test/device.py (DeviceMixin.connect_device):
+    Added.
+
+* mozharness/test/device.py (DeviceMixin.disconnect_device):
+    Added.
+
+* mozharness/test/device.py (DeviceMixin.ping_device):
+    Added auto_connect functionality.
+
+* mozharness/test/device.py (DeviceMixin.check_device):
+    Added auto_connect functionality.
+
+* scripts/device_talosrunner.py (DeviceTalosRunner.pre_cleanup_device):
+    Added, since I'll want to have a post_cleanup_device.
+
 2011-10-26  Aki Sasaki  <aki@mozilla.com>
 * mozharness/base/errors.py:
     Added "error: protocol fault" to adb error list.

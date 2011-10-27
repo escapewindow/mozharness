@@ -131,32 +131,50 @@ class DeviceMixin(object):
         self.devicemanager.debug = 3
         return self.devicemanager
 
-    def query_device_serial(self):
+    def _query_config_device_serial(self):
+        c = self.config
+        if c.get('device_serial'):
+            return c['device_serial']
+        if c.get('device_ip'):
+            return "%s:%s" % (c['device_ip'], c.get('device_port', 5555))
+        # TODO sut support?
+
+    def _query_attached_devices(self):
+        devices = []
+        output = self.get_output_from_command("adb devices")
+        starting_list = False
+        for line in output:
+            if 'adb: command not found' in line:
+                self.fatal("Can't find adb; install the Android SDK!")
+            if line.startswith("* daemon"):
+                continue
+            if line.startswith("List of devices"):
+                starting_list = True
+                continue
+            # TODO somehow otherwise determine whether this is an actual
+            # device?
+            if starting_list:
+                devices.append(re.split('\s+', line)[0])
+        return devices
+
+    def query_device_serial(self, auto_connect=False):
         """ADB-specific device serial number.
         """
         if self.device_serial:
             return self.device_serial
         c = self.config
-        device_serial = None
-        if 'device_serial' in c:
-            device_serial = c['device_serial']
-        elif c.get('device_ip') and c.get('device_port'):
-            device_serial = "%s:%s" % (c['device_ip'], str(c['device_port']))
-            # TODO We currently assume that if the IP/port are specified,
-            # the device is attached via adb.
-            # It would be friendly of us to attempt to connect to said
-            # IP:port if the device is not connected.
+        device_serial = self._query_config_device_serial()
+        if device_serial:
+            if auto_connect:
+                self.ping_device(auto_connect=True)
         else:
             self.info("Trying to find device...")
-            output = self.get_output_from_command("adb devices")
-            if not str(output).startswith("List of devices attached"):
-                self.fatal("Can't determine device serial!  Is the device connected by adb?")
-            device_list = output.splitlines()
-            if len(device_list) < 2:
-                self.fatal("No device attached via adb! Use 'adb connect'!")
-            elif len(device_list) > 2:
-                self.warning("""More than one device detected; specify 'device_serial' or both\n'device_port' and 'device_ip' to target a specific device!""")
-            device_serial = re.split('\s+', device_list[1])[0]
+            devices = self._query_attached_devices()
+            if not devices:
+                self.fatal("No device attached via adb!\nUse 'adb connect' or specify a device_serial or device_ip in config!")
+            elif len(devices) > 1:
+                self.warning("""More than one device detected; specify 'device_serial' or\n'device_ip' to target a specific device!""")
+            device_serial = devices[0]
             self.info("Found %s." % device_serial)
         self.device_serial = device_serial
         return self.device_serial
@@ -303,7 +321,7 @@ class DeviceMixin(object):
         dm = self.query_devicemanager()
         dev_root = self.query_device_root()
         if dev_root is None:
-            self.exit_on_error("Can't connect to device!")
+            self.fatal("Can't connect to device!")
         if dm.dirExists(dev_root):
             self.info("Removing device root %s." % dev_root)
             if dm.removeDir(dev_root) is None:
@@ -324,15 +342,39 @@ class DeviceMixin(object):
                          level=error_level)
 
     # Maintenance {{{2
-
     def exit_on_error(self, message, **kwargs):
+        '''When exit_on_error is defined, a FATAL log call will call it
+        and use the message and other args from it.
+        '''
         if self.config['enable_automation']:
             self.set_device_error_flag(message)
-            self.fatal("Remote Device Error: %s" % message, **kwargs)
-        else:
-            self.fatal(message, **kwargs)
+            message = "Remote Device Error: %s" % message
+        return (message, kwargs)
 
-    def ping_device(self):
+    def connect_device(self):
+        self.info("Connecting device...")
+        cmd = ["adb", "connect"]
+        device_serial = self._query_config_device_serial()
+        if device_serial:
+            devices = self._query_attached_devices()
+            if device_serial in devices:
+                # TODO is this the right behavior?
+                self.disconnect_device()
+            cmd = ["adb", "-s", device_serial, "connect"]
+        status = self.run_command(cmd, error_list=ADBErrorList)
+
+    def disconnect_device(self):
+        self.info("Disconnecting device...")
+        device_serial = self.query_device_serial()
+        if device_serial:
+            status = self.run_command(["adb", "-s", device_serial,
+                                       "disconnect"],
+                                      error_list=ADBErrorList)
+            self.device_serial = None
+        else:
+            self.info("No device found.")
+
+    def ping_device(self, auto_connect=False):
         c = self.config
         # TODO support non-adb
         if c['device_protocol'] == 'adb':
@@ -343,24 +385,30 @@ class DeviceMixin(object):
             if str(output).startswith("up time:"):
                 self.info("Found %s." % serial)
                 return True
-            self.error("Can't find a device.")
-            return False
+            elif auto_connect:
+                # TODO retry?
+                self.connect_device()
+                return self.ping_device()
+            else:
+                self.error("Can't find a device.")
+                return False
         else:
             self.fatal("Device protocol %s is unsupported!" %
                        c['device_protocol'])
 
     def check_device(self):
-        if not self.ping_device():
-            self.exit_on_error("Can't find device!")
+        if not self.ping_device(auto_connect=True):
+            self.fatal("Can't find device!")
         if self.query_device_root() is None:
-            self.exit_on_error("Can't connect to device!")
+            self.fatal("Can't connect to device!")
         if self.config.get('enable_automation'):
             self.query_device_flags()
 
     def cleanup_device(self):
+        self.info("Cleaning up device.")
         status = self.remove_device_root()
         if not status:
-            self.exit_on_error("Can't remove device root!")
+            self.fatal("Can't remove device root!")
         self.remove_etc_hosts()
         # TODO pid kill
         # TODO uninstall apps
@@ -385,7 +433,7 @@ class DeviceMixin(object):
                 dm.sendCMD(['exec mount -o remount,rw -t yaffs2 /dev/block/mtdblock3 /system'])
                 dm.sendCMD(['exec rm %s' % hosts_file])
             except DMError, e:
-                self.exit_on_error("Unable to remove %s: %s!" % (hosts_file,
+                self.fatal("Unable to remove %s: %s!" % (hosts_file,
                                    str(e)))
         else:
             self.debug("%s file doesn't exist; skipping." % hosts_file)
