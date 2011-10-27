@@ -32,6 +32,9 @@
 * scripts/device_talosrunner.py (DeviceTalosRunner.pre_cleanup_device):
     Added, since I'll want to have a post_cleanup_device.
 
+* scripts/device_talosrunner.py (DeviceTalosRunner.run_talos):
+    Added summary.
+
 2011-10-26  Aki Sasaki  <aki@mozilla.com>
 * mozharness/base/errors.py:
     Added "error: protocol fault" to adb error list.

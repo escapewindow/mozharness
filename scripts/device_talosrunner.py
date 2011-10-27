@@ -374,6 +374,7 @@ class DeviceTalosRunner(VirtualenvMixin, DeviceMixin, MercurialScript):
                                          error_list=ADBErrorList)
 
     def run_talos(self):
+        c = self.config
         dirs = self.query_abs_dirs()
         python = self.query_python_path()
         python_dir = os.path.dirname(python)
@@ -384,12 +385,14 @@ class DeviceTalosRunner(VirtualenvMixin, DeviceMixin, MercurialScript):
          {'substr': r'''erfConfigurator.py: Unknown error''', 'level': CRITICAL},
          {'regex': r'''No machine_name called '.*' can be found''', 'level': CRITICAL},
         ]
-        self.run_command([python, 'run_tests.py', '--noisy', '--debug',
-                          'local.yml'],
-                          error_list=TalosErrorList,
-                          cwd=dirs['abs_talos_dir'],
-                          # TODO does this work on windows? possibly ';'
-                          env={'PATH': '%s:%s' % (python_dir, os.environ['PATH'])})
+        status = self.run_command([python, 'run_tests.py', '--noisy', '--debug',
+                                  'local.yml'],
+                                  error_list=TalosErrorList,
+                                  cwd=dirs['abs_talos_dir'],
+                                  # TODO does this work on windows? possibly ';'
+                                  env={'PATH': '%s:%s' % (python_dir, os.environ['PATH'])})
+        self.add_summary("Ran talos suite(s) %s with exit status %s." % (
+                         (','.join(c['talos_suites'], str(status)))
 
     def reboot_device(self):
         pass
