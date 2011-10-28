@@ -396,7 +396,7 @@ class DeviceTalosRunner(VirtualenvMixin, DeviceMixin, MercurialScript):
                                   env={
                                    'PATH': '%s:%s' % (python_dir,
                                                       os.environ['PATH']),
-                                   'PYTHONUNBUFFERED': 1,
+                                   'PYTHONUNBUFFERED': '1',
                                   })
         self.add_summary("Ran talos suite(s) %s with exit status %s." % (
                          ','.join(c['talos_suites']), str(status)))
