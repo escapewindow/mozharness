@@ -36,14 +36,12 @@
 # the terms of any one of the MPL, the GPL or the LGPL.
 #
 # ***** END LICENSE BLOCK *****
-'''Interact with ADB, SUT Agent, and devicemanager.
+'''Interact with ADB.
 
 This code is largely from
 http://hg.mozilla.org/build/tools/file/default/sut_tools
 
-Since devicemanagerSUT and devicemanagerADB have divergent APIs, it's
-questionable whether we'll support both.  Currently angling for ADB support
-only.
+Currently angling for ADB support only.
 '''
 
 import os
@@ -74,16 +72,7 @@ device_config_options = [[
  ["--device-port"],
  {"action": "store",
   "dest": "device_port",
-  # TODO how do I default this to 20701 if device_protocol == 'sut' ?
-  # default to 5555 / 20701 if device_protocol is adb/sut and device_port
-  # is None?
   "help": "Specify the IP address of the device."
- }
-],[
- ["--devicemanager-path"],
- {"action": "store",
-  "dest": "devicemanager_path",
-  "help": "Specify the path to devicemanager.py."
  }
 ],[
  ["--device-type"],
@@ -99,39 +88,11 @@ device_config_options = [[
 ]]
 
 class DeviceMixin(object):
-    '''BaseScript mixin, designed to interface with the device through
-    devicemanager.
+    '''BaseScript mixin, designed to interface with the device.
 
-    Config items:
-     * devicemanager_path points to the devicemanager.py location on disk.
-     * device_ip holds the IP of the device.
     '''
-    devicemanager = None
+    device_root = None
     device_serial = None
-
-    def query_devicemanager(self, level='fatal'):
-        if self.devicemanager:
-            return self.devicemanager
-        c = self.config
-        dirs = self.query_abs_dirs()
-        dm_path = c.get("devicemanager_path", dirs['abs_talos_dir'])
-        sys.path.append(dm_path)
-        try:
-            if c['device_protocol'] == 'adb':
-                import devicemanagerADB
-                from devicemanagerADB import DeviceManagerADB
-                from devicemanagerADB import DMError
-                self.devicemanager = devicemanagerADB.DeviceManagerADB(
-                    packageName=c.get('device_package_name'),
-                )
-            else:
-                self.fatal("Don't know how to use device_protocol %s!" %
-                           c['device_protocol'])
-        except ImportError, e:
-            self.log("Can't import devicemanager! %s\nDid you check out talos?" % str(e), level=level)
-            raise
-        self.devicemanager.debug = 3
-        return self.devicemanager
 
     def _query_config_device_serial(self):
         c = self.config
@@ -139,7 +100,6 @@ class DeviceMixin(object):
             return c['device_serial']
         if c.get('device_ip'):
             return "%s:%s" % (c['device_ip'], c.get('device_port', 5555))
-        # TODO sut support?
 
     def _query_attached_devices(self):
         devices = []
@@ -160,8 +120,6 @@ class DeviceMixin(object):
         return devices
 
     def query_device_serial(self, auto_connect=False):
-        """ADB-specific device serial number.
-        """
         if self.device_serial:
             return self.device_serial
         c = self.config
@@ -269,16 +227,26 @@ class DeviceMixin(object):
     def clear_device_proxy_flag(self):
         self._clear_device_flag(PROXY_FLAG)
 
-    # devicemanager calls {{{2
+    # device calls {{{2
     def query_device_root(self, silent=False):
-        dm = self.query_devicemanager()
-        device_root = dm.getDeviceRoot()
+        if self.device_root:
+            return self.device_root
+        device_root = None
+        device_serial = self.query_device_serial()
+        output = self.get_output_from_command("adb -s %s shell df" % device_serial,
+                                              silent=silent)
+        # TODO this assumes we're connected; error checking?
+        if "/mnt/sdcard" in output:
+            device_root = "/mnt/sdcard/tests"
+        elif ' not found' in output:
+            self.error("Can't get output from 'adb shell df'!\n%s" % output)
+            return None
+        else:
+            device_root = "/data/local/tmp/tests"
         if not silent:
             self.info("Device root is %s" % device_root)
-        if not device_root or device_root == '/tests':
-            self.error("Bad device root; most likely the device isn't up.")
-            return None
-        return device_root
+        self.device_root = device_root
+        return self.device_root
 
     def wait_for_device(self, interval=60, max_attempts=20):
         self.info("Waiting for device to come back...")
@@ -293,8 +261,6 @@ class DeviceMixin(object):
         raise DeviceException, "Remote Device Error: waiting for device timed out."
 
     def query_device_time(self):
-        """ Not currently ported to DeviceManagerADB.
-        """
         c = self.config
         serial = self.query_device_serial()
         # adb shell 'date' will give a date string
@@ -304,9 +270,6 @@ class DeviceMixin(object):
         return date_string
 
     def set_device_time(self, device_time=None, error_level='error'):
-        """ Not currently ported to DeviceManagerADB.
-        device_time is seconds since epoch.
-        """
         # adb shell date UNIXTIMESTAMP will set date
         c = self.config
         serial = self.query_device_serial()
@@ -319,27 +282,41 @@ class DeviceMixin(object):
         self.info(self.query_device_time())
         return status
 
+    def query_device_file_exists(self, file_name):
+        device_serial = self.query_device_serial()
+        output = self.get_output_from_command(["adb", "-s", device_serial,
+                                               "shell", "ls", "-d", file_name])
+        if output.rstrip() == file_name:
+            return True
+        return False
+
     def remove_device_root(self, error_level='error'):
-        dm = self.query_devicemanager()
-        dev_root = self.query_device_root()
-        if dev_root is None:
+        device_root = self.query_device_root()
+        device_serial = self.query_device_serial()
+        if device_root is None:
             self.fatal("Can't connect to device!")
-        if dm.dirExists(dev_root):
-            self.info("Removing device root %s." % dev_root)
-            if dm.removeDir(dev_root) is None:
+        if self.query_device_file_exists(device_root):
+            self.info("Removing device root %s." % device_root)
+            self.run_command(["adb", "-s", device_serial, "shell", "rm",
+                              "-rf", device_root], error_list=ADBErrorList)
+            if self.query_device_file_exists(device_root):
                 self.log("Unable to remove device root!", level=error_level)
                 return False
         return True
 
     def uninstall_app(self, package_name, package_root="/data/data",
                       error_level="error"):
-        # adb shell ls -d /data/data/package_name
-        # (0 if exists; 1 if not)
-        # adb uninstall package_name
-        dm = self.query_devicemanager()
-        if dm.dirExists('%s/%s' % (package_root, package_name)):
-            status = dm.uninstallAppAndReboot(package_name)
-            if status is None:
+        c = self.config
+        device_serial = self.query_device_serial()
+        self.info("Uninstalling %s..." % package_name)
+        if self.query_device_file_exists('%s/%s' % (package_root, package_name)):
+            cmd = ["adb", "-s", device_serial, "uninstall"]
+            if not c.get('enable_automation'):
+                cmd.append("-k")
+            cmd.append(package_name)
+            status = self.run_command(cmd, error_list=ADBErrorList)
+            # TODO is this the right error check?
+            if status:
                 self.log("Failed to uninstall %s!" % package_name,
                          level=error_level)
 
@@ -400,31 +377,26 @@ class DeviceMixin(object):
 
     def ping_device(self, auto_connect=False, silent=False):
         c = self.config
-        # TODO support non-adb
-        if c['device_protocol'] == 'adb':
-            if auto_connect and not self._query_attached_devices():
-                self.connect_device()
+        if auto_connect and not self._query_attached_devices():
+            self.connect_device()
+        if not silent:
+            self.info("Determining device connectivity over adb...")
+        serial = self.query_device_serial()
+        output = self.get_output_from_command(["adb", "-s", serial,
+                                               "shell", "uptime"],
+                                              silent=silent)
+        if str(output).startswith("up time:"):
             if not silent:
-                self.info("Determining device connectivity over adb...")
-            serial = self.query_device_serial()
-            output = self.get_output_from_command(["adb", "-s", serial,
-                                                   "shell", "uptime"],
-                                                  silent=silent)
-            if str(output).startswith("up time:"):
-                if not silent:
-                    self.info("Found %s." % serial)
-                return True
-            elif auto_connect:
-                # TODO retry?
-                self.connect_device()
-                return self.ping_device()
-            else:
-                if not silent:
-                    self.error("Can't find a device.")
-                return False
+                self.info("Found %s." % serial)
+            return True
+        elif auto_connect:
+            # TODO retry?
+            self.connect_device()
+            return self.ping_device()
         else:
-            self.fatal("Device protocol %s is unsupported!" %
-                       c['device_protocol'])
+            if not silent:
+                self.error("Can't find a device.")
+            return False
 
     def check_device(self):
         if not self.ping_device(auto_connect=True):
@@ -452,19 +424,17 @@ class DeviceMixin(object):
         if c['device_type'] not in ("tegra250",):
             self.debug("No need to remove /etc/hosts on a non-Tegra250.")
             return
-        # output = get_output_from_command adb -s serial shell ls -d /etc/hosts
-        # if 'No such file or directory' not in output:
-        # adb -s serial shell mount -o remount,rw -t yaffs2 /dev/block/mtdblock3 /system
-        # adb -s serial shell rm /etc/hosts
-        dm = self.query_devicemanager()
-        if dm.fileExists(hosts_file):
+        device_serial = self.query_device_serial()
+        if self.query_device_file_exists(hosts_file):
             self.info("Removing %s file." % hosts_file)
-            try:
-                dm.sendCMD(['exec mount -o remount,rw -t yaffs2 /dev/block/mtdblock3 /system'])
-                dm.sendCMD(['exec rm %s' % hosts_file])
-            except DMError, e:
-                self.fatal("Unable to remove %s: %s!" % (hosts_file,
-                                   str(e)))
+            self.run_command(["adb", "-s", device_serial, "shell",
+                              "mount", "-o", "remount,rw", "-t", "yaffs2",
+                              "/dev/block/mtdblock3", "/system"],
+                             error_list=ADBErrorList)
+            self.run_command(["adb", "-s", device_serial, "shell", "rm",
+                              hosts_file])
+            if self.query_device_file_exists(hosts_file):
+                self.fatal("Unable to remove %s!" % hosts_file)
         else:
             self.debug("%s file doesn't exist; skipping." % hosts_file)
 
@@ -472,11 +442,10 @@ class DeviceMixin(object):
 
 # ADBDevice {{{1
 class ADBDevice(ShellMixin, OSMixin, LogMixin, DeviceMixin, object):
-    def __init__(self, log_obj=None, config=None, devicemanager=None):
+    def __init__(self, log_obj=None, config=None):
         super(ADBDevice, self).__init__()
         self.log_obj = log_obj
         self.config = config
-        self.devicemanager = devicemanager
 
 
 

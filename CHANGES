@@ -1,5 +1,33 @@
 === 0.5 ===
 2011-10-28  Aki Sasaki  <aki@mozilla.com>
+* mozharness/test/device.py (DeviceMixin):
+    Removed devicemanager references.
+    Removed vestiges of sut support.
+
+* mozharness/test/device.py (DeviceMixin.query_devicemanager):
+    Removed.
+
+* mozharness/test/device.py (DeviceMixin.query_device_root):
+    Changed to use adb rather than devicemanager calls.
+
+* mozharness/test/device.py (DeviceMixin.query_device_file_exists):
+    Added to replace dm.dirExists() and dm.fileExists().
+
+* mozharness/test/device.py (DeviceMixin.remove_device_root):
+    Changed to use adb rather than devicemanager calls.
+
+* mozharness/test/device.py (DeviceMixin.uninstall_app):
+    Changed to use adb rather than devicemanager calls.
+
+* mozharness/test/device.py (DeviceMixin.ping_device):
+    Removed check to see if we're using adb (assuemd, now)
+
+* mozharness/test/device.py (DeviceMixin.check_device):
+    Changed to use adb rather than devicemanager calls.
+
+* unit.sh:
+    Removed devicemanager-related error suppression.
+
 * mozharness/base/errors.py
     Added "unable to connect to " to ADBErrorList.
 
