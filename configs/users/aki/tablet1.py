@@ -8,7 +8,7 @@ config = {
 #    "graph_server": "graphs-stage.mozilla.org",
     "graph_server": "''",
     "results_link": "/server/collect.cgi",
-    "talos_suites": ["twinopen","tsvg"],
+    "talos_suites": ["tsvg"],
     "talos_config_file": "remote.config",
     "talos_web_server": "10.251.25.44:8000",
     "virtualenv_path": "/src/talosrunner/venv",
