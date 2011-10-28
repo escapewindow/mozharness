@@ -22,15 +22,33 @@
 
 * mozharness/test/device.py (DeviceMixin.disconnect_device):
     Added.
+    Debating whether to reset self.device_serial or not -- probably not,
+    for the scenario of getting device_serial from an external non-config
+    source.
 
 * mozharness/test/device.py (DeviceMixin.ping_device):
     Added auto_connect functionality.
+    Added silent functionality.
 
 * mozharness/test/device.py (DeviceMixin.check_device):
     Added auto_connect functionality.
 
+* mozharness/test/device.py (DeviceMixin.wait_for_device):
+    Use ping_device instead of query_device_root.
+
+* mozharness/test/device.py (DeviceMixin.reboot_device):
+    First attempt at getting this. However, run_command waits for exit
+    even if I end with &; I need to thread/daemonize & ignore.
+
 * scripts/device_talosrunner.py (DeviceTalosRunner.pre_cleanup_device):
     Added, since I'll want to have a post_cleanup_device.
+
+* scripts/device_talosrunner.py (DeviceTalosRunner.run_talos):
+    Added browser_output.txt error message; stub of explanation.
+    Added PYTHONUNBUFFERED to the env.
+
+* scripts/device_talosrunner.py (DeviceTalosRunner.post_cleanup_device):
+    Added, though I'll want to make parts of it dependent on enable_automation.
 
 * scripts/device_talosrunner.py (DeviceTalosRunner.run_talos):
     Added summary.

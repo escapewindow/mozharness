@@ -285,8 +285,8 @@ class DeviceMixin(object):
         while tries <= max_attempts:
             tries += 1
             self.info("Try %d" % tries)
-            if self.query_device_root(silent=True) is not None:
-                return 0
+            if self.ping_device(auto_connect=True) is not None:
+                return True
             time.sleep(interval)
         raise DeviceException, "Remote Device Error: waiting for device timed out."
 
@@ -370,27 +370,46 @@ class DeviceMixin(object):
             status = self.run_command(["adb", "-s", device_serial,
                                        "disconnect"],
                                       error_list=ADBErrorList)
-            self.device_serial = None
+#            self.device_serial = None
         else:
             self.info("No device found.")
 
-    def ping_device(self, auto_connect=False):
+    def reboot_device(self):
+        if not self.ping_device(auto_connect=True):
+            self.error("Can't reboot disconnected device!")
+            return False
+        device_serial = self.query_device_serial()
+        self.info("Rebooting device...")
+        self.run_command("adb -s %s reboot &" % device_serial,
+                         error_list=ADBErrorList)
+        time.sleep(10)
+        self.disconnect_device()
+        try:
+            return self.wait_for_device()
+        except DeviceException:
+            self.error("Can't reconnect to device!")
+            return False
+
+    def ping_device(self, auto_connect=False, silent=False):
         c = self.config
         # TODO support non-adb
         if c['device_protocol'] == 'adb':
-            self.info("Determining device connectivity over adb...")
+            if not silent:
+                self.info("Determining device connectivity over adb...")
             serial = self.query_device_serial()
             output = self.get_output_from_command(["adb", "-s", serial,
                                                    "shell", "uptime"])
             if str(output).startswith("up time:"):
-                self.info("Found %s." % serial)
+                if not silent:
+                    self.info("Found %s." % serial)
                 return True
             elif auto_connect:
                 # TODO retry?
                 self.connect_device()
                 return self.ping_device()
             else:
-                self.error("Can't find a device.")
+                if not silent:
+                    self.error("Can't find a device.")
                 return False
         else:
             self.fatal("Device protocol %s is unsupported!" %

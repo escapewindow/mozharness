@@ -144,7 +144,7 @@ class DeviceTalosRunner(VirtualenvMixin, DeviceMixin, MercurialScript):
                       'install-app',
                       'configure',
                       'run-talos',
-#                      'post-cleanup-device',
+                      'post-cleanup-device',
 #                      'upload',
 #                      'notify',
 #                      'reboot',
@@ -384,21 +384,28 @@ class DeviceTalosRunner(VirtualenvMixin, DeviceMixin, MercurialScript):
          {'substr': r'''FAIL: Graph server unreachable''', 'level': CRITICAL},
          {'substr': r'''erfConfigurator.py: Unknown error''', 'level': CRITICAL},
          {'regex': r'''No machine_name called '.*' can be found''', 'level': CRITICAL},
+         {'substr': r"""No such file or directory: 'browser_output.txt'""",
+          'level': CRITICAL,
+          'explanation': r"""Most likely the browser failed to launch, or the test was otherwise unsuccessful in even starting."""},
         ]
-        status = self.run_command([python, 'run_tests.py', '--noisy', '--debug',
-                                  'local.yml'],
+        status = self.run_command([python, 'run_tests.py', '--noisy',
+                                   '--debug', 'local.yml'],
                                   error_list=TalosErrorList,
                                   cwd=dirs['abs_talos_dir'],
                                   # TODO does this work on windows? possibly ';'
-                                  env={'PATH': '%s:%s' % (python_dir, os.environ['PATH'])})
+                                  env={
+                                   'PATH': '%s:%s' % (python_dir,
+                                                      os.environ['PATH']),
+                                   'PYTHONUNBUFFERED': 1,
+                                  })
         self.add_summary("Ran talos suite(s) %s with exit status %s." % (
                          ','.join(c['talos_suites']), str(status)))
 
-    def reboot_device(self):
-        pass
-        # TODO 'adb shell reboot' hangs. thinking about 'adb shell reboot &'
-        # and then verifying it's gone, disconnecting, then waiting for device.
-        # this doesn't seem ideal.
+    def post_cleanup_device(self):
+        self.cleanup_device()
+        if not self.reboot_device():
+            # TODO mark as bad
+            pass
 
 # __main__ {{{1
 if __name__ == '__main__':
