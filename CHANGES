@@ -1,5 +1,8 @@
 === 0.5 ===
 2011-10-28  Aki Sasaki  <aki@mozilla.com>
+* mozharness/base/script.py (ShellMixin.get_output_from_command):
+    rmtree the tmpfiles with log_level=DEBUG (got tired of seeing that output all the time)
+
 * mozharness/test/device.py (DeviceMixin):
     Removed devicemanager references.
     Removed vestiges of sut support.
