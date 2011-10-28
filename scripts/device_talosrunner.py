@@ -1,4 +1,4 @@
-#!/usr/bin/env python
+#!/usr/bin/env python -u
 # ***** BEGIN LICENSE BLOCK *****
 # Version: MPL 1.1/GPL 2.0/LGPL 2.1
 #
@@ -402,10 +402,12 @@ class DeviceTalosRunner(VirtualenvMixin, DeviceMixin, MercurialScript):
                          ','.join(c['talos_suites']), str(status)))
 
     def post_cleanup_device(self):
-        self.cleanup_device()
-        if not self.reboot_device():
-            # TODO mark as bad
-            pass
+        c = self.config
+        if c.get('enable_automation'):
+            self.cleanup_device()
+            if not self.reboot_device():
+                # TODO mark as bad
+                pass
 
 # __main__ {{{1
 if __name__ == '__main__':

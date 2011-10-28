@@ -48,6 +48,8 @@ only.
 
 import os
 import re
+import signal
+import subprocess
 import sys
 import time
 
@@ -285,8 +287,8 @@ class DeviceMixin(object):
         while tries <= max_attempts:
             tries += 1
             self.info("Try %d" % tries)
-            if self.ping_device(auto_connect=True) is not None:
-                return True
+            if self.ping_device(auto_connect=True, silent=True):
+                return self.ping_device()
             time.sleep(interval)
         raise DeviceException, "Remote Device Error: waiting for device timed out."
 
@@ -380,25 +382,47 @@ class DeviceMixin(object):
             return False
         device_serial = self.query_device_serial()
         self.info("Rebooting device...")
-        self.run_command("adb -s %s reboot &" % device_serial,
-                         error_list=ADBErrorList)
+        cmd = "adb -s %s reboot" % device_serial
+        self.info("Running command (in the background): %s" % cmd)
+        p = subprocess.Popen(cmd, shell=True, stdout=subprocess.PIPE,
+                             stderr=subprocess.STDOUT)
         time.sleep(10)
         self.disconnect_device()
+        # TODO try bear's killPID
+        if p.poll is not None:
+            self.info("Killing background adb reboot...")
+            p.kill()
+            time.sleep(10)
+            if p.poll is not None:
+                self.info("(with -9)")
+                os.kill(p.pid, signal.SIGKILL)
+            time.sleep(10)
+            if p.poll is not None:
+                self.warning("Unable to kill background adb reboot!")
+        else:
+            # TODO debug
+            self.info("Background adb reboot killed by itself.")
+        status = False
         try:
-            return self.wait_for_device()
+            self.wait_for_device()
+            status = True
         except DeviceException:
             self.error("Can't reconnect to device!")
-            return False
+        # TODO check output?
+        return status
 
     def ping_device(self, auto_connect=False, silent=False):
         c = self.config
         # TODO support non-adb
         if c['device_protocol'] == 'adb':
+            if auto_connect and not self._query_attached_devices():
+                self.connect_device()
             if not silent:
                 self.info("Determining device connectivity over adb...")
             serial = self.query_device_serial()
             output = self.get_output_from_command(["adb", "-s", serial,
-                                                   "shell", "uptime"])
+                                                   "shell", "uptime"],
+                                                  silent=silent)
             if str(output).startswith("up time:"):
                 if not silent:
                     self.info("Found %s." % serial)
