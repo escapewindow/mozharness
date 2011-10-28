@@ -1,4 +1,13 @@
 === 0.5 ===
+2011-10-28  Aki Sasaki  <aki@mozilla.com>
+* mozharness/base/errors.py
+    Added "unable to connect to " to ADBErrorList.
+
+* mozharness/test/device.py (DeviceMixin.reboot_device):
+    Watched for existence of the subprocess pid: it doesn't exit throughout
+    reboot_device, but exits by end of script.  WFM.  Removed all attempts
+    to forcibly kill the pid.
+
 2011-10-27  Aki Sasaki  <aki@mozilla.com>
 * mozharness/base/log.py (LogMixin.log):
     If logging a fatal error message, call self.exit_on_error() if it

@@ -382,33 +382,20 @@ class DeviceMixin(object):
             return False
         device_serial = self.query_device_serial()
         self.info("Rebooting device...")
-        cmd = "adb -s %s reboot" % device_serial
+        cmd = ["adb", "-s", device_serial, "reboot"]
         self.info("Running command (in the background): %s" % cmd)
-        p = subprocess.Popen(cmd, shell=True, stdout=subprocess.PIPE,
+        # This won't exit until much later, but we don't need to wait.
+        # However, some error checking would be good.
+        p = subprocess.Popen(cmd, stdout=subprocess.PIPE,
                              stderr=subprocess.STDOUT)
         time.sleep(10)
         self.disconnect_device()
-        # TODO try bear's killPID
-        if p.poll is not None:
-            self.info("Killing background adb reboot...")
-            p.kill()
-            time.sleep(10)
-            if p.poll is not None:
-                self.info("(with -9)")
-                os.kill(p.pid, signal.SIGKILL)
-            time.sleep(10)
-            if p.poll is not None:
-                self.warning("Unable to kill background adb reboot!")
-        else:
-            # TODO debug
-            self.info("Background adb reboot killed by itself.")
         status = False
         try:
             self.wait_for_device()
             status = True
         except DeviceException:
             self.error("Can't reconnect to device!")
-        # TODO check output?
         return status
 
     def ping_device(self, auto_connect=False, silent=False):
