@@ -298,7 +298,7 @@ class DeviceMixin(object):
         if self.query_device_file_exists(device_root):
             self.info("Removing device root %s." % device_root)
             self.run_command(["adb", "-s", device_serial, "shell", "rm",
-                              "-rf", device_root], error_list=ADBErrorList)
+                              "-r", device_root], error_list=ADBErrorList)
             if self.query_device_file_exists(device_root):
                 self.log("Unable to remove device root!", level=error_level)
                 return False
