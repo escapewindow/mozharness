@@ -1,10 +1,15 @@
 === 0.5 ===
 2011-10-31  Aki Sasaki  <aki@mozilla.com>
+* mozharness/base/script.py (ShellMixin.query_exe):
+    Added, since adb isn't in linux buildslaves' default PATHs.
+
 * mozharness/test/device.py:
     Removed all flag file references.
+    Replaced all "adb" calls with adb, where adb = self.query_exe('adb')
 
 * scripts/device_talosrunner.py:
     Removed all flag file references.
+    Replaced all "adb" calls with adb, where adb = self.query_exe('adb')
 
 * mozharness/test/device.py (DeviceMixin.cleanup_device):
     Added killall; made this a bit more automation friendly.

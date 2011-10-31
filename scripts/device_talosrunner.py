@@ -259,14 +259,15 @@ class DeviceTalosRunner(VirtualenvMixin, DeviceMixin, MercurialScript):
         file_name = self.query_download_file_name()
         dirs = self.query_abs_dirs()
         file_path = os.path.join(dirs['abs_work_dir'], file_name)
+        adb = self.query_exe('adb')
         if c['enable_automation']:
             self.set_device_time()
         if self._log_level_at_least(DEBUG):
-            self.run_command(["adb", "-s", serial, "shell", "ps"],
+            self.run_command([adb, "-s", serial, "shell", "ps"],
                              error_list=ADBErrorList)
         # TODO dm.getInfo('memory')
         if self._log_level_at_least(DEBUG):
-            self.run_command(["adb", "-s", "shell", "uptime"],
+            self.run_command([adb, "-s", "shell", "uptime"],
                              error_list=ADBErrorList)
         # TODO getResolution ?
         # for tegra250:
@@ -291,23 +292,23 @@ class DeviceTalosRunner(VirtualenvMixin, DeviceMixin, MercurialScript):
         # TODO error checking
         if not c['enable_automation']:
             # -s to install on sdcard? Needs to be config driven
-            self.run_command(["adb", "-s", serial, "install", '-r',
+            self.run_command([adb, "-s", serial, "install", '-r',
                               os.path.join(dirs['abs_work_dir'], file_name)],
                              error_list=ADBErrorList)
         else:
-            output = self.get_output_from_command(["adb", "-s", serial,
+            output = self.get_output_from_command([adb, "-s", serial,
                                                    "shell",
                                                    "ls -d /data/data/%s" % \
                                                    c['device_package_name']])
             if "No such file" not in output:
-                self.run_command(["adb", "-s", serial, "uninstall",
+                self.run_command([adb, "-s", serial, "uninstall",
                                   c['device_package_name']],
                                  error_list=ADBErrorList)
-            self.run_command(["adb", "-s", serial, "install", '-r',
+            self.run_command([adb, "-s", serial, "install", '-r',
                               file_path],
                              error_list=ADBErrorList)
             file_name = os.path.join(dirs['abs_browser_dir'], 'application.ini')
-            self.run_command(["adb", "-s", serial, "push", file_name,
+            self.run_command([adb, "-s", serial, "push", file_name,
                               '/data/data/%s/application.ini' % c['device_package_name']])
 
     def preflight_configure(self):
@@ -355,7 +356,8 @@ class DeviceTalosRunner(VirtualenvMixin, DeviceMixin, MercurialScript):
         if 'install-app' not in self.actions:
             c = self.config
             serial = self.query_device_serial()
-            procs = self.get_output_from_command(['adb', "-s", serial,
+            adb = self.query_exe('adb')
+            procs = self.get_output_from_command([adb, "-s", serial,
                                                   'shell', 'ps'],
                                                  log_level=DEBUG)
             if c['device_package_name'] in procs:
@@ -366,7 +368,7 @@ class DeviceTalosRunner(VirtualenvMixin, DeviceMixin, MercurialScript):
                 for line in procs.splitlines():
                     line_contents = re.split('\s+', line)
                     if line_contents[-1].startswith(c['device_package_name']):
-                        self.run_command(['adb', "-s", serial, 'shell',
+                        self.run_command([adb, "-s", serial, 'shell',
                                           'kill', line_contents[1]],
                                          error_list=ADBErrorList)
 

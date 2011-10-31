@@ -100,7 +100,8 @@ class DeviceMixin(object):
 
     def _query_attached_devices(self):
         devices = []
-        output = self.get_output_from_command("adb devices")
+        adb = self.query_exe('adb')
+        output = self.get_output_from_command([adb, "devices"])
         starting_list = False
         for line in output:
             if 'adb: command not found' in line:
@@ -142,7 +143,8 @@ class DeviceMixin(object):
             return self.device_root
         device_root = None
         device_serial = self.query_device_serial()
-        output = self.get_output_from_command("adb -s %s shell df" % device_serial,
+        adb = self.query_exe('adb')
+        output = self.get_output_from_command("%s -s %s shell df" % (adb, device_serial),
                                               silent=silent)
         # TODO this assumes we're connected; error checking?
         if "/mnt/sdcard" in output:
@@ -172,8 +174,9 @@ class DeviceMixin(object):
     def query_device_time(self):
         c = self.config
         serial = self.query_device_serial()
+        adb = self.query_exe('adb')
         # adb shell 'date' will give a date string
-        date_string = self.get_output_from_command(["adb", "-s", serial,
+        date_string = self.get_output_from_command([adb, "-s", serial,
                                                     "shell", "date"])
         # TODO what to do when we error?
         return date_string
@@ -185,7 +188,8 @@ class DeviceMixin(object):
         if device_time is None:
             device_time = time.time()
         self.info(self.query_device_time())
-        status = self.run_command(["adb", "-s", serial,  "shell", "date",
+        adb = self.query_exe('adb')
+        status = self.run_command([adb, "-s", serial,  "shell", "date",
                                    str(device_time)],
                                   error_list=ADBErrorList)
         self.info(self.query_device_time())
@@ -193,7 +197,8 @@ class DeviceMixin(object):
 
     def query_device_file_exists(self, file_name):
         device_serial = self.query_device_serial()
-        output = self.get_output_from_command(["adb", "-s", device_serial,
+        adb = self.query_exe('adb')
+        output = self.get_output_from_command([adb, "-s", device_serial,
                                                "shell", "ls", "-d", file_name])
         if output.rstrip() == file_name:
             return True
@@ -204,9 +209,10 @@ class DeviceMixin(object):
         device_serial = self.query_device_serial()
         if device_root is None:
             self.fatal("Can't connect to device!")
+        adb = self.query_exe('adb')
         if self.query_device_file_exists(device_root):
             self.info("Removing device root %s." % device_root)
-            self.run_command(["adb", "-s", device_serial, "shell", "rm",
+            self.run_command([adb, "-s", device_serial, "shell", "rm",
                               "-r", device_root], error_list=ADBErrorList)
             if self.query_device_file_exists(device_root):
                 self.log("Unable to remove device root!", level=error_level)
@@ -219,7 +225,8 @@ class DeviceMixin(object):
         device_serial = self.query_device_serial()
         self.info("Uninstalling %s..." % package_name)
         if self.query_device_file_exists('%s/%s' % (package_root, package_name)):
-            cmd = ["adb", "-s", device_serial, "uninstall"]
+            adb = self.query_exe('adb')
+            cmd = [adb, "-s", device_serial, "uninstall"]
             if not c.get('enable_automation'):
                 cmd.append("-k")
             cmd.append(package_name)
@@ -240,7 +247,8 @@ class DeviceMixin(object):
 
     def connect_device(self):
         self.info("Connecting device...")
-        cmd = ["adb", "connect"]
+        adb = self.query_exe('adb')
+        cmd = [adb, "connect"]
         device_serial = self._query_config_device_serial()
         if device_serial:
             devices = self._query_attached_devices()
@@ -254,7 +262,8 @@ class DeviceMixin(object):
         self.info("Disconnecting device...")
         device_serial = self.query_device_serial()
         if device_serial:
-            status = self.run_command(["adb", "-s", device_serial,
+            adb = self.query_exe('adb')
+            status = self.run_command([adb, "-s", device_serial,
                                        "disconnect"],
                                       error_list=ADBErrorList)
 #            self.device_serial = None
@@ -267,7 +276,8 @@ class DeviceMixin(object):
             return False
         device_serial = self.query_device_serial()
         self.info("Rebooting device...")
-        cmd = ["adb", "-s", device_serial, "reboot"]
+        adb = self.query_exe('adb')
+        cmd = [adb, "-s", device_serial, "reboot"]
         self.info("Running command (in the background): %s" % cmd)
         # This won't exit until much later, but we don't need to wait.
         # However, some error checking would be good.
@@ -290,7 +300,8 @@ class DeviceMixin(object):
         if not silent:
             self.info("Determining device connectivity over adb...")
         serial = self.query_device_serial()
-        output = self.get_output_from_command(["adb", "-s", serial,
+        adb = self.query_exe('adb')
+        output = self.get_output_from_command([adb, "-s", serial,
                                                "shell", "uptime"],
                                               silent=silent)
         if str(output).startswith("up time:"):
@@ -322,7 +333,8 @@ class DeviceMixin(object):
         if c.get("enable_automation"):
             self.remove_etc_hosts()
         if c.get("device_package_name"):
-            self.run_command(["adb", "-s", device_serial, "shell",
+            adb = self.query_exe('adb')
+            self.run_command([adb, "-s", device_serial, "shell",
                               "killall", c["device_package_name"]],
                               error_list=ADBErrorList)
             self.uninstall_app(c['device_package_name'])
@@ -337,11 +349,12 @@ class DeviceMixin(object):
         device_serial = self.query_device_serial()
         if self.query_device_file_exists(hosts_file):
             self.info("Removing %s file." % hosts_file)
-            self.run_command(["adb", "-s", device_serial, "shell",
+            adb = self.query_exe('adb')
+            self.run_command([adb, "-s", device_serial, "shell",
                               "mount", "-o", "remount,rw", "-t", "yaffs2",
                               "/dev/block/mtdblock3", "/system"],
                              error_list=ADBErrorList)
-            self.run_command(["adb", "-s", device_serial, "shell", "rm",
+            self.run_command([adb, "-s", device_serial, "shell", "rm",
                               hosts_file])
             if self.query_device_file_exists(hosts_file):
                 self.fatal("Unable to remove %s!" % hosts_file)
