@@ -67,6 +67,7 @@ class VirtualenvMixin(object):
         """Return the path of a binary inside the virtualenv, if
         c['virtualenv_path'] is set; otherwise return the binary name.
         """
+        self._check_existing_virtualenv()
         if binary not in self.python_paths:
             bin_dir = 'bin'
             if self._is_windows():
@@ -77,11 +78,18 @@ class VirtualenvMixin(object):
                 self.python_paths[binary] = binary
         return self.python_paths[binary]
 
+    def _check_existing_virtualenv(self, error_level=WARNING):
+        if 'VIRTUAL_ENV' in os.environ:
+            self.log("VIRTUAL_ENV %s set; this may break mozharness virtualenv calls!" % os.environ['VIRTUAL_ENV'],
+                     level=error_level)
+            return True
+
     def create_virtualenv(self):
         c = self.config
         if not c.get('virtualenv_path'):
             self.add_summary("No virtualenv specified; not creating virtualenv!", level=FATAL)
             return -1
+        self._check_existing_virtualenv()
         venv_path = os.path.abspath(c['virtualenv_path'])
         self.info("Creating virtualenv %s" % venv_path)
         virtualenv_error_list = [
