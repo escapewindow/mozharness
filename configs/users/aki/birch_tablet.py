@@ -1,9 +1,9 @@
 config = {
     "log_name": "talos",
     "talos_zip": "file:///Users/asasaki/Desktop/talos_webserver.zip",
-    "installer_url": "file:///Users/asasaki/Desktop/fennec-9.0a2.multi.android-arm.apk",
+    "installer_url": "file:///Users/asasaki/Desktop/birch.apk",
     "device_name": "aki_tablet",
-    "device_package_name": "org.mozilla.fennec_aurora",
+    "device_package_name": "org.mozilla.fennec",
     "talos_branch": "mobile",
 #    "graph_server": "graphs-stage.mozilla.org",
     "graph_server": "''",
