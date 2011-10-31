@@ -252,6 +252,18 @@ class ShellMixin(object):
             self.env = env
         return env
 
+    def query_exe(self, exe):
+        """One way to work around PATH rewrites.
+
+        By default, return exe, and we'll fall through to searching
+        os.environ["PATH"].
+        However, if self.config['exes'][exe] exists, return that.
+        This lets us override exe paths via config file.
+
+        If we need runtime setting, we can build in self.exes support later.
+        """
+        return self.config.get('exes', {}).get(exe, exe)
+
     def run_command(self, command, cwd=None, error_list=[], parse_at_end=False,
                     halt_on_failure=False, success_codes=[0],
                     env=None, return_type='status', throw_exception=False):
