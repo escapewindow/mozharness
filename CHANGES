@@ -1,5 +1,11 @@
 === 0.5 ===
 2011-10-31  Aki Sasaki  <aki@mozilla.com>
+* mozharness/test/device.py:
+    Removed all flag file references.
+
+* scripts/device_talosrunner.py:
+    Removed all flag file references.
+
 * mozharness/test/device.py (DeviceMixin.cleanup_device):
     Added killall; made this a bit more automation friendly.
 

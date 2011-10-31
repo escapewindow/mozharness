@@ -58,9 +58,6 @@ from mozharness.base.script import ShellMixin, OSMixin
 class DeviceException(Exception):
     pass
 
-PROXY_FLAG = 'proxy.flg'
-ERROR_FLAG = 'error.flg'
-
 # DeviceMixin {{{1
 device_config_options = [[
  ["--device-ip"],
@@ -138,94 +135,6 @@ class DeviceMixin(object):
             self.info("Found %s." % device_serial)
         self.device_serial = device_serial
         return self.device_serial
-
-    # device_flags {{{2
-    def _query_device_flag(self, flag_file=None):
-        """Return (file_path, contents) if flag_file exists; None otherwise.
-        """
-        dirs = self.query_abs_dirs()
-        return_value = {}
-        flag_file_path = os.path.join(dirs['abs_device_flag_dir'], flag_file)
-        self.info("Looking for %s ..." % flag_file_path)
-        if flag_file not in (ERROR_FLAG, PROXY_FLAG):
-            raise ValueError, "Unknown flag_file type %s!" % flag_file
-        if os.path.exists(flag_file_path):
-            fh = open(flag_file_path, 'r')
-            contents = fh.read()
-            fh.close()
-            return (flag_file_path, contents)
-
-    def query_device_error_flag(self, log_level=ERROR):
-        flag = self._query_device_flag(ERROR_FLAG)
-        if flag:
-            self.log("Found error flag at %s: %s!" % (flag[0], flag[1]),
-                     level=log_level)
-            return flag
-
-    def query_device_proxy_flag(self, log_level=INFO):
-        flag = self._query_device_flag(PROXY_FLAG)
-        if flag:
-            self.log("Found proxy flag at %s: %s." % (flag[0], flag[1]),
-                     level=log_level)
-            return flag
-
-    def query_device_flags(self, clear_proxy_flag=True,
-                           halt_on_error_flag=True):
-        """Return a dict with 'error' or 'proxy' keys if those flags exist;
-        None otherwise.
-        """
-        self.info("Checking device flags...")
-        flags = {}
-        flag = self.query_device_proxy_flag(log_level=WARNING)
-        if flag:
-            if clear_proxy_flag:
-                self.clear_device_proxy_flag()
-            else:
-                flags['proxy'] = flag
-        level = ERROR
-        if halt_on_error_flag:
-            level = FATAL
-        flag = self.query_device_error_flag(log_level=level)
-        if flag:
-            flags['error'] = flag
-        if flags:
-            return flags
-
-    def _set_device_flag(self, message, flag_file=None, level="info"):
-        dirs = self.query_abs_dirs()
-        flag_file_path = os.path.join(dirs['abs_device_flag_dir'], flag_file)
-        self.log("Setting %s ..." % flag_file_path, level=level)
-        if flag_file not in (ERROR_FLAG, PROXY_FLAG):
-            raise ValueError, "Unknown flag_file type %s!" % flag_file
-        # TODO do we need a generic way to write to a local file?
-        self.mkdir_p(dirs['abs_device_flag_dir'])
-        # TODO try/except?
-        fh = open(flag_file_path, "a")
-        fh.write("%s: %s" % (time.strftime("%Y/%m/%d %H:%M:%S", time.localtime()), message))
-        fh.close()
-        return flag_file_path
-
-    def set_device_error_flag(self, message):
-        self.critical("Setting error flag: %s" % ERROR_FLAG)
-        self._set_device_flag(message, flag_file=ERROR_FLAG, level="error")
-
-    def set_device_proxy_flag(self, message):
-        self.info("Setting proxy flag: %s" % PROXY_FLAG)
-        self._set_device_flag(message, flag_file=PROXY_FLAG)
-
-    def _clear_device_flag(self, flag_file=None):
-        dirs = self.query_abs_dirs()
-        return_value = {}
-        (flag_file_path, contents) = self._query_device_flag(flag_file)
-        if os.path.exists(flag_file_path):
-            self.info("Clearing %s..." % flag_file_path)
-            self.rmtree(flag_file_path, error_level=FATAL)
-
-    def clear_device_error_flag(self):
-        self._clear_device_flag(ERROR_FLAG)
-
-    def clear_device_proxy_flag(self):
-        self._clear_device_flag(PROXY_FLAG)
 
     # device calls {{{2
     def query_device_root(self, silent=False):
@@ -326,7 +235,6 @@ class DeviceMixin(object):
         and use the message and other args from it.
         '''
         if self.config['enable_automation']:
-            self.set_device_error_flag(message)
             message = "Remote Device Error: %s" % message
         return (message, kwargs)
 
@@ -403,8 +311,6 @@ class DeviceMixin(object):
             self.fatal("Can't find device!")
         if self.query_device_root() is None:
             self.fatal("Can't connect to device!")
-        if self.config.get('enable_automation'):
-            self.query_device_flags()
 
     def cleanup_device(self):
         self.info("Cleaning up device.")
