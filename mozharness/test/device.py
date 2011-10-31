@@ -408,14 +408,18 @@ class DeviceMixin(object):
 
     def cleanup_device(self):
         self.info("Cleaning up device.")
+        c = self.config
+        device_serial = self.query_device_serial()
         status = self.remove_device_root()
         if not status:
             self.fatal("Can't remove device root!")
-        self.remove_etc_hosts()
-        # TODO pid kill
-        # TODO uninstall apps
-
-
+        if c.get("enable_automation"):
+            self.remove_etc_hosts()
+        if c.get("device_package_name"):
+            self.run_command(["adb", "-s", device_serial, "shell",
+                              "killall", c["device_package_name"]],
+                              error_list=ADBErrorList)
+            self.uninstall_app(c['device_package_name'])
 
     # Device-type-specific. {{{2
 

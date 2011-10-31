@@ -1,4 +1,8 @@
 === 0.5 ===
+2011-10-31  Aki Sasaki  <aki@mozilla.com>
+* mozharness/test/device.py (DeviceMixin.cleanup_device):
+    Added killall; made this a bit more automation friendly.
+
 2011-10-28  Aki Sasaki  <aki@mozilla.com>
 * mozharness/base/script.py (ShellMixin.get_output_from_command):
     rmtree the tmpfiles with log_level=DEBUG (got tired of seeing that output all the time)
