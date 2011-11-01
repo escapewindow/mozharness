@@ -137,6 +137,9 @@ class DeviceMixin(object):
         self.device_serial = device_serial
         return self.device_serial
 
+    def query_device_exe(self, exe_name):
+        return self.query_exe(exe_name, exe_dict="device_exes")
+
     # device calls {{{2
     def query_device_root(self, silent=False):
         if self.device_root:

@@ -1,4 +1,8 @@
 === 0.5 ===
+2011-11-01  Aki Sasaki  <aki@mozilla.com>
+* mozharness/test/device.py (DeviceMixin.query_device_exe):
+    Added; will need since tegra busybox won't be in standard PATH.
+
 2011-10-31  Aki Sasaki  <aki@mozilla.com>
 * mozharness/base/script.py (ShellMixin.query_exe):
     Added, since adb isn't in linux buildslaves' default PATHs.
