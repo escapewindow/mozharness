@@ -330,7 +330,7 @@ class DeviceTalosRunner(VirtualenvMixin, DeviceMixin, MercurialScript):
         command = [python, 'remotePerfConfigurator.py',
                    '-v',
                    '-e', c['device_package_name'],
-                   '-t', c['device_name'],
+                   '-t', c.get('talos_device_name', c['device_name']),
                    '-b', c['talos_branch'],
                    '--branchName', c['talos_branch'],
                    '--resultsServer', c['graph_server'],
