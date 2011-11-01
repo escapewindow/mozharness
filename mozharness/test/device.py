@@ -304,8 +304,9 @@ class DeviceMixin(object):
             self.info("Determining device connectivity over adb...")
         serial = self.query_device_serial()
         adb = self.query_exe('adb')
+        uptime = self.query_device_exe('uptime')
         output = self.get_output_from_command([adb, "-s", serial,
-                                               "shell", "uptime"],
+                                               "shell", uptime],
                                               silent=silent)
         if str(output).startswith("up time:"):
             if not silent:
@@ -337,8 +338,9 @@ class DeviceMixin(object):
             self.remove_etc_hosts()
         if c.get("device_package_name"):
             adb = self.query_exe('adb')
+            killall = self.query_device_exe('killall')
             self.run_command([adb, "-s", device_serial, "shell",
-                              "killall", c["device_package_name"]],
+                              killall, c["device_package_name"]],
                               error_list=ADBErrorList)
             self.uninstall_app(c['device_package_name'])
 

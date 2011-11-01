@@ -260,6 +260,7 @@ class DeviceTalosRunner(VirtualenvMixin, DeviceMixin, MercurialScript):
         dirs = self.query_abs_dirs()
         file_path = os.path.join(dirs['abs_work_dir'], file_name)
         adb = self.query_exe('adb')
+        uptime = self.query_device_exe('uptime')
         if c['enable_automation']:
             self.set_device_time()
         if self._log_level_at_least(DEBUG):
@@ -267,7 +268,7 @@ class DeviceTalosRunner(VirtualenvMixin, DeviceMixin, MercurialScript):
                              error_list=ADBErrorList)
         # TODO dm.getInfo('memory')
         if self._log_level_at_least(DEBUG):
-            self.run_command([adb, "-s", "shell", "uptime"],
+            self.run_command([adb, "-s", "shell", uptime],
                              error_list=ADBErrorList)
         # TODO getResolution ?
         # for tegra250:
@@ -357,6 +358,7 @@ class DeviceTalosRunner(VirtualenvMixin, DeviceMixin, MercurialScript):
             c = self.config
             serial = self.query_device_serial()
             adb = self.query_exe('adb')
+            kill = self.query_device_exe('kill')
             procs = self.get_output_from_command([adb, "-s", serial,
                                                   'shell', 'ps'],
                                                  log_level=DEBUG)
@@ -369,7 +371,7 @@ class DeviceTalosRunner(VirtualenvMixin, DeviceMixin, MercurialScript):
                     line_contents = re.split('\s+', line)
                     if line_contents[-1].startswith(c['device_package_name']):
                         self.run_command([adb, "-s", serial, 'shell',
-                                          'kill', line_contents[1]],
+                                          kill, line_contents[1]],
                                          error_list=ADBErrorList)
 
     def run_talos(self):

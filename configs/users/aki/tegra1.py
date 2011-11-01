@@ -35,4 +35,9 @@ config = {
     "exes": {
         "adb": "/tools/android-sdk-r13/platform-tools/adb",
     },
+    "device_exes": {
+        "kill": "/data/busybox/kill",
+        "killall": "/data/busybox/killall",
+        "uptime": "/data/busybox/uptime",
+    },
 }
