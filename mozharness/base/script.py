@@ -277,7 +277,8 @@ class ShellMixin(object):
         error_list example:
         [{'regex': '^Error: LOL J/K', level=IGNORE},
          {'regex': '^Error:', level=ERROR, context_lines='5:5'},
-         {'substr': 'THE WORLD IS ENDING', level=FATAL, context_lines='20:'}
+         {'substr': 'THE WORLD IS ENDING', level=FATAL, context_lines='20:',
+          'explanation': "You'd better run!", summary=True}
         ]
         (context_lines isn't written yet)
         """
@@ -328,7 +329,13 @@ class ShellMixin(object):
                                   error_check)
                     if match:
                         level=error_check.get('level', INFO)
-                        self.log(' %s' % line, level=level)
+                        message = ' %s' % line
+                        if error_check.get('explanation'):
+                            message += '\n %s' % error_check['explanation']
+                        if error_check.get('summary'):
+                            self.add_summary(line, level=level)
+                        else:
+                            self.log(line, level=level)
                         if level in (ERROR, CRITICAL, FATAL):
                             num_errors = num_errors + 1
                         break
