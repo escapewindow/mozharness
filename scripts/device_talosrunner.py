@@ -383,6 +383,8 @@ class DeviceTalosRunner(VirtualenvMixin, DeviceMixin, MercurialScript):
         TalosErrorList += [
          {'regex': r'''run-as: Package '.*' is unknown''', 'level': DEBUG},
          {'substr': r'''FAIL: Graph server unreachable''', 'level': CRITICAL},
+         {'substr': r'''FAIL: Busted:''', 'level': CRITICAL},
+         {'substr': r'''FAIL: failed to cleanup''', 'level': ERROR},
          {'substr': r'''erfConfigurator.py: Unknown error''', 'level': CRITICAL},
          {'regex': r'''No machine_name called '.*' can be found''', 'level': CRITICAL},
          {'substr': r"""No such file or directory: 'browser_output.txt'""",

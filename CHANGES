@@ -1,4 +1,8 @@
 === 0.5 ===
+2011-11-02  Aki Sasaki  <aki@mozilla.com>
+* scripts/device_talosrunner.py (DeviceTalosRunner.run_talos):
+    Added more FAIL: error_list entries for TalosErrorList
+
 2011-11-01  Aki Sasaki  <aki@mozilla.com>
 * mozharness/test/device.py (DeviceMixin.exit_on_error):
     Fixed args.
