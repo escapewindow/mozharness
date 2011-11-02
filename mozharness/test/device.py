@@ -240,13 +240,13 @@ class DeviceMixin(object):
                          level=error_level)
 
     # Maintenance {{{2
-    def exit_on_error(self, message, **kwargs):
+    def exit_on_error(self, message, *args, **kwargs):
         '''When exit_on_error is defined, a FATAL log call will call it
         and use the message and other args from it.
         '''
         if self.config['enable_automation']:
             message = "Remote Device Error: %s" % message
-        return (message, kwargs)
+        return (message, args, kwargs)
 
     def connect_device(self):
         self.info("Connecting device...")
