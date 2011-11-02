@@ -333,9 +333,9 @@ class ShellMixin(object):
                         if error_check.get('explanation'):
                             message += '\n %s' % error_check['explanation']
                         if error_check.get('summary'):
-                            self.add_summary(line, level=level)
+                            self.add_summary(message, level=level)
                         else:
-                            self.log(line, level=level)
+                            self.log(message, level=level)
                         if level in (ERROR, CRITICAL, FATAL):
                             num_errors = num_errors + 1
                         break

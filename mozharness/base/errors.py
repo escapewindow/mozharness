@@ -46,19 +46,6 @@ whether IGNORE, DEBUG, INFO, WARNING, ERROR, CRITICAL, or FATAL.
 
 TODO: Context lines (requires work on the run_command side)
 
-TODO: Optional explanations of these lines.  These would translate generic,
-abstract, or otherwise non-intuitive error messages into human-readable
-meanings.  E.g., if we hit a specific unhelpful error message when we
-run out of disk,
-
-  {'substr': r'''unhelpful error message!!!111''', 'level': ERROR,
-   'explanation': r'''We ran out of disk. Please clean up.'''}
-
-would give:
-
-TIMESTAMP -  ERROR - unhelpful error message!!!111
-TIMESTAMP -  ERROR - We ran out of disk. Please clean up.
-
 TODO: We could also create classes that generate these, but with the
 appropriate level (please don't die on any errors; please die on any
 warning; etc.) or platform or language or whatever.
