@@ -1,7 +1,7 @@
 config = {
     "log_name": "talos",
     "talos_zip": "http://people.mozilla.org/~asasaki/talos_webserver.zip",
-    "installer_url": "http://ftp.mozilla.org/pub/mozilla.org/mobile/nightly/latest-mozilla-central-android/fennec-10.0a1.multi.android-arm.apk",
+    "browser_url": "http://ftp.mozilla.org/pub/mozilla.org/mobile/nightly/latest-mozilla-central-android/fennec-10.0a1.multi.android-arm.apk",
     "device_name": "tegra-029.build.mozilla.org",
     "device_package_name": "org.mozilla.fennec",
     "talos_device_name": "tegra-029",

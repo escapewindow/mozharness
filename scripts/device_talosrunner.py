@@ -114,11 +114,11 @@ class DeviceTalosRunner(VirtualenvMixin, DeviceMixin, MercurialScript):
       "help": "Integrate with clientproxy automation (non-developer setting)."
      }
     ],[
-     ["--installer-url", "--url"],
+     ["--browser-url", "--url"],
      {"action": "store",
-      "dest": "installer_url",
+      "dest": "browser_url",
       # TODO: wildcard download?
-      "help": "Specify the url to the installer."
+      "help": "Specify the url to the browser installer/bundle."
      }
     ],[
      ["--yaml-url"],
@@ -145,19 +145,19 @@ class DeviceTalosRunner(VirtualenvMixin, DeviceMixin, MercurialScript):
                       'configure',
                       'run-talos',
                       'post-cleanup-device',
-#                      'upload',
-#                      'notify',
-#                      'reboot',
+                      'upload',
+                      'notify',
+                      'reboot',
                       ],
          default_actions=['preclean',
-                          'pull',
-                          'check-device',
-                          'pre-cleanup-device',
-                          'download',
-                          'unpack',
-                          'install-app',
-                          'configure',
-                          'run-talos',
+#                          'pull',
+#                          'check-device',
+#                          'pre-cleanup-device',
+#                          'download',
+#                          'unpack',
+#                          'install-app',
+#                          'configure',
+#                          'run-talos',
                          ],
          require_config_file=require_config_file,
          config={"virtualenv_modules": ["PyYAML"],
@@ -193,11 +193,11 @@ class DeviceTalosRunner(VirtualenvMixin, DeviceMixin, MercurialScript):
         self.abs_dirs = abs_dirs
         return self.abs_dirs
 
-    def query_download_file_name(self):
+    def query_download_file_name(self, url_key='browser_url'):
         if self.download_file_name:
             return self.download_file_name
         c = self.config
-        download_file_name = os.path.basename(c['installer_url'])
+        download_file_name = get_filename_from_url(c[url_key])
         m = re.match(r'([a-zA-Z0-9]*).*\.([^.]*)', download_file_name)
         if m.group(1) and m.group(2):
             download_file_name = '%s.%s' % (m.group(1), m.group(2))
@@ -242,7 +242,7 @@ class DeviceTalosRunner(VirtualenvMixin, DeviceMixin, MercurialScript):
         self.mkdir_p(dirs["abs_work_dir"])
         self.chdir(dirs["abs_work_dir"])
         file_name = self.query_download_file_name()
-        self.download_file(c['installer_url'], file_name=file_name,
+        self.download_file(c['browser_url'], file_name=file_name,
                            error_level="fatal")
         self.chdir(orig_dir)
 
