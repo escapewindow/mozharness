@@ -64,10 +64,13 @@ class DeviceException(Exception):
 # BaseDeviceHandler {{{1
 class BaseDeviceHandler(ShellMixin, OSMixin, LogMixin):
     device_id = None
-    def __init__(self, log_obj=None, config=None):
+    device_root = None
+    default_port = None
+    def __init__(self, log_obj=None, config=None, script_obj=None):
         super(BaseDeviceHandler, self).__init__()
-        self.log_obj = log_obj
         self.config = config
+        self.log_obj = log_obj
+        self.script_obj = script_obj
 
     def query_device_id(self):
         if self.device_id:
@@ -92,6 +95,9 @@ class BaseDeviceHandler(ShellMixin, OSMixin, LogMixin):
             message = "Remote Device Error: %s" % message
         return (message, args, kwargs)
 
+    def query_download_filename(self, file_id=None):
+        pass
+
     def ping_device(self):
         pass
 
@@ -111,6 +117,9 @@ class ADBDeviceHandler(BaseDeviceHandler):
 
     def query_device_exe(self, exe_name):
         return self.query_exe(exe_name, exe_dict="device_exes")
+
+    def _query_config_device_id(self):
+        return BaseDeviceHandler.query_device_id(self)
 
     def query_device_id(self, auto_connect=True):
         if self.device_id:
@@ -139,15 +148,15 @@ class ADBDeviceHandler(BaseDeviceHandler):
             self.connect_device()
         if not silent:
             self.info("Determining device connectivity over adb...")
-        serial = self.query_device_id()
+        device_id = self.query_device_id()
         adb = self.query_exe('adb')
         uptime = self.query_device_exe('uptime')
-        output = self.get_output_from_command([adb, "-s", serial,
+        output = self.get_output_from_command([adb, "-s", device_id,
                                                "shell", uptime],
                                               silent=silent)
         if str(output).startswith("up time:"):
             if not silent:
-                self.info("Found %s." % serial)
+                self.info("Found %s." % device_id)
             return True
         elif auto_connect:
             # TODO retry?
@@ -265,7 +274,7 @@ class ADBDeviceHandler(BaseDeviceHandler):
         else:
             device_root = "/data/local/tmp/tests"
         if not silent:
-            self.info("Device root is %s" % device_root)
+            self.info("Device root is %s" % str(device_root))
         self.device_root = device_root
         return self.device_root
 
@@ -284,10 +293,10 @@ class ADBDeviceHandler(BaseDeviceHandler):
 
     def query_device_time(self):
         c = self.config
-        serial = self.query_device_id()
+        device_id = self.query_device_id()
         adb = self.query_exe('adb')
         # adb shell 'date' will give a date string
-        date_string = self.get_output_from_command([adb, "-s", serial,
+        date_string = self.get_output_from_command([adb, "-s", device_id,
                                                     "shell", "date"])
         # TODO what to do when we error?
         return date_string
@@ -295,12 +304,12 @@ class ADBDeviceHandler(BaseDeviceHandler):
     def set_device_time(self, device_time=None, error_level='error'):
         # adb shell date UNIXTIMESTAMP will set date
         c = self.config
-        serial = self.query_device_id()
+        device_id = self.query_device_id()
         if device_time is None:
             device_time = time.time()
         self.info(self.query_device_time())
         adb = self.query_exe('adb')
-        status = self.run_command([adb, "-s", serial,  "shell", "date",
+        status = self.run_command([adb, "-s", device_id,  "shell", "date",
                                    str(device_time)],
                                   error_list=ADBErrorList)
         self.info(self.query_device_time())
@@ -329,6 +338,63 @@ class ADBDeviceHandler(BaseDeviceHandler):
                 self.log("Unable to remove device root!", level=error_level)
                 return False
         return True
+
+    def install_app(self):
+        c = self.config
+        device_id = self.query_device_id()
+        file_name = self.query_download_filename()
+        dirs = self.script_obj.query_abs_dirs()
+        file_path = os.path.join(dirs['abs_work_dir'], file_name)
+        adb = self.query_exe('adb')
+        uptime = self.query_device_exe('uptime')
+        if c['enable_automation']:
+            self.set_device_time()
+        if self._log_level_at_least(DEBUG):
+            self.run_command([adb, "-s", device_id, "shell", "ps"],
+                             error_list=ADBErrorList)
+        # TODO dm.getInfo('memory')
+        if self._log_level_at_least(DEBUG):
+            self.run_command([adb, "-s", "shell", uptime],
+                             error_list=ADBErrorList)
+        # TODO getResolution ?        # for tegra250:
+        # adb shell getprop persist.tegra.dpy3.mode.width
+        # adb shell getprop persist.tegra.dpy3.mode.height
+        #
+        # for non-tegra250, this ugliness:
+        # adb -s device_id shell screencap /mnt/sdcard/tests/foo.png
+        # adb -s device_id shell ls -l /mnt/sdcard/tests/foo.png
+        # -rw-rw-r-- root     sdcard_rw   207187 2011-10-04 18:12 foo.png
+        # adb pull /mnt/sdcard/tests/foo.png
+        # Can do via PIL:
+        # import Image
+        # Image.open("foo.png").size
+        # (1280, 800)
+        # I hate requiring another module just for this, if we can help it.
+        #
+        # adb -s device_id shell am display-size 1024x768
+        # reboot; adb wait-for-device; sleep
+        # (later) adb -s device_id shell am display-size 1680:1050
+        cmd = None
+        # TODO error checking
+        if not c['enable_automation']:
+            # -s to install on sdcard? Needs to be config driven
+            self.run_command([adb, "-s", device_id, "install", '-r',
+                              os.path.join(dirs['abs_work_dir'], file_name)],
+                             error_list=ADBErrorList)
+        else:
+            output = self.get_output_from_command([adb, "-s", device_id,
+                                                   "shell",
+                                                   "ls -d /data/data/%s" % \
+                                                   c['device_package_name']])
+            if "No such file" not in output:
+                self.run_command([adb, "-s", device_id, "uninstall",
+                                  c['device_package_name']],
+                                 error_list=ADBErrorList)
+            self.run_command([adb, "-s", device_id, "install", '-r',
+                              file_path],
+                             error_list=ADBErrorList)
+            file_name = os.path.join(dirs['abs_browser_dir'], 'application.ini')
+            self.run_command([adb, "-s", device_id, "push", file_name,                              '/data/data/%s/application.ini' % c['device_package_name']])
 
     def uninstall_app(self, package_name, package_root="/data/data",
                       error_level="error"):
@@ -426,7 +492,8 @@ device_config_options = [[
  }
 ],[
  ["--device-protocol"],
- {"action": "choice",
+ {"action": "store",
+  "type": "choice",
   "dest": "device_protocol",
   "choices": DEVICE_PROTOCOL_DICT.keys(),
   "help": "Specify the device communication protocol."
@@ -461,15 +528,20 @@ class DeviceMixin(object):
             self.fatal("Unknown device_protocol %s; set via --device-protocol!" % str(device_protocol))
         self.device_handler = device_class(
          log_obj=self.log_obj,
-         config=self.config
+         config=self.config,
+         script_obj=self,
         )
         return self.device_handler
 
+    def check_device(self):
+        # TODO
+        pass
 
+    def cleanup_device(self):
+        pass
 
-# __main__ {{{1
+    def install_app(self):
+        pass
 
-if __name__ == '__main__':
-    '''TODO: unit tests.
-    '''
-    pass
+    def reboot_device(self):
+        pass
