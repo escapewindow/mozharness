@@ -150,8 +150,8 @@ class DeviceTalosRunner(VirtualenvMixin, DeviceMixin, MercurialScript):
                       'reboot',
                       ],
          default_actions=['preclean',
-#                          'pull',
-#                          'check-device',
+                          'pull',
+                          'check-device',
 #                          'pre-cleanup-device',
 #                          'download',
 #                          'unpack',
@@ -197,7 +197,7 @@ class DeviceTalosRunner(VirtualenvMixin, DeviceMixin, MercurialScript):
         if self.download_file_name:
             return self.download_file_name
         c = self.config
-        download_file_name = get_filename_from_url(c[url_key])
+        download_file_name = self.get_filename_from_url(c[url_key])
         m = re.match(r'([a-zA-Z0-9]*).*\.([^.]*)', download_file_name)
         if m.group(1) and m.group(2):
             download_file_name = '%s.%s' % (m.group(1), m.group(2))

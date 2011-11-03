@@ -443,9 +443,23 @@ class SUTDeviceHandler(BaseDeviceHandler):
         self.devicemanager = None
         self.default_port = 20701
 
-    def query_devicemanager(self):
-        # TODO WRITEME
-        pass
+    def query_devicemanager(self, error_level=FATAL):
+        if self.devicemanager:
+            return self.devicemanager
+        c = self.config
+        dirs = self.script_obj.query_abs_dirs()
+        dm_path = c.get("devicemanager_path", dirs['abs_talos_dir'])
+        sys.path.append(dm_path)
+        try:
+            import devicemanagerSUT
+            from devicemanagerSUT import DeviceManagerSUT
+            from devicemanagerSUT import DMError
+            self.devicemanager = DeviceManagerSUT(c['device_ip'])
+            self.devicemanager.debug = 5
+        except ImportError, e:
+            self.log("Can't import DeviceManagerSUT! %s\nDid you check out talos?" % str(e), level=error_level)
+            raise
+        return self.devicemanager
 
     # maintenance {{{2
     def ping_device(self):
@@ -453,6 +467,10 @@ class SUTDeviceHandler(BaseDeviceHandler):
         pass
 
     def check_device(self):
+#        if not self.ping_device(auto_connect=True):
+#            self.fatal("Can't find device!")
+#        if self.query_device_root() is None:
+#            self.fatal("Can't connect to device!")
         pass
 
     def reboot_device(self):
@@ -508,6 +526,12 @@ device_config_options = [[
   "default": "non-tegra",
   "dest": "device_type",
   "help": "Specify the device type."
+ }
+],[
+ ["--devicemanager-path"],
+ {"action": "store",
+  "dest": "devicemanager_path",
+  "help": "Specify the parent dir of devicemanagerSUT.py."
  }
 ]]
 
