@@ -61,9 +61,10 @@ from mozharness.base.script import ShellMixin, OSMixin
 DEVICE_UNREACHABLE = 0x01
 DEVICE_NOT_CONNECTED = 0x02
 DEVICE_MISSING_SDCARD = 0x03
-DEVICE_ADB_ERROR = 0x04
-DEVICE_CANT_REMOVE_DEVROOT = 0x05
-DEVICE_NOT_REBOOTED = 0x06
+DEVICE_HOST_ERROR = 0x04
+# DEVICE_UNRECOVERABLE_ERROR?
+DEVICE_NOT_REBOOTED = 0x05
+DEVICE_CANT_REMOVE_DEVROOT = 0x06
 DEVICE_CANT_REMOVE_ETC_HOSTS = 0x07
 DEVICE_CANT_SET_TIME = 0x08
 
@@ -122,7 +123,10 @@ class BaseDeviceHandler(ShellMixin, OSMixin, LogMixin):
     def check_device(self):
         pass
 
-    def cleanup_device(self):
+    def cleanup_device(self, reboot=False):
+        pass
+
+    def reboot_device(self):
         pass
 
     def query_device_root(self):
@@ -201,11 +205,11 @@ class ADBDeviceHandler(BaseDeviceHandler):
         output = self.get_output_from_command([adb, "devices"])
         starting_list = False
         if output is None:
-            self.add_device_flag(DEVICE_ADB_ERROR)
+            self.add_device_flag(DEVICE_HOST_ERROR)
             self.fatal("Can't get output from 'adb devices'; install the Android SDK!")
         for line in output:
             if 'adb: command not found' in line:
-                self.add_device_flag(DEVICE_ADB_ERROR)
+                self.add_device_flag(DEVICE_HOST_ERROR)
                 self.fatal("Can't find adb; install the Android SDK!")
             if line.startswith("* daemon"):
                 continue
@@ -274,7 +278,7 @@ class ADBDeviceHandler(BaseDeviceHandler):
             self.error("Can't reconnect to device!")
         return status
 
-    def cleanup_device(self):
+    def cleanup_device(self, reboot=False):
         self.info("Cleaning up device.")
         c = self.config
         device_id = self.query_device_id()
@@ -291,7 +295,8 @@ class ADBDeviceHandler(BaseDeviceHandler):
                               killall, c["device_package_name"]],
                               error_list=ADBErrorList)
             self.uninstall_app(c['device_package_name'])
-        # uninstall processnames
+        if reboot:
+            self.reboot_device()
 
     # device calls {{{2
     def query_device_root(self, silent=False):
@@ -514,9 +519,6 @@ class SUTDeviceHandler(BaseDeviceHandler):
             self.fatal("Can't get dev_root from devicemanager; is the device up?")
         self.info("Found a dev_root of %s." % str(dev_root))
 
-    def reboot_device(self):
-        pass
-
     def wait_for_device(self, interval=60, max_attempts=20):
         self.info("Waiting for device to come back...")
         time.sleep(interval)
@@ -535,7 +537,7 @@ class SUTDeviceHandler(BaseDeviceHandler):
         else:
             self.info("Device came back.")
 
-    def cleanup_device(self):
+    def cleanup_device(self, reboot=False):
         c = self.config
         dev_root = self.query_device_root()
         dm = self.query_devicemanager()
@@ -552,7 +554,8 @@ class SUTDeviceHandler(BaseDeviceHandler):
                 self.info("Uninstalling %s..." % c['device_package_name'])
                 dm.uninstallAppAndReboot(c['device_package_name'])
                 self.wait_for_device()
-        # pidfiles ?
+            elif reboot:
+                self.reboot_device()
 
     # device calls {{{2
     def query_device_root(self, strict=False):
@@ -606,6 +609,16 @@ class SUTDeviceHandler(BaseDeviceHandler):
         # TODO screen resolution
         self.copyfile(inifile, remoteappini)
         status = dm.installApp(target)
+
+    def reboot_device(self):
+        dm = self.query_devicemanager()
+        # logcat?
+        self.info("Rebooting device...")
+        status = dm.reboot()
+        if status is None:
+            self.add_device_flag(DEVICE_NOT_REBOOTED)
+            self.fatal("Can't reboot device!")
+        self.wait_for_device()
 
     # device type specific {{{2
     def remove_etc_hosts(self, hosts_file="/system/etc/hosts"):
@@ -707,9 +720,9 @@ class DeviceMixin(object):
         dh = self.query_device_handler()
         return dh.check_device()
 
-    def cleanup_device(self):
+    def cleanup_device(self, **kwargs):
         dh = self.query_device_handler()
-        return dh.cleanup_device()
+        return dh.cleanup_device(**kwargs)
 
     def install_app(self):
         dirs = self.query_abs_dirs()
@@ -720,4 +733,5 @@ class DeviceMixin(object):
         )
 
     def reboot_device(self):
-        pass
+        dh = self.query_device_handler()
+        return dh.reboot_device()

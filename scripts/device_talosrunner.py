@@ -145,9 +145,9 @@ class DeviceTalosRunner(VirtualenvMixin, DeviceMixin, MercurialScript):
                       'configure',
                       'run-talos',
                       'post-cleanup-device',
-                      'upload',
-                      'notify',
-                      'reboot',
+#                      'upload',
+#                      'notify',
+#                      'reboot-host',
                       ],
          default_actions=['preclean',
                           'pull',
@@ -158,6 +158,7 @@ class DeviceTalosRunner(VirtualenvMixin, DeviceMixin, MercurialScript):
                           'install-app',
                           'configure',
                           'run-talos',
+                          'post-cleanup-device',
                          ],
          require_config_file=require_config_file,
          config={"virtualenv_modules": ["PyYAML"],
@@ -352,10 +353,9 @@ class DeviceTalosRunner(VirtualenvMixin, DeviceMixin, MercurialScript):
     def post_cleanup_device(self):
         c = self.config
         if c.get('enable_automation'):
-            self.cleanup_device()
-            if not self.reboot_device():
-                # TODO mark as bad
-                pass
+            self.cleanup_device(reboot=True)
+        else:
+            self.info("Nothing to do without enable_automation set.")
 
 # __main__ {{{1
 if __name__ == '__main__':
