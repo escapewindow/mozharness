@@ -11,7 +11,7 @@ config = {
     "results_link": "/server/collect.cgi",
     "talos_suites": ["tsvg"],
     "talos_config_file": "remote.config",
-    "talos_web_server": "10.251.25.44:8001",
+    "talos_web_server": "10.251.25.44:8000",
     #"virtualenv_path": "/home/cltbld/aki/venv",
     "device_protocol": "sut",
 #    "device_port": "20701",
