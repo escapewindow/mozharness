@@ -56,6 +56,17 @@ from mozharness.base.script import ShellMixin, OSMixin
 
 
 
+# Device flags
+DEVICE_UNREACHABLE = 0x01
+DEVICE_NOT_CONNECTED = 0x02
+DEVICE_MISSING_SDCARD = 0x03
+DEVICE_ADB_ERROR = 0x04
+DEVICE_CANT_REMOVE_DEVROOT = 0x05
+DEVICE_NOT_REBOOTED = 0x06
+DEVICE_CANT_REMOVE_ETC_HOSTS = 0x07
+
+
+
 class DeviceException(Exception):
     pass
 
@@ -66,11 +77,16 @@ class BaseDeviceHandler(ShellMixin, OSMixin, LogMixin):
     device_id = None
     device_root = None
     default_port = None
+    device_flags = []
     def __init__(self, log_obj=None, config=None, script_obj=None):
         super(BaseDeviceHandler, self).__init__()
         self.config = config
         self.log_obj = log_obj
         self.script_obj = script_obj
+
+    def add_device_flag(self, flag):
+        if flag not in self.device_flags:
+            self.device_flags.append(flag)
 
     def query_device_id(self):
         if self.device_id:
@@ -104,7 +120,13 @@ class BaseDeviceHandler(ShellMixin, OSMixin, LogMixin):
     def check_device(self):
         pass
 
+    def cleanup_device(self):
+        pass
+
     def query_device_root(self):
+        pass
+
+    def wait_for_device(self, interval=60, max_attempts=20):
         pass
 
 
@@ -133,7 +155,8 @@ class ADBDeviceHandler(BaseDeviceHandler):
             self.info("Trying to find device...")
             devices = self._query_attached_devices()
             if not devices:
-                self.fatal("No device attached via adb!\nUse 'adb connect' or specify a device_id or device_ip in config!")
+                self.add_device_flag(DEVICE_NOT_CONNECTED)
+                self.fatal("No device connected via adb!\nUse 'adb connect' or specify a device_id or device_ip in config!")
             elif len(devices) > 1:
                 self.warning("""More than one device detected; specify 'device_id' or\n'device_ip' to target a specific device!""")
             device_id = devices[0]
@@ -173,9 +196,11 @@ class ADBDeviceHandler(BaseDeviceHandler):
         output = self.get_output_from_command([adb, "devices"])
         starting_list = False
         if output is None:
+            self.add_device_flag(DEVICE_ADB_ERROR)
             self.fatal("Can't get output from 'adb devices'; install the Android SDK!")
         for line in output:
             if 'adb: command not found' in line:
+                self.add_device_flag(DEVICE_ADB_ERROR)
                 self.fatal("Can't find adb; install the Android SDK!")
             if line.startswith("* daemon"):
                 continue
@@ -214,12 +239,15 @@ class ADBDeviceHandler(BaseDeviceHandler):
 
     def check_device(self):
         if not self.ping_device(auto_connect=True):
+            self.add_device_flag(DEVICE_NOT_CONNECTED)
             self.fatal("Can't find device!")
         if self.query_device_root() is None:
+            self.add_device_flag(DEVICE_NOT_CONNECTED)
             self.fatal("Can't connect to device!")
 
     def reboot_device(self):
         if not self.ping_device(auto_connect=True):
+            self.add_device_flag(DEVICE_NOT_REBOOTED)
             self.error("Can't reboot disconnected device!")
             return False
         device_id = self.query_device_id()
@@ -247,6 +275,7 @@ class ADBDeviceHandler(BaseDeviceHandler):
         device_id = self.query_device_id()
         status = self.remove_device_root()
         if not status:
+            self.add_device_flag(DEVICE_CANT_REMOVE_DEVROOT)
             self.fatal("Can't remove device root!")
         if c.get("enable_automation"):
             self.remove_etc_hosts()
@@ -257,6 +286,7 @@ class ADBDeviceHandler(BaseDeviceHandler):
                               killall, c["device_package_name"]],
                               error_list=ADBErrorList)
             self.uninstall_app(c['device_package_name'])
+        # uninstall processnames
 
     # device calls {{{2
     def query_device_root(self, silent=False):
@@ -330,6 +360,7 @@ class ADBDeviceHandler(BaseDeviceHandler):
         device_root = self.query_device_root()
         device_id = self.query_device_id()
         if device_root is None:
+            self.add_device_flag(DEVICE_UNREACHABLE)
             self.fatal("Can't connect to device!")
         adb = self.query_exe('adb')
         if self.query_device_file_exists(device_root):
@@ -337,6 +368,7 @@ class ADBDeviceHandler(BaseDeviceHandler):
             self.run_command([adb, "-s", device_id, "shell", "rm",
                               "-r", device_root], error_list=ADBErrorList)
             if self.query_device_file_exists(device_root):
+                self.add_device_flag(DEVICE_CANT_REMOVE_DEVROOT)
                 self.log("Unable to remove device root!", level=error_level)
                 return False
         return True
@@ -432,6 +464,7 @@ class ADBDeviceHandler(BaseDeviceHandler):
             self.run_command([adb, "-s", device_id, "shell", "rm",
                               hosts_file])
             if self.query_device_file_exists(hosts_file):
+                self.add_device_flag(DEVICE_CANT_REMOVE_ETC_HOSTS)
                 self.fatal("Unable to remove %s!" % hosts_file)
         else:
             self.debug("%s file doesn't exist; skipping." % hosts_file)
@@ -471,32 +504,84 @@ class SUTDeviceHandler(BaseDeviceHandler):
 
     def check_device(self):
         c = self.config
-        dev_root = self.query_device_root()
-        if c.get("enable_automation"):
-            if not str(dev_root).startswith("/mnt/sdcard"):
-                self.fatal("dev_root from devicemanager [%s] is not correct!" % \
-                           str(dev_root))
-        elif not dev_root:
+        dev_root = self.query_device_root(strict=True)
+        if not dev_root:
+            self.add_device_flag(DEVICE_UNREACHABLE)
             self.fatal("Can't get dev_root from devicemanager; is the device up?")
         self.info("Found a dev_root of %s." % str(dev_root))
 
     def reboot_device(self):
         pass
 
+    def wait_for_device(self, interval=60, max_attempts=20):
+        self.info("Waiting for device to come back...")
+        time.sleep(interval)
+        success = False
+        attempts = 0
+        while attempts <= max_attempts:
+            attempts += 1
+            self.info("Try %d" % attempts)
+            if self.query_device_root() is not None:
+                success = True
+                break
+            time.sleep(interval)
+        if not success:
+            self.add_device_flag(DEVICE_UNREACHABLE)
+            self.fatal("Waiting for tegra timed out.")
+
     def cleanup_device(self):
-        pass
+        c = self.config
+        dev_root = self.query_device_root()
+        dm = self.query_devicemanager()
+        if dm.dirExists(dev_root):
+            self.info("Removing dev_root %s..." % dev_root)
+            status = dm.removeDir(dev_root)
+            if not status:
+                self.add_device_flag(DEVICE_CANT_REMOVE_DEVROOT)
+                self.fatal("Can't remove dev_root!")
+        if c.get("enable_automation"):
+            self.remove_etc_hosts()
+        if c.get("device_package_name"):
+            if dm.dirExists('/data/data/%s' % c['device_package_name']):
+                self.info("Uninstalling %s..." % c['device_package_name'])
+                dm.uninstallAppAndReboot(c['device_package_name'])
+                self.wait_for_device()
+        # pidfiles ?
 
     # device calls {{{2
-    def query_device_root(self):
+    def query_device_root(self, strict=False):
+        c = self.config
         dm = self.query_devicemanager()
         dev_root = dm.getDeviceRoot()
+        if strict and c.get('enable_automation'):
+            if not str(dev_root).startswith("/mnt/sdcard"):
+                self.add_device_flag(DEVICE_MISSING_SDCARD)
+                self.fatal("dev_root from devicemanager [%s] is not correct!" % \
+                           str(dev_root))
         if not dev_root or dev_root == "/tests":
             return None
         return dev_root
 
     # device type specific {{{2
     def remove_etc_hosts(self, hosts_file="/system/etc/hosts"):
-        pass
+        c = self.config
+        if c['device_type'] not in ("tegra250",):
+            self.debug("No need to remove /etc/hosts on a non-Tegra250.")
+            return
+        dm = self.query_devicemanager()
+        if dm.fileExists(hosts_file):
+            self.info("Removing %s file." % hosts_file)
+            try:
+                dm.sendCMD(['exec mount -o remount,rw -t yaffs2 /dev/block/mtdblock3 /system'])
+                dm.sendCMD(['exec rm %s' % hosts_file])
+            except DMError, e:
+                self.add_device_flag(DEVICE_CANT_REMOVE_ETC_HOSTS)
+                self.fatal("Unable to remove %s!" % hosts_file)
+            if dm.fileExists(hosts_file):
+                self.add_device_flag(DEVICE_CANT_REMOVE_ETC_HOSTS)
+                self.fatal("Unable to remove %s!" % hosts_file)
+        else:
+            self.debug("%s file doesn't exist; skipping." % hosts_file)
 
 
 
@@ -578,7 +663,8 @@ class DeviceMixin(object):
         return dh.check_device()
 
     def cleanup_device(self):
-        pass
+        dh = self.query_device_handler()
+        return dh.cleanup_device()
 
     def install_app(self):
         pass

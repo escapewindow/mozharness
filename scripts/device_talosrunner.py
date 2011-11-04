@@ -152,7 +152,7 @@ class DeviceTalosRunner(VirtualenvMixin, DeviceMixin, MercurialScript):
          default_actions=['preclean',
                           'pull',
                           'check-device',
-#                          'pre-cleanup-device',
+                          'pre-cleanup-device',
 #                          'download',
 #                          'unpack',
 #                          'install-app',
