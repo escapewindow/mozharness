@@ -532,6 +532,8 @@ class SUTDeviceHandler(BaseDeviceHandler):
         if not success:
             self.add_device_flag(DEVICE_UNREACHABLE)
             self.fatal("Waiting for tegra timed out.")
+        else:
+            self.info("Device came back.")
 
     def cleanup_device(self):
         c = self.config
