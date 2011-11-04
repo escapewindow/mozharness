@@ -153,8 +153,8 @@ class DeviceTalosRunner(VirtualenvMixin, DeviceMixin, MercurialScript):
                           'pull',
                           'check-device',
                           'pre-cleanup-device',
-#                          'download',
-#                          'unpack',
+                          'download',
+                          'unpack',
 #                          'install-app',
 #                          'configure',
 #                          'run-talos',
@@ -250,9 +250,8 @@ class DeviceTalosRunner(VirtualenvMixin, DeviceMixin, MercurialScript):
         dirs = self.query_abs_dirs()
         file_name = self.query_download_file_name()
         self.mkdir_p(dirs['abs_browser_dir'])
-        self.run_command("unzip -o %s" % os.path.join(dirs['abs_work_dir'],
-                                                      file_name),
-                         cwd=dirs['abs_browser_dir'])
+        self.extract(os.path.join(dirs['abs_work_dir'], file_name),
+                     extdir=dirs['abs_browser_dir'])
 
     # TODO install_app defined in DeviceMixin
 
