@@ -277,6 +277,8 @@ class DeviceTalosRunner(VirtualenvMixin, DeviceMixin, MercurialScript):
         elif c['device_protocol'] == 'adb':
             additional_options.extend(['--remoteDevice', ''])
             additional_options.extend(['--remotePort', '-1'])
+        if c.get('start_python_webserver'):
+            additional_options.append('--develop')
         # TODO set no_chrome based on active tests
         command = [python, 'remotePerfConfigurator.py',
                    '-v',
@@ -290,8 +292,6 @@ class DeviceTalosRunner(VirtualenvMixin, DeviceMixin, MercurialScript):
                    '--sampleConfig', c['talos_config_file'],
                    '--output', 'local.yml',
                    '--browserWait', '60',
-# TODO Only run this if we want a webserver
-                   '--develop',
                    '--webServer', c['talos_web_server'],
                   ] + additional_options
         self.run_command(command, cwd=dirs['abs_talos_dir'],
