@@ -4,7 +4,7 @@ config = {
     "browser_url": "http://ftp.mozilla.org/pub/mozilla.org/mobile/nightly/latest-mozilla-aurora-android/fennec-9.0a2.multi.android-arm.apk",
     "device_name": "tegra-029",
     "device_package_name": "org.mozilla.fennec_aurora",
-    "devicemanager_debug_level": 2,
+#    "devicemanager_debug_level": 2,
     "talos_device_name": "tegra-029",
     "talos_branch": "mobile",
     "graph_server": "graphs-stage.mozilla.org",
