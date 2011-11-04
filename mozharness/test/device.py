@@ -605,9 +605,10 @@ class SUTDeviceHandler(BaseDeviceHandler):
         target = os.path.join(dev_root, os.path.basename(file_path))
         inifile = os.path.join(dirs['abs_browser_dir'], 'application.ini')
         remoteappini = os.path.join(dirs['abs_talos_dir'], 'remoteapp.ini')
+        self.copyfile(inifile, remoteappini)
+        self.info("Installing %s on device..." % file_path)
         dm.pushFile(file_path, target)
         # TODO screen resolution
-        self.copyfile(inifile, remoteappini)
         status = dm.installApp(target)
 
     def reboot_device(self):
