@@ -1,9 +1,10 @@
 config = {
     "log_name": "talos",
     "talos_zip": "http://people.mozilla.org/~asasaki/talos_webserver.zip",
-    "browser_url": "http://ftp.mozilla.org/pub/mozilla.org/mobile/nightly/latest-mozilla-central-android/fennec-10.0a1.multi.android-arm.apk",
+    "browser_url": "http://ftp.mozilla.org/pub/mozilla.org/mobile/nightly/latest-mozilla-aurora-android/fennec-9.0a2.multi.android-arm.apk",
     "device_name": "tegra-029",
-    "device_package_name": "org.mozilla.fennec",
+    "device_package_name": "org.mozilla.fennec_aurora",
+    "devicemanager_debug_level": 5,
     "talos_device_name": "tegra-029",
     "talos_branch": "mobile",
     "graph_server": "graphs-stage.mozilla.org",

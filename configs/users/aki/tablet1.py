@@ -1,7 +1,7 @@
 config = {
     "log_name": "talos",
     "talos_zip": "file:///Users/asasaki/Desktop/talos_webserver.zip",
-    "browser_url": "file:///Users/asasaki/Desktop/fennec-9.0a2.multi.android-arm.apk",
+    "browser_url": "http://ftp.mozilla.org/pub/mozilla.org/mobile/nightly/latest-mozilla-aurora-android/fennec-9.0a2.multi.android-arm.apk",
     "device_name": "aki_tablet",
     "device_package_name": "org.mozilla.fennec_aurora",
     "talos_branch": "mobile",
