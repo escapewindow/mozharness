@@ -42,6 +42,7 @@ This code is largely from
 http://hg.mozilla.org/build/tools/file/default/sut_tools
 '''
 
+import datetime
 import os
 import re
 import signal
@@ -64,6 +65,7 @@ DEVICE_ADB_ERROR = 0x04
 DEVICE_CANT_REMOVE_DEVROOT = 0x05
 DEVICE_NOT_REBOOTED = 0x06
 DEVICE_CANT_REMOVE_ETC_HOSTS = 0x07
+DEVICE_CANT_SET_TIME = 0x08
 
 
 
@@ -127,6 +129,9 @@ class BaseDeviceHandler(ShellMixin, OSMixin, LogMixin):
         pass
 
     def wait_for_device(self, interval=60, max_attempts=20):
+        pass
+
+    def install_app(self, file_path):
         pass
 
 
@@ -373,12 +378,10 @@ class ADBDeviceHandler(BaseDeviceHandler):
                 return False
         return True
 
-    def install_app(self):
+    def install_app(self, file_path):
         c = self.config
         device_id = self.query_device_id()
-        file_name = self.query_download_filename()
         dirs = self.script_obj.query_abs_dirs()
-        file_path = os.path.join(dirs['abs_work_dir'], file_name)
         adb = self.query_exe('adb')
         uptime = self.query_device_exe('uptime')
         if c['enable_automation']:
@@ -413,7 +416,7 @@ class ADBDeviceHandler(BaseDeviceHandler):
         if not c['enable_automation']:
             # -s to install on sdcard? Needs to be config driven
             self.run_command([adb, "-s", device_id, "install", '-r',
-                              os.path.join(dirs['abs_work_dir'], file_name)],
+                              file_path],
                              error_list=ADBErrorList)
         else:
             output = self.get_output_from_command([adb, "-s", device_id,
@@ -427,8 +430,8 @@ class ADBDeviceHandler(BaseDeviceHandler):
             self.run_command([adb, "-s", device_id, "install", '-r',
                               file_path],
                              error_list=ADBErrorList)
-            file_name = os.path.join(dirs['abs_browser_dir'], 'application.ini')
-            self.run_command([adb, "-s", device_id, "push", file_name,                              '/data/data/%s/application.ini' % c['device_package_name']])
+            file_path = os.path.join(dirs['abs_browser_dir'], 'application.ini')
+            self.run_command([adb, "-s", device_id, "push", file_path,                              '/data/data/%s/application.ini' % c['device_package_name']])
 
     def uninstall_app(self, package_name, package_root="/data/data",
                       error_level="error"):
@@ -491,7 +494,8 @@ class SUTDeviceHandler(BaseDeviceHandler):
             from devicemanagerSUT import DeviceManagerSUT
             from devicemanagerSUT import DMError
             self.devicemanager = DeviceManagerSUT(c['device_ip'])
-            self.devicemanager.debug = 5
+            # TODO configurable?
+            self.devicemanager.debug = c.get('devicemanager_debug_level', 0)
         except ImportError, e:
             self.log("Can't import DeviceManagerSUT! %s\nDid you check out talos?" % str(e), level=error_level)
             raise
@@ -561,6 +565,45 @@ class SUTDeviceHandler(BaseDeviceHandler):
         if not dev_root or dev_root == "/tests":
             return None
         return dev_root
+
+    def query_device_time(self):
+        dm = self.query_devicemanager()
+        timestamp = int(dm.getCurrentTime()) #epoch time in milliseconds
+        dt = datetime.datetime.utcfromtimestamp(timestamp / 1000)
+        self.info("Current device time is %s" % dt.strftime('%Y/%m/%d %H:%M:%S'))
+        return dt
+
+    def set_device_time(self):
+        dm = self.query_devicemanager()
+        s = datetime.datetime.now().strftime('%Y/%m/%d %H:%M:%S')
+        self.info("Setting device time to %s" % s)
+        try:
+            dm.sendCMD(['settime %s' % s])
+            return True
+        except DMError, e:
+            self.add_device_flag(DEVICE_CANT_SET_TIME)
+            self.fatal("Exception while setting device time: %s" % str(e))
+
+    def install_app(self, file_path):
+        dev_root = self.query_device_root(strict=True)
+        if not dev_root:
+            self.add_device_flag(DEVICE_UNREACHABLE)
+            # TODO wait_for_device?
+            self.fatal("dev_root %s not correct!" % str(dev_root))
+        dm = self.query_devicemanager()
+        c = self.config
+        dirs = self.script_obj.query_abs_dirs()
+        if c.get('enable_automation'):
+            self.query_device_time()
+            self.set_device_time()
+            self.query_device_time()
+        target = os.path.join(dev_root, os.path.basename(file_path))
+        inifile = os.path.join(dirs['abs_browser_dir'], 'application.ini')
+        remoteappini = os.path.join(dirs['abs_talos_dir'], 'remoteapp.ini')
+        dm.pushFile(file_path, target)
+        # TODO screen resolution
+        self.copyfile(inifile, remoteappini)
+        status = dm.installApp(target)
 
     # device type specific {{{2
     def remove_etc_hosts(self, hosts_file="/system/etc/hosts"):
@@ -667,7 +710,12 @@ class DeviceMixin(object):
         return dh.cleanup_device()
 
     def install_app(self):
-        pass
+        dirs = self.query_abs_dirs()
+        dh = self.query_device_handler()
+        return dh.install_app(
+            file_path=os.path.join(dirs['abs_work_dir'],
+                                   self.query_download_file_name())
+        )
 
     def reboot_device(self):
         pass

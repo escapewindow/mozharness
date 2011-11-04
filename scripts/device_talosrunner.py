@@ -155,7 +155,7 @@ class DeviceTalosRunner(VirtualenvMixin, DeviceMixin, MercurialScript):
                           'pre-cleanup-device',
                           'download',
                           'unpack',
-#                          'install-app',
+                          'install-app',
 #                          'configure',
 #                          'run-talos',
                          ],
@@ -228,7 +228,7 @@ class DeviceTalosRunner(VirtualenvMixin, DeviceMixin, MercurialScript):
                              halt_on_failure=True)
         self.vcs_checkout_repos(c['repos'], parent_dir=dirs['abs_work_dir'])
 
-    # TODO check_device defined in DeviceMixin
+    # check_device defined in DeviceMixin
     # create_virtualenv defined in VirtualenvMixin
 
     def pre_cleanup_device(self):
