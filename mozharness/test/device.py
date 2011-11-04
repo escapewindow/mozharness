@@ -619,6 +619,7 @@ class SUTDeviceHandler(BaseDeviceHandler):
             self.add_device_flag(DEVICE_NOT_REBOOTED)
             self.fatal("Can't reboot device!")
         self.wait_for_device()
+        dm.getInfo('uptime')
 
     # device type specific {{{2
     def remove_etc_hosts(self, hosts_file="/system/etc/hosts"):
