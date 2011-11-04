@@ -14,7 +14,7 @@ config = {
     "virtualenv_path": "/home/cltbld/aki/venv",
     "device_protocol": "sut",
 #    "device_port": "20701",
-    "device_ip": "10.251.28.128",
+    "device_ip": "10.250.49.16",
     "device_type": "tegra",
     "enable_automation": True,
 #    "actions": ["check-device"],

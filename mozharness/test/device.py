@@ -172,6 +172,8 @@ class ADBDeviceHandler(BaseDeviceHandler):
         adb = self.query_exe('adb')
         output = self.get_output_from_command([adb, "devices"])
         starting_list = False
+        if output is None:
+            self.fatal("Can't get output from 'adb devices'; install the Android SDK!")
         for line in output:
             if 'adb: command not found' in line:
                 self.fatal("Can't find adb; install the Android SDK!")
@@ -266,11 +268,11 @@ class ADBDeviceHandler(BaseDeviceHandler):
         output = self.get_output_from_command("%s -s %s shell df" % (adb, device_id),
                                               silent=silent)
         # TODO this assumes we're connected; error checking?
-        if "/mnt/sdcard" in output:
-            device_root = "/mnt/sdcard/tests"
-        elif ' not found' in output:
+        if output is None or ' not found' in str(output):
             self.error("Can't get output from 'adb shell df'!\n%s" % output)
             return None
+        if "/mnt/sdcard" in output:
+            device_root = "/mnt/sdcard/tests"
         else:
             device_root = "/data/local/tmp/tests"
         if not silent:
@@ -320,7 +322,7 @@ class ADBDeviceHandler(BaseDeviceHandler):
         adb = self.query_exe('adb')
         output = self.get_output_from_command([adb, "-s", device_id,
                                                "shell", "ls", "-d", file_name])
-        if output.rstrip() == file_name:
+        if str(output).rstrip() == file_name:
             return True
         return False
 
@@ -386,7 +388,7 @@ class ADBDeviceHandler(BaseDeviceHandler):
                                                    "shell",
                                                    "ls -d /data/data/%s" % \
                                                    c['device_package_name']])
-            if "No such file" not in output:
+            if output is not None and "No such file" not in output:
                 self.run_command([adb, "-s", device_id, "uninstall",
                                   c['device_package_name']],
                                  error_list=ADBErrorList)
@@ -442,6 +444,7 @@ class SUTDeviceHandler(BaseDeviceHandler):
         super(SUTDeviceHandler, self).__init__(**kwargs)
         self.devicemanager = None
         self.default_port = 20701
+        self.default_heartbeat_port = 20700
 
     def query_devicemanager(self, error_level=FATAL):
         if self.devicemanager:
@@ -467,11 +470,15 @@ class SUTDeviceHandler(BaseDeviceHandler):
         pass
 
     def check_device(self):
-#        if not self.ping_device(auto_connect=True):
-#            self.fatal("Can't find device!")
-#        if self.query_device_root() is None:
-#            self.fatal("Can't connect to device!")
-        pass
+        c = self.config
+        dev_root = self.query_device_root()
+        if c.get("enable_automation"):
+            if not str(dev_root).startswith("/mnt/sdcard"):
+                self.fatal("dev_root from devicemanager [%s] is not correct!" % \
+                           str(dev_root))
+        elif not dev_root:
+            self.fatal("Can't get dev_root from devicemanager; is the device up?")
+        self.info("Found a dev_root of %s." % str(dev_root))
 
     def reboot_device(self):
         pass
@@ -481,8 +488,11 @@ class SUTDeviceHandler(BaseDeviceHandler):
 
     # device calls {{{2
     def query_device_root(self):
-        #TODO writeme
-        pass
+        dm = self.query_devicemanager()
+        dev_root = dm.getDeviceRoot()
+        if not dev_root or dev_root == "/tests":
+            return None
+        return dev_root
 
     # device type specific {{{2
     def remove_etc_hosts(self, hosts_file="/system/etc/hosts"):
@@ -507,6 +517,12 @@ device_config_options = [[
  {"action": "store",
   "dest": "device_port",
   "help": "Specify the IP port of the device."
+ }
+],[
+ ["--device-heartbeat-port"],
+ {"action": "store",
+  "dest": "device_heartbeat_port",
+  "help": "Specify the heartbeat port of the SUT device."
  }
 ],[
  ["--device-protocol"],
@@ -558,8 +574,8 @@ class DeviceMixin(object):
         return self.device_handler
 
     def check_device(self):
-        # TODO
-        pass
+        dh = self.query_device_handler()
+        return dh.check_device()
 
     def cleanup_device(self):
         pass

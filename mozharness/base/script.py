@@ -438,7 +438,7 @@ class ShellMixin(object):
                     level = FATAL
                 self.log("Can't run command %s in non-existent directory %s!" % \
                          (command, cwd), level=level)
-                return -1
+                return None
             self.info("Getting output from command: %s in %s" % (command, cwd))
         else:
             self.info("Getting output from command: %s" % command)
@@ -462,7 +462,7 @@ class ShellMixin(object):
                 level = FATAL
             self.log("Can't open %s for writing!" % tmp_stdout_filename + \
                      self.dump_exception(), level=level)
-            return -1
+            return None
         try:
             tmp_stderr = open(tmp_stderr_filename, 'w')
         except IOError:
@@ -471,7 +471,7 @@ class ShellMixin(object):
                 level = FATAL
             self.log("Can't open %s for writing!" % tmp_stderr_filename + \
                      self.dump_exception(), level=level)
-            return -1
+            return None
         shell = True
         if isinstance(command, list):
             shell = False
