@@ -16,7 +16,7 @@ config = {
     "graph_server": "graphs-stage.mozilla.org",
 
     "results_link": "/server/collect.cgi",
-    "talos_suites": ["tpan"],
+    "talos_suites": ["tsvg"],
     "talos_config_file": "remote.config",
 
     # this needs to be set to either your_IP:8000, or an existing webserver
