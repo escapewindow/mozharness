@@ -292,7 +292,7 @@ class DeviceTalosRunner(VirtualenvMixin, DeviceMixin, MercurialScript):
                    '--sampleConfig', c['talos_config_file'],
                    '--output', 'local.yml',
                    '--browserWait', '60',
-                   '--webServer', c['talos_web_server'],
+                   '--webServer', c['talos_webserver'],
                   ] + additional_options
         self.run_command(command, cwd=dirs['abs_talos_dir'],
                          error_list=PythonErrorList,
