@@ -1,6 +1,6 @@
 config = {
     "log_name": "talos",
-    "talos_zip": "file:///Users/asasaki/Desktop/talos_webserver.zip",
+    "talos_zip": "http://people.mozilla.org/~asasaki/talos_webserver.zip",
     "browser_url": "http://ftp.mozilla.org/pub/mozilla.org/mobile/nightly/latest-mozilla-aurora-android/fennec-9.0a2.multi.android-arm.apk",
     "device_name": "aki_tablet",
     "device_package_name": "org.mozilla.fennec_aurora",
@@ -12,7 +12,7 @@ config = {
     "talos_config_file": "remote.config",
     "talos_web_server": "10.251.25.44:8000",
     "start_python_webserver": True,
-    "virtualenv_path": "/src/talosrunner/venv",
+#    "virtualenv_path": "/src/talosrunner/venv",
     "device_protocol": "adb",
 #    "device_port": 5555,
     "device_ip": "10.251.28.128",
