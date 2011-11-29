@@ -55,7 +55,7 @@ from mozharness.l10n.locales import LocalesMixin
 
 # So far this only references the ftp platform name.
 SUPPORTED_PLATFORMS = ["android", "android-xul"]
-JARSIGNER_ERROR_LIST = [{
+TEST_JARSIGNER_ERROR_LIST = [{
     "substr": "jarsigner error: java.lang.RuntimeException: keystore load: Keystore was tampered with, or password was incorrect",
     "level": FATAL,
     "explanation": "The store passphrase is probably incorrect!",
@@ -64,6 +64,11 @@ JARSIGNER_ERROR_LIST = [{
     "level": FATAL,
     "explanation": "The key passphrase is probably incorrect!",
 },{
+    "regex": "jarsigner error: java.lang.RuntimeException: keystore load: .* .No such file or directory",
+    "level": FATAL,
+    "explanation": "The keystore doesn't exist!",
+}]
+JARSIGNER_ERROR_LIST = TEST_JARSIGNER_ERROR_LIST + [{
     "substr": "jarsigner: unable to open jar file:",
     "level": FATAL,
     "explanation": "The apk is missing!",
@@ -99,11 +104,20 @@ class SignAndroid(LocalesMixin, MercurialScript):
       "type": "string",
       "help": "Override the user repo path for all repos"
      }
+    ],[
+     ['--key-alias',],
+     {"action": "store",
+      "dest": "key_alias",
+      "type": "choice",
+      "choices": ['production', 'nightly'],
+      "help": "Specify the key alias"
+     }
 # TODO unsigned url, signed url, ssh key/user/server/path,
 # --version
 # --buildnum
 # --previous-version
 # --previous-buildnum
+# --keystore
 # previous build signed url, --ignore-locale, locales_file
 # aus key/user/server/path
 # verify aus url?
@@ -115,7 +129,7 @@ class SignAndroid(LocalesMixin, MercurialScript):
         super(SignAndroid, self).__init__(
             config_options=self.config_options,
             all_actions=[
-#                "passphrase",
+                "passphrase",
                 "clobber",
                 "pull",
 #                "download-unsigned-bits",
@@ -131,14 +145,20 @@ class SignAndroid(LocalesMixin, MercurialScript):
         )
 
     def passphrase(self):
-        print "***** Enter store passphrase: ",
+        print "(store passphrase): ",
         self.store_passphrase = getpass.getpass()
-        print "***** Enter key passphrase: ",
+        print "(key passphrase): ",
         self.key_passphrase = getpass.getpass()
 
     def verify_passphrases(self):
-        # TODO writeme
-        pass
+        c = self.config
+        jarsigner = self.query_exe("jarsigner")
+        # TODO this needs to run silently!
+        self.run_command([jarsigner, "-keystore", c['keystore'],
+                          "-storepass", self.store_passphrase,
+                          "-keypass", self.key_passphrase,
+                          "NOTAREALAPK", c['key_alias']],
+                         error_list=TEST_JARSIGNER_ERROR_LIST)
 
     def postflight_passphrase(self):
         self.verify_passphrases()

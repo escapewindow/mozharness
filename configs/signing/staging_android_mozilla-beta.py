@@ -13,12 +13,13 @@ FTP_UPLOAD_BASE_DIR = "/pub/mozilla.org/mobile/%(version)s-candidates/build%(bui
 DOWNLOAD_BASE_URL = "http://ftp.mozilla.org/pub/mozilla.org/mobile/candidates/%(version)s-candidates/build%(buildnum)d"
 APK_BASE_NAME = "fennec-%(version)s.%(locale)s.android-arm.apk"
 
+KEYSTORE = "%s/.android/android.keystore" % os.environ['HOME']
 #BASE_WORK_DIR = "%s/signing-work/fennec-%s" % (os.environ['HOME'], VERSION)
 BASE_WORK_DIR = "%s/signing-work/fennec-%s" % (os.getcwd(), VERSION)
 WORK_DIR = "build%s" % str(BUILDNUM)
 
 JARSIGNER = "/tools/jdk6/bin/jarsigner"
-STORE_ALIAS = "nightly"
+KEY_ALIAS = "nightly"
 
 config = {
     "locales": LOCALES,
@@ -29,6 +30,8 @@ config = {
     "platforms": ['android'],
     "apk_base_name": APK_BASE_NAME,
     "download_base_url": DOWNLOAD_BASE_URL,
+    "keystore": KEYSTORE,
+    "key_alias": KEY_ALIAS,
     "user_repo_override": "build",
     "repos": [{
         "repo": "http://hg.mozilla.org/%(user_repo_override)s/tools",
