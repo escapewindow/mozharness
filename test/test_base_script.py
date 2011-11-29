@@ -82,8 +82,7 @@ class TestScript(unittest.TestCase):
 
     def test_noop_get_output_from_command(self):
         self.s = get_noop_script_obj()
-        contents1 = self.s.run_command("cat test/test.json", cwd="configs",
-                                  return_type="output")
+        contents1 = self.s.get_output_from_command("cat test/test.json", cwd="configs")
         self.assertEqual(contents1, None,
                          msg="get_output_from_command noop error")
 

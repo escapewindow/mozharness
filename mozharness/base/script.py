@@ -350,11 +350,6 @@ class ShellMixin(object):
          {'substr': 'THE WORLD IS ENDING', level=FATAL, contextLines='20:'}
         ]
         """
-        # Get rid of this when we get rid of the scratchbox stuff
-        if return_type == 'output':
-            return self.get_output_from_command(command=command, cwd=cwd,
-                                                halt_on_failure=halt_on_failure,
-                                                env=env)
         num_errors = 0
         if cwd:
             if not os.path.isdir(cwd):
