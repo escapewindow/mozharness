@@ -8,7 +8,8 @@ BUILDNUM = 1
 PRODUCT = "fennec"
 TAG = "FENNEC_9_0b3_RELEASE"
 
-BASE_WORK_DIR = "%s/signing-work/%s-%s" % (os.environ['HOME'], PRODUCT, VERSION)
+#BASE_WORK_DIR = "%s/signing-work/%s-%s" % (os.environ['HOME'], PRODUCT, VERSION)
+BASE_WORK_DIR = "%s/signing-work/%s-%s" % (os.getcwd(), PRODUCT, VERSION)
 WORK_DIR = "build%s" % str(BUILDNUM)
 
 config = {

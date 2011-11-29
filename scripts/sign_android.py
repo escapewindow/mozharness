@@ -109,10 +109,8 @@ class SignAndroid(LocalesMixin, MercurialScript):
             print c['repos']
         else:
             repos = c['repos']
-        self.vcs_checkout_repos(repos,
-            parent_dir=dirs['abs_work_dir'],
-            tag_override=""
-        )
+        self.vcs_checkout_repos(repos, parent_dir=dirs['abs_work_dir'],
+                                tag_override=c.get('tag_override'))
 
 if __name__ == '__main__':
     sign_android = SignAndroid()
