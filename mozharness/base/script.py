@@ -647,6 +647,13 @@ class BaseScript(ShellMixin, OSMixin, LogMixin, object):
                                 rotate=True)
         sys.exit(self.return_code)
 
+    def clobber(self):
+        """
+        Delete the working directory
+        """
+        dirs = self.query_abs_dirs()
+        self.rmtree(dirs['abs_work_dir'])
+
     def query_abs_dirs(self):
         """We want to be able to determine where all the important things
         are.  Absolute paths lend themselves well to this, though I wouldn't
@@ -800,7 +807,6 @@ class BaseScript(ShellMixin, OSMixin, LogMixin, object):
         else:
             self.log("%s doesn't exist after copy!" % dest, level=error_level)
             return None
-
 
 
 # __main__ {{{1

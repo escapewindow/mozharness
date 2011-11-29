@@ -51,6 +51,13 @@ virtualenv_config_options = [[
   "default": os.path.join(os.getcwd(), "venv"),
   "help": "Specify the virtualenv path"
  }
+],
+[["--virtualenv"],
+ {"action": "store",
+  "dest": "virtualenv",
+  "default": "virtualenv",
+  "help": "Specify the virtualenv executable to use"
+  }
 ]]
 
 class VirtualenvMixin(object):
@@ -118,6 +125,10 @@ class VirtualenvMixin(object):
          {'regex': r'''\d+: error: ''', 'level': 'error'},
          {'regex': r'''\d+: warning: ''', 'level': 'warning'},
         ] + PythonErrorList
+        virtualenv = c['virtualenv']
+        if not os.path.exists(virtualenv) and not self.which(virtualenv):
+            self.add_summary("The executable '%s' is not found; not creating virtualenv!" % virtualenv, level=FATAL)
+            return -1
         self.run_command([virtualenv, "--no-site-packages",
                           venv_path],
                          error_list=virtualenv_error_list,
