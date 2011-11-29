@@ -49,9 +49,8 @@ from mozharness.base.errors import PythonErrorList
 # LocalesMixin {{{1
 
 class LocalesMixin(object):
-    def __init__(self, **kwargs):
-        self.abs_dirs = None
-        self.locales = None
+    abs_dirs = None
+    locales = None
 
     def query_locales(self):
         if self.locales is not None:
