@@ -126,7 +126,8 @@ class SignAndroid(LocalesMixin, MercurialScript):
     def __init__(self, require_config_file=True):
         store_passphrase = None
         key_passphrase = None
-        super(SignAndroid, self).__init__(
+        LocalesMixin.__init__(self)
+        MercurialScript.__init__(self,
             config_options=self.config_options,
             all_actions=[
                 "passphrase",

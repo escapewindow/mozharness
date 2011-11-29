@@ -617,7 +617,7 @@ class BaseScript(ShellMixin, OSMixin, LogMixin, object):
         """
         dirs = self.query_abs_dirs()
         self.rmtree(dirs['abs_work_dir'])
-        
+
     def query_abs_dirs(self):
         if self.abs_dirs:
             return self.abs_dirs
