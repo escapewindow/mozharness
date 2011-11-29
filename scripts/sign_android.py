@@ -45,6 +45,8 @@ import sys
 # load modules from parent dir
 sys.path.insert(1, os.path.dirname(sys.path[0]))
 
+from copy import deepcopy
+
 from mozharness.base.errors import SSHErrorList
 from mozharness.base.log import DEBUG, INFO, WARNING, ERROR, CRITICAL, FATAL, IGNORE
 from mozharness.base.vcs.vcsbase import MercurialScript
@@ -58,6 +60,20 @@ class SignAndroid(LocalesMixin, MercurialScript):
       "type": "string",
       "help": "Specify the locale(s) to sign"
      }
+    ],[
+     ['--tag-override',],
+     {"action": "store",
+      "dest": "tag_override",
+      "type": "string",
+      "help": "Override the tags set for all repos"
+     }
+    ],[
+     ['--user-repo-override',],
+     {"action": "store",
+      "dest": "user_repo_override",
+      "type": "string",
+      "help": "Override the user repo path for all repos"
+     }
 # TODO unsigned url, signed url, ssh key/user/server/path,
 # previous build signed url, --ignore-locale, locales_file
 # aus key/user/server/path
@@ -69,7 +85,7 @@ class SignAndroid(LocalesMixin, MercurialScript):
             config_options=self.config_options,
             all_actions=[
                 "clobber",
-#                "pull",
+                "pull",
 #                "download",
 #                "sign",
 #                "verify",
@@ -77,6 +93,25 @@ class SignAndroid(LocalesMixin, MercurialScript):
 #                "upload",
             ],
             require_config_file=require_config_file
+        )
+
+    def pull(self):
+        c = self.config
+        dirs = self.query_abs_dirs()
+        repos = []
+        replace_dict = {}
+        if c.get("user_repo_override"):
+            replace_dict['user_repo_override'] = c['user_repo_override']
+            # deepcopy() needed because of self.config lock bug :(
+            for repo_dict in deepcopy(c['repos']):
+                repo_dict['repo'] = repo_dict['repo'] % replace_dict
+                repos.append(repo_dict)
+            print c['repos']
+        else:
+            repos = c['repos']
+        self.vcs_checkout_repos(repos,
+            parent_dir=dirs['abs_work_dir'],
+            tag_override=""
         )
 
 if __name__ == '__main__':
