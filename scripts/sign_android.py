@@ -38,6 +38,11 @@
 """sign_android.py
 
 """
+# TODO partner repacks downloading/signing
+# TODO query_unsigned_paths() type methods that return a list of all
+#      [unsigned] directories for all platforms/locales
+# TODO split out signing and transfers to helper objects so we can do
+#      the downloads/signing/uploads in parallel, speeding that up
 
 import os
 import sys
@@ -144,7 +149,7 @@ class SignAndroid(LocalesMixin, MercurialScript):
                 "pull",
                 "download-unsigned-bits",
                 "sign",
-                "verify",
+                "verify-signatures",
 #                "upload-signed-bits"
 #                "download-previous-bits",
 #                "create-snippets",
@@ -189,7 +194,6 @@ class SignAndroid(LocalesMixin, MercurialScript):
         self.vcs_checkout_repos(repos, parent_dir=dirs['abs_work_dir'],
                                 tag_override=c.get('tag_override'))
 
-    # TODO partner repack download
     def download_unsigned_bits(self):
         c = self.config
         dirs = self.query_abs_dirs()
@@ -254,7 +258,6 @@ class SignAndroid(LocalesMixin, MercurialScript):
             self.passphrase()
             self.verify_passphrases()
 
-    # TODO partner repack signing
     def sign(self):
         c = self.config
         dirs = self.query_abs_dirs()
@@ -291,7 +294,7 @@ class SignAndroid(LocalesMixin, MercurialScript):
         self.add_summary("Signed %d of %d apks successfully." % \
                          (successful_count, total_count), level=level)
 
-    def verify(self):
+    def verify_signatures(self):
         c = self.config
         dirs = self.query_abs_dirs()
         verification_error_list = BaseErrorList + [{
