@@ -229,8 +229,9 @@ class SignAndroid(LocalesMixin, MercurialScript):
         jarsigner = self.query_exe("jarsigner")
         if error_list is None:
             error_list = JARSIGNER_ERROR_LIST
-        # This needs to run silently!
-        # Not sure how best to do this in the long term.
+        # This needs to run silently, so no run_command() or
+        # get_output_from_command() (though I could add a
+        # suppress_command_echo=True or something?)
         p = subprocess.Popen([jarsigner, "-keystore", c['keystore'],
                              "-storepass", self.store_passphrase,
                              "-keypass", self.key_passphrase,
