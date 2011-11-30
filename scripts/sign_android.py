@@ -143,7 +143,7 @@ class SignAndroid(LocalesMixin, MercurialScript):
                 "clobber",
                 "pull",
                 "download-unsigned-bits",
-#                "sign",
+                "sign",
 #                "verify",
 #                "upload-signed-bits"
 #                "clobber-unsigned-bits",
@@ -164,26 +164,9 @@ class SignAndroid(LocalesMixin, MercurialScript):
 
     def verify_passphrases(self):
         c = self.config
-        jarsigner = self.query_exe("jarsigner")
         self.info("Verifying passphrases...")
-        # This needs to run silently!
-        # Not sure how best to do this in the long term.
-        p = subprocess.Popen([jarsigner, "-keystore", c['keystore'],
-                             "-storepass", self.store_passphrase,
-                             "-keypass", self.key_passphrase,
-                             "NOTAREALAPK", c['key_alias']],
-                             stdout=subprocess.PIPE,
-                             stderr=subprocess.STDOUT)
-        parser = OutputParser(config=self.config, log_obj=self.log_obj,
-                              error_list=TEST_JARSIGNER_ERROR_LIST)
-        loop = True
-        while loop:
-            if p.poll() is not None:
-                """Avoid losing the final lines of the log?"""
-                loop = False
-            for line in p.stdout:
-                parser.add_lines(line)
-        if parser.num_errors == 0:
+        status = self._sign("NOTAREALAPK", error_list=TEST_JARSIGNER_ERROR_LIST)
+        if status == 0:
             self.info("Passphrases are good.")
         else:
             self.fatal("Unable to verify passphrases!")
@@ -241,10 +224,69 @@ class SignAndroid(LocalesMixin, MercurialScript):
         self.add_summary("Downloaded %d of %d unsigned apks successfully." % \
                          (successful_count, total_count), level=level)
 
+    def _sign(self, apk, error_list=None):
+        c = self.config
+        jarsigner = self.query_exe("jarsigner")
+        if error_list is None:
+            error_list = JARSIGNER_ERROR_LIST
+        # This needs to run silently!
+        # Not sure how best to do this in the long term.
+        p = subprocess.Popen([jarsigner, "-keystore", c['keystore'],
+                             "-storepass", self.store_passphrase,
+                             "-keypass", self.key_passphrase,
+                             apk, c['key_alias']],
+                             stdout=subprocess.PIPE,
+                             stderr=subprocess.STDOUT)
+        parser = OutputParser(config=self.config, log_obj=self.log_obj,
+                              error_list=error_list)
+        loop = True
+        while loop:
+            if p.poll() is not None:
+                """Avoid losing the final lines of the log?"""
+                loop = False
+            for line in p.stdout:
+                parser.add_lines(line)
+        return parser.num_errors
+
     def preflight_sign(self):
-        if self.store_passphrase is None or self.key_passphrase is None:
+        if 'passphrase' not in self.actions:
             self.passphrase()
             self.verify_passphrases()
+
+    def sign(self):
+        c = self.config
+        dirs = self.query_abs_dirs()
+        locales = self.query_locales()
+        successful_count = 0
+        total_count = 0
+        zipalign = self.query_exe("zipalign")
+        for platform in c['platforms']:
+            for locale in locales:
+                parent_dir = '%s/%s/unsigned/%s' % (dirs['abs_work_dir'],
+                                                    platform, locale)
+                unsigned_unaligned_path = '%s/gecko_unsigned_unaligned.apk' % parent_dir
+                unaligned_path = '%s/gecko_unaligned.apk' % parent_dir
+                signed_path = '%s/%s' % (parent_dir,
+                    c['apk_base_name'] % {'version': c['version'],
+                                          'locale': locale})
+                self.mkdir_p(parent_dir)
+                total_count += 1
+                self.info("Signing %s %s." % (platform, locale))
+                self.copyfile(unsigned_unaligned_path, unaligned_path)
+                if self._sign(unaligned_path) != 0:
+                    self.add_summary("Unable to sign %s:%s apk!",
+                                     level=FATAL)
+                elif self.run_command([zipalign, '-f', '4',
+                                       unaligned_path, signed_path]):
+                    self.add_summary("Unable to align %s:%s apk!",
+                                     level=FATAL)
+                else:
+                    successful_count += 1
+        level = INFO
+        if successful_count < total_count:
+            level = ERROR
+        self.add_summary("Signed %d of %d apks successfully." % \
+                         (successful_count, total_count), level=level)
 
 if __name__ == '__main__':
     sign_android = SignAndroid()
