@@ -208,7 +208,7 @@ class SignAndroid(LocalesMixin, MercurialScript):
             for locale in locales:
                 replace_dict['locale'] = locale
                 url = base_url % replace_dict
-                parent_dir = '%s/%s/unsigned/%s' % (dirs['abs_work_dir'],
+                parent_dir = '%s/%s/%s' % (dirs['abs_work_dir'],
                                                     platform, locale)
                 file_path = '%s/gecko_unsigned_unaligned.apk' % parent_dir
                 self.mkdir_p(parent_dir)
@@ -262,7 +262,7 @@ class SignAndroid(LocalesMixin, MercurialScript):
         zipalign = self.query_exe("zipalign")
         for platform in c['platforms']:
             for locale in locales:
-                parent_dir = '%s/%s/unsigned/%s' % (dirs['abs_work_dir'],
+                parent_dir = '%s/%s/%s' % (dirs['abs_work_dir'],
                                                     platform, locale)
                 unsigned_unaligned_path = '%s/gecko_unsigned_unaligned.apk' % parent_dir
                 unaligned_path = '%s/gecko_unaligned.apk' % parent_dir
