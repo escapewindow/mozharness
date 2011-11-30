@@ -133,8 +133,8 @@ class SignAndroid(LocalesMixin, MercurialScript):
     ]]
 
     def __init__(self, require_config_file=True):
-        self.store_passphrase = None
-        self.key_passphrase = None
+        self.store_passphrase = os.environ.get('android_storepass')
+        self.key_passphrase = os.environ.get('android_keypass')
         LocalesMixin.__init__(self)
         MercurialScript.__init__(self,
             config_options=self.config_options,
@@ -155,10 +155,12 @@ class SignAndroid(LocalesMixin, MercurialScript):
         )
 
     def passphrase(self):
-        print "(store passphrase): ",
-        self.store_passphrase = getpass.getpass()
-        print "(key passphrase): ",
-        self.key_passphrase = getpass.getpass()
+        if not self.store_passphrase:
+            print "(store passphrase): ",
+            self.store_passphrase = getpass.getpass()
+        if not self.key_passphrase:
+            print "(key passphrase): ",
+            self.key_passphrase = getpass.getpass()
 
     def verify_passphrases(self):
         c = self.config
