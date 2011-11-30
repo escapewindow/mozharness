@@ -35,19 +35,22 @@
 # the terms of any one of the MPL, the GPL or the LGPL.
 #
 # ***** END LICENSE BLOCK *****
-'''Generic error regexes.
-'''
+"""Generic error lists.
+
+Error lists are used to parse output in mozharness.base.log.OutputParser.
+
+Each line of output is matched against each substring or regular expression
+in the error list.  On a match, we determine the 'level' of that line,
+whether IGNORE, DEBUG, INFO, WARNING, ERROR, CRITICAL, or FATAL.
+
+TODO: Context lines (requires work on the OutputParser side)
+
+TODO: We could also create classes that generate these, but with the
+appropriate level (please don't die on any errors; please die on any
+warning; etc.) or platform or language or whatever.
+"""
 
 from mozharness.base.log import DEBUG, INFO, WARNING, ERROR, CRITICAL, FATAL, IGNORE
-
-# TODO: We could also create classes that generate these, but with the
-# appropriate level (please don't die on any errors; please die on any
-# warning; etc.) or platform or language or whatever.
-#
-# TODO: Context lines (requires work on the runCommand side)
-#
-# TODO:  We could have a generic shell command error list
-# (e.g. File not found, permission denied) that others could be based on.
 
 # Exceptions
 class VCSException(Exception):
@@ -56,7 +59,11 @@ class VCSException(Exception):
 # ErrorLists {{{1
 
 # For ssh, scp, rsync over ssh
-SSHErrorList=[
+BaseErrorList = [
+ {'substr': r'''command not found''', 'level': ERROR},
+]
+
+SSHErrorList = BaseErrorList + [
  {'substr': r'''Name or service not known''', 'level': ERROR},
  {'substr': r'''Could not resolve hostname''', 'level': ERROR},
  {'substr': r'''POSSIBLE BREAK-IN ATTEMPT''', 'level': WARNING},
@@ -66,31 +73,30 @@ SSHErrorList=[
  {'substr': r'''Out of memory''', 'level': ERROR},
  {'substr': r'''Connection reset by peer''', 'level': WARNING},
  {'substr': r'''Host key verification failed''', 'level': ERROR},
- {'substr': r'''command not found''', 'level': ERROR},
  {'substr': r'''WARNING:''', 'level': WARNING},
  {'substr': r'''rsync error:''', 'level': ERROR},
  {'substr': r'''Broken pipe:''', 'level': ERROR},
  {'substr': r'''connection unexpectedly closed:''', 'level': ERROR},
 ]
 
-HgErrorList=[
+HgErrorList = BaseErrorList + [
  {'regex': r'''^abort:''', 'level': ERROR},
- {'substr': r'''command not found''', 'level': ERROR},
  {'substr': r'''unknown exception encountered''', 'level': ERROR},
 ]
 
-PythonErrorList=[
+PythonErrorList = BaseErrorList + [
  {'substr': r'''Traceback (most recent call last)''', 'level': ERROR},
  {'substr': r'''SyntaxError: ''', 'level': ERROR},
  {'substr': r'''TypeError: ''', 'level': ERROR},
  {'substr': r'''NameError: ''', 'level': ERROR},
  {'substr': r'''ZeroDivisionError: ''', 'level': ERROR},
- {'substr': r'''command not found''', 'level': ERROR},
+ {'regex': r'''raise \w*Exception: ''', 'level': CRITICAL},
+ {'regex': r'''raise \w*Error: ''', 'level': CRITICAL},
 ]
 
 # We may need to have various MakefileErrorLists for differing amounts of
 # warning-ignoring-ness.
-MakefileErrorList = [
+MakefileErrorList = BaseErrorList + [
  {'substr': r'''No rule to make target ''', 'level': ERROR},
  {'regex': r'''akefile.*was not found\.''', 'level': ERROR},
  {'regex': r'''Stop\.$''', 'level': ERROR},
