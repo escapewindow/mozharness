@@ -50,8 +50,8 @@ import getpass
 import subprocess
 
 from mozharness.base.errors import SSHErrorList
-from mozharness.base.log import DEBUG, INFO, WARNING, ERROR, CRITICAL, FATAL, IGNORE
-from mozharness.base.script import OutputParser
+from mozharness.base.log import OutputParser, DEBUG, INFO, WARNING, ERROR, \
+     CRITICAL, FATAL, IGNORE
 from mozharness.base.vcs.vcsbase import MercurialScript
 from mozharness.l10n.locales import LocalesMixin
 
