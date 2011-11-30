@@ -83,8 +83,8 @@ class OSMixin(object):
         else:
             self.debug("mkdir_p: %s Already exists." % path)
 
-    def rmtree(self, path, error_level=ERROR, exit_code=-1):
-        self.info("rmtree: %s" % path)
+    def rmtree(self, path, log_level=INFO, error_level=ERROR, exit_code=-1):
+        self.log("rmtree: %s" % path, level=log_level)
         if os.path.exists(path):
             if not self.config.get('noop'):
                 if os.path.isdir(path):
@@ -225,8 +225,9 @@ class OSMixin(object):
         # return list of paths of top level extracted files
         return top_level_files
 
-    def move(self, src, dest, error_level="error", exit_code=-1):
-        self.info("Moving %s to %s" % (src, dest))
+    def move(self, src, dest, log_level=INFO, error_level=ERROR,
+             exit_code=-1):
+        self.log("Moving %s to %s" % (src, dest), level=log_level)
         if not self.config.get('noop'):
             try:
                 shutil.move(src, dest)
@@ -242,8 +243,8 @@ class OSMixin(object):
         if not self.config.get('noop'):
             os.chmod(path, mode)
 
-    def copyfile(self, src, dest, error_level=ERROR):
-        self.info("Copying %s to %s" % (src, dest))
+    def copyfile(self, src, dest, log_level=INFO, error_level=ERROR):
+        self.log("Copying %s to %s" % (src, dest), level=log_level)
         if not self.config.get('noop'):
             try:
                 shutil.copyfile(src, dest)
@@ -714,18 +715,20 @@ class BaseScript(ShellMixin, OSMixin, LogMixin, object):
                 for backup_num in range(oldest_backup, 0, -1):
                     # TODO more error checking?
                     if backup_num >= max_backups:
-                        self.rmtree(os.path.join(dest_dir, dest_file, backup_num))
+                        self.rmtree(os.path.join(dest_dir, dest_file, backup_num),
+                                    log_level=DEBUG)
                     else:
                         self.move(os.path.join(dest_dir, dest_file, '.%d' % backup_num),
-                                  os.path.join(dest_dir, dest_file, '.%d' % backup_num +1))
-                if self.move(dest, "%s.1" % dest):
+                                  os.path.join(dest_dir, dest_file, '.%d' % backup_num +1),
+                                  log_level=DEBUG)
+                if self.move(dest, "%s.1" % dest, log_level=DEBUG):
                     self.log("Unable to move %s!" % dest, level=error_level)
                     return -1
             else:
-                if self.rmtree(dest):
+                if self.rmtree(dest, log_level=DEBUG):
                     self.log("Unable to remove %s!" % dest, level=error_level)
                     return -1
-        self.copyfile(target, dest)
+        self.copyfile(target, dest, log_level=DEBUG)
         if os.path.exists(dest):
             return dest
         else:
