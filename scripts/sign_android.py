@@ -47,15 +47,20 @@ sys.path.insert(1, os.path.dirname(sys.path[0]))
 
 from copy import deepcopy
 import getpass
+import subprocess
 
 from mozharness.base.errors import SSHErrorList
 from mozharness.base.log import DEBUG, INFO, WARNING, ERROR, CRITICAL, FATAL, IGNORE
+from mozharness.base.script import OutputParser
 from mozharness.base.vcs.vcsbase import MercurialScript
 from mozharness.l10n.locales import LocalesMixin
 
 # So far this only references the ftp platform name.
 SUPPORTED_PLATFORMS = ["android", "android-xul"]
-TEST_JARSIGNER_ERROR_LIST = [{
+BASE_JARSIGNER_ERROR_LIST = [{
+    "substr": "command not found",
+    "level": FATAL,
+},{
     "substr": "jarsigner error: java.lang.RuntimeException: keystore load: Keystore was tampered with, or password was incorrect",
     "level": FATAL,
     "explanation": "The store passphrase is probably incorrect!",
@@ -68,10 +73,14 @@ TEST_JARSIGNER_ERROR_LIST = [{
     "level": FATAL,
     "explanation": "The keystore doesn't exist!",
 }]
-JARSIGNER_ERROR_LIST = TEST_JARSIGNER_ERROR_LIST + [{
+JARSIGNER_ERROR_LIST = BASE_JARSIGNER_ERROR_LIST + [{
     "substr": "jarsigner: unable to open jar file:",
     "level": FATAL,
     "explanation": "The apk is missing!",
+}]
+TEST_JARSIGNER_ERROR_LIST = BASE_JARSIGNER_ERROR_LIST + [{
+    "substr": "jarsigner: unable to open jar file:",
+    "level": IGNORE,
 }]
 
 class SignAndroid(LocalesMixin, MercurialScript):
@@ -124,8 +133,8 @@ class SignAndroid(LocalesMixin, MercurialScript):
     ]]
 
     def __init__(self, require_config_file=True):
-        store_passphrase = None
-        key_passphrase = None
+        self.store_passphrase = None
+        self.key_passphrase = None
         LocalesMixin.__init__(self)
         MercurialScript.__init__(self,
             config_options=self.config_options,
@@ -133,7 +142,7 @@ class SignAndroid(LocalesMixin, MercurialScript):
                 "passphrase",
                 "clobber",
                 "pull",
-#                "download-unsigned-bits",
+                "download-unsigned-bits",
 #                "sign",
 #                "verify",
 #                "upload-signed-bits"
@@ -154,12 +163,28 @@ class SignAndroid(LocalesMixin, MercurialScript):
     def verify_passphrases(self):
         c = self.config
         jarsigner = self.query_exe("jarsigner")
-        # TODO this needs to run silently!
-        self.run_command([jarsigner, "-keystore", c['keystore'],
-                          "-storepass", self.store_passphrase,
-                          "-keypass", self.key_passphrase,
-                          "NOTAREALAPK", c['key_alias']],
-                         error_list=TEST_JARSIGNER_ERROR_LIST)
+        self.info("Verifying passphrases...")
+        # This needs to run silently!
+        # Not sure how best to do this in the long term.
+        p = subprocess.Popen([jarsigner, "-keystore", c['keystore'],
+                             "-storepass", self.store_passphrase,
+                             "-keypass", self.key_passphrase,
+                             "NOTAREALAPK", c['key_alias']],
+                             stdout=subprocess.PIPE,
+                             stderr=subprocess.STDOUT)
+        parser = OutputParser(config=self.config, log_obj=self.log_obj,
+                              error_list=TEST_JARSIGNER_ERROR_LIST)
+        loop = True
+        while loop:
+            if p.poll() is not None:
+                """Avoid losing the final lines of the log?"""
+                loop = False
+            for line in p.stdout:
+                parser.add_lines(line)
+        if parser.num_errors == 0:
+            self.info("Passphrases are good.")
+        else:
+            self.fatal("Unable to verify passphrases!")
 
     def postflight_passphrase(self):
         self.verify_passphrases()
