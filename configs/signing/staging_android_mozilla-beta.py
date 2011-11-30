@@ -45,6 +45,7 @@ config = {
         "jarsigner": "/usr/bin/jarsigner",
         "zipalign": "/Users/asasaki/wrk/android-tools/android-sdk-mac_x86/tools/zipalign",
     },
+    "signature_verification_script": "tools/release/signing/verify-android-signature.sh",
 
     "user_repo_override": "build",
     "tag_override": TAG,

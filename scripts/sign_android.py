@@ -49,7 +49,7 @@ from copy import deepcopy
 import getpass
 import subprocess
 
-from mozharness.base.errors import SSHErrorList
+from mozharness.base.errors import BaseErrorList, SSHErrorList
 from mozharness.base.log import OutputParser, DEBUG, INFO, WARNING, ERROR, \
      CRITICAL, FATAL, IGNORE
 from mozharness.base.vcs.vcsbase import MercurialScript
@@ -144,9 +144,8 @@ class SignAndroid(LocalesMixin, MercurialScript):
                 "pull",
                 "download-unsigned-bits",
                 "sign",
-#                "verify",
+                "verify",
 #                "upload-signed-bits"
-#                "clobber-unsigned-bits",
 #                "download-previous-bits",
 #                "create-snippets",
 #                "upload-snippets",
@@ -190,6 +189,7 @@ class SignAndroid(LocalesMixin, MercurialScript):
         self.vcs_checkout_repos(repos, parent_dir=dirs['abs_work_dir'],
                                 tag_override=c.get('tag_override'))
 
+    # TODO partner repack download
     def download_unsigned_bits(self):
         c = self.config
         dirs = self.query_abs_dirs()
@@ -254,6 +254,7 @@ class SignAndroid(LocalesMixin, MercurialScript):
             self.passphrase()
             self.verify_passphrases()
 
+    # TODO partner repack signing
     def sign(self):
         c = self.config
         dirs = self.query_abs_dirs()
@@ -278,7 +279,8 @@ class SignAndroid(LocalesMixin, MercurialScript):
                     self.add_summary("Unable to sign %s:%s apk!",
                                      level=FATAL)
                 elif self.run_command([zipalign, '-f', '4',
-                                       unaligned_path, signed_path]):
+                                       unaligned_path, signed_path],
+                                      error_list=BaseErrorList):
                     self.add_summary("Unable to align %s:%s apk!",
                                      level=FATAL)
                 else:
@@ -288,6 +290,27 @@ class SignAndroid(LocalesMixin, MercurialScript):
             level = ERROR
         self.add_summary("Signed %d of %d apks successfully." % \
                          (successful_count, total_count), level=level)
+
+    def verify(self):
+        c = self.config
+        dirs = self.query_abs_dirs()
+        verification_error_list = BaseErrorList + [{
+            "regex": r'''^Invalid$''',
+            "level": FATAL,
+            "explanation": "Signature is invalid!"
+        }]
+        locales = self.query_locales()
+        for platform in c['platforms']:
+            for locale in locales:
+                signed_path = '%s/%s/%s' % (platform, locale,
+                    c['apk_base_name'] % {'version': c['version'],
+                                          'locale': locale})
+                self.run_command([c['signature_verification_script'],
+                                  '--tools-dir=tools/',
+                                  '--%s' % c['key_alias'],
+                                  '--apk=%s' % signed_path],
+                                 cwd=dirs['abs_work_dir'],
+                                 error_list=verification_error_list)
 
 if __name__ == '__main__':
     sign_android = SignAndroid()
