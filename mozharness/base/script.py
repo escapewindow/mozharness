@@ -496,8 +496,8 @@ class ShellMixin(object):
             return_level = ERROR
         # Clean up.
         if not save_tmpfiles:
-            self.rmtree(tmp_stderr_filename)
-            self.rmtree(tmp_stdout_filename)
+            self.rmtree(tmp_stderr_filename, log_level=DEBUG)
+            self.rmtree(tmp_stdout_filename, log_level=DEBUG)
         if p.returncode and throw_exception:
             raise subprocess.CalledProcessError(p.returncode, command)
         self.log("Return code: %d" % p.returncode, level=return_level)
