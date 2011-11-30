@@ -202,7 +202,6 @@ class SignAndroid(LocalesMixin, MercurialScript):
             for repo_dict in deepcopy(c['repos']):
                 repo_dict['repo'] = repo_dict['repo'] % replace_dict
                 repos.append(repo_dict)
-            print c['repos']
         else:
             repos = c['repos']
         self.vcs_checkout_repos(repos, parent_dir=dirs['abs_work_dir'],
@@ -211,6 +210,19 @@ class SignAndroid(LocalesMixin, MercurialScript):
     def download_unsigned_bits(self):
         c = self.config
         dirs = self.query_abs_dirs()
+        locales = self.query_locales()
+        base_url = c['download_base_url'] + '/' + \
+                   c['download_unsigned_base_subdir'] + '/' + \
+                   c['apk_base_name']
+        replace_dict = {
+            'buildnum': c['buildnum'],
+            'version': c['version'],
+        }
+        for platform in c['platforms']:
+            replace_dict['platform'] = platform
+            for locale in locales:
+                replace_dict['locale'] = locale
+                self.info("url is %s" % (base_url % replace_dict))
 
     def preflight_sign(self):
         if self.store_passphrase is None or self.key_passphrase is None:

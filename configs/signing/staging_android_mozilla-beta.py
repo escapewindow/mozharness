@@ -22,17 +22,31 @@ JARSIGNER = "/tools/jdk6/bin/jarsigner"
 KEY_ALIAS = "nightly"
 
 config = {
-    "locales": LOCALES,
     "log_name": "sign_android",
     "base_work_dir": BASE_WORK_DIR,
     "work_dir": WORK_DIR,
-    "tag_override": TAG,
+
+    "locales": LOCALES,
+    "locales_file": "configs/mozilla/l10n-changesets_mobile-beta.json",
     "platforms": ['android'],
+
     "apk_base_name": APK_BASE_NAME,
     "download_base_url": DOWNLOAD_BASE_URL,
+    "download_unsigned_base_subdir": "unsigned/%(platform)s/%(locale)s",
+    "download_signed_base_subdir": "%(platform)s/%(locale)s",
+
+    "version": VERSION,
+    "buildnum": BUILDNUM,
+
     "keystore": KEYSTORE,
     "key_alias": KEY_ALIAS,
+    "exes": {
+        "jarsigner": "/usr/bin/jarsigner",
+        "zipalign": "/Users/asasaki/wrk/android-tools/android-sdk-mac_x86/tools/zipalign",
+    },
+
     "user_repo_override": "build",
+    "tag_override": TAG,
     "repos": [{
         "repo": "http://hg.mozilla.org/%(user_repo_override)s/tools",
         "dest": "tools",
