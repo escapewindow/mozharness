@@ -31,6 +31,7 @@ config = {
     "platforms": ['android'],
 
     "apk_base_name": APK_BASE_NAME,
+    "unsigned_apk_base_name": 'gecko-unsigned-unaligned.apk',
     "download_base_url": DOWNLOAD_BASE_URL,
     "download_unsigned_base_subdir": "unsigned/%(platform)s/%(locale)s",
     "download_signed_base_subdir": "%(platform)s/%(locale)s",

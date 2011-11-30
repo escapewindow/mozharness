@@ -150,7 +150,9 @@ class OSMixin(object):
                      error_level=ERROR, exit_code=-1):
         """Python wget.
         TODO: option to mkdir_p dirname(file_name) if it doesn't exist.
+        TODO: parent_dir option.
         TODO: should noop touch the filename? seems counter-noop.
+        TODO: the initial log line should say "Downloading url to file_name"
         """
         if not file_name:
             file_name = self.get_filename_from_url(url)

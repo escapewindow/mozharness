@@ -213,16 +213,33 @@ class SignAndroid(LocalesMixin, MercurialScript):
         locales = self.query_locales()
         base_url = c['download_base_url'] + '/' + \
                    c['download_unsigned_base_subdir'] + '/' + \
-                   c['apk_base_name']
+                   c.get('unsigned_apk_base_name', 'gecko-unsigned-unaligned.apk')
         replace_dict = {
             'buildnum': c['buildnum'],
             'version': c['version'],
         }
+        successful_count = 0
+        total_count = 0
         for platform in c['platforms']:
             replace_dict['platform'] = platform
             for locale in locales:
                 replace_dict['locale'] = locale
-                self.info("url is %s" % (base_url % replace_dict))
+                url = base_url % replace_dict
+                parent_dir = '%s/%s/unsigned/%s' % (dirs['abs_work_dir'],
+                                                    platform, locale)
+                file_path = '%s/gecko_unsigned_unaligned.apk' % parent_dir
+                self.mkdir_p(parent_dir)
+                total_count += 1
+                if not self.download_file(url, file_path):
+                    self.add_summary("Unable to download %s:%s unsigned apk!",
+                                     level=ERROR)
+                else:
+                    successful_count += 1
+        level = INFO
+        if successful_count < total_count:
+            level = ERROR
+        self.add_summary("Downloaded %d of %d unsigned apks successfully." % \
+                         (successful_count, total_count), level=level)
 
     def preflight_sign(self):
         if self.store_passphrase is None or self.key_passphrase is None:
