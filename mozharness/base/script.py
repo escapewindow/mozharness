@@ -281,6 +281,84 @@ class OSMixin(object):
                     return exe_file
         return None
 
+
+
+# OutputParser {{{1
+class OutputParser(LogMixin):
+    """ Helper object to parse command output.
+
+    This will buffer output if needed, so we can go back and mark
+    [(linenum - 10):linenum+10] as errors if need be, without having to
+    get all the output first.
+
+    linenum+10 will be easy; we can set self.num_post_context_lines to 10,
+    and self.num_post_context_lines-- as we mark each line to at least error
+    level X.
+
+    linenum-10 will be trickier.  We'll not only need to save the line
+    itself, but also the level that we've set for that line previously,
+    whether by matching on that line, or by a previous line's context.
+    We should only log that line if all output has ended (self.finish() ?);
+    otherwise store a list of dictionaries in self.context_buffer that is
+    buffered up to self.num_pre_context_lines (set to the largest
+    pre-context-line setting in error_list.)
+    """
+    def __init__(self, config=None, log_obj=None, error_list=None,
+                 log_output=True):
+        self.config = config
+        self.log_obj = log_obj
+        self.error_list = error_list
+        self.log_output = log_output
+        self.num_errors = 0
+        # TODO context_lines.
+        # Not in use yet, but will be based off error_list.
+        self.context_buffer = []
+        self.num_pre_context_lines = 0
+        self.num_post_context_lines = 0
+        # TODO set self.error_level to the worst error level hit
+        # (WARNING, ERROR, CRITICAL, FATAL)
+        # self.error_level = INFO
+
+    def add_lines(self, output):
+        if str(output) == output:
+            output = [output]
+        for line in output:
+            if not line or line.isspace():
+                continue
+            line = line.decode("utf-8").rstrip()
+            for error_check in self.error_list:
+                # TODO buffer for context_lines.
+                match = False
+                if 'substr' in error_check:
+                    if error_check['substr'] in line:
+                        match = True
+                elif 'regex' in error_check:
+                    if re.search(error_check['regex'], line):
+                        match = True
+                else:
+                    self.warn("error_list: 'substr' and 'regex' not in %s" % \
+                              error_check)
+                if match:
+                    level=error_check.get('level', INFO)
+                    if self.log_output:
+                        message = ' %s' % line
+                        if error_check.get('explanation'):
+                            message += '\n %s' % error_check['explanation']
+                        if error_check.get('summary'):
+                            self.add_summary(message, level=level)
+                        else:
+                            self.log(message, level=level)
+                    if level in (ERROR, CRITICAL, FATAL):
+                        self.num_errors += 1
+                    # TODO set self.error_status (or something)
+                    # that sets the worst error level hit.
+                    break
+            else:
+                if self.log_output:
+                    self.info(' %s' % line)
+
+
+
 # ShellMixin {{{1
 class ShellMixin(object):
     """These are very special but very complex methods that, together with
@@ -334,15 +412,16 @@ class ShellMixin(object):
         """
         return self.config.get(exe_dict, {}).get(exe_name, exe_name)
 
-    def run_command(self, command, cwd=None, error_list=[], parse_at_end=False,
+    def run_command(self, command, cwd=None, error_list=None, parse_at_end=False,
                     halt_on_failure=False, success_codes=[0],
                     env=None, return_type='status', throw_exception=False):
         """Run a command, with logging and error parsing.
 
-        TODO: parse_at_end, contextLines
+        TODO: parse_at_end, context_ines
         TODO: retry_interval?
         TODO: error_level_override?
         TODO: Add a copy-pastable version of |command| if it's a list.
+        TODO: print env if set
 
         error_list example:
         [{'regex': '^Error: LOL J/K', level=IGNORE},
@@ -350,7 +429,8 @@ class ShellMixin(object):
          {'substr': 'THE WORLD IS ENDING', level=FATAL, contextLines='20:'}
         ]
         """
-        num_errors = 0
+        if error_list is None:
+            error_list = []
         if cwd:
             if not os.path.isdir(cwd):
                 level = ERROR
@@ -370,34 +450,15 @@ class ShellMixin(object):
             shell = False
         p = subprocess.Popen(command, shell=shell, stdout=subprocess.PIPE,
                              cwd=cwd, stderr=subprocess.STDOUT, env=env)
+        parser = OutputParser(config=self.config, log_obj=self.log_obj,
+                              error_list=error_list)
         loop = True
         while loop:
             if p.poll() is not None:
                 """Avoid losing the final lines of the log?"""
                 loop = False
             for line in p.stdout:
-                if not line or line.isspace():
-                    continue
-                line = line.decode("utf-8").rstrip()
-                for error_check in error_list:
-                    match = False
-                    if 'substr' in error_check:
-                        if error_check['substr'] in line:
-                            match = True
-                    elif 'regex' in error_check:
-                        if re.search(error_check['regex'], line):
-                            match = True
-                    else:
-                        self.warn("error_list: 'substr' and 'regex' not in %s" % \
-                                  error_check)
-                    if match:
-                        level=error_check.get('level', INFO)
-                        self.log(' %s' % line, level=level)
-                        if level in (ERROR, CRITICAL, FATAL):
-                            num_errors = num_errors + 1
-                        break
-                else:
-                    self.info(' %s' % line)
+                parser.add_lines(line)
         return_level = INFO
         if p.returncode not in success_codes:
             return_level = ERROR
@@ -405,11 +466,11 @@ class ShellMixin(object):
                 raise subprocess.CalledProcessError(p.returncode, command)
         self.log("Return code: %d" % p.returncode, level=return_level)
         if halt_on_failure:
-            if num_errors or p.returncode not in success_codes:
+            if parser.num_errors or p.returncode not in success_codes:
                 self.fatal("Halting on failure while running %s" % command,
                            exit_code=p.returncode)
         if return_type == 'num_errors':
-            return num_errors
+            return parser.num_errors
         return p.returncode
 
     def get_output_from_command(self, command, cwd=None,
