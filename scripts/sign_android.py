@@ -151,9 +151,8 @@ class SignAndroid(LocalesMixin, MercurialScript):
                 "sign",
                 "verify-signatures",
                 "upload-signed-bits",
-                "download-previous-bits",
-#                "create-snippets",
-#                "upload-snippets",
+                "create-snippets",
+                "upload-snippets",
             ],
             require_config_file=require_config_file
         )
@@ -319,42 +318,34 @@ class SignAndroid(LocalesMixin, MercurialScript):
         # TODO writeme
         self.warning("Not implemented yet.")
 
-    def download_previous_bits(self):
-        # TODO this shares so much with download_unsigned bits that
-        # they should be able to share logic.
+    def query_previous_buildid(self, platform):
         c = self.config
-        dirs = self.query_abs_dirs()
         locales = self.query_locales()
-        base_url = c['download_base_url'] + '/' + \
-                   c['download_signed_base_subdir'] + '/' + \
-                   c['previous_apk_base_name']
         replace_dict = {
             'buildnum': c['buildnum'],
             'version': c['version'],
+            'platform': platform,
         }
-        successful_count = 0
-        total_count = 0
-        for platform in c['platforms']:
-            replace_dict['platform'] = platform
-            for locale in locales:
-                replace_dict['locale'] = locale
-                url = base_url % replace_dict
-                parent_dir = '%s/previous/%s/%s' % (dirs['abs_work_dir'],
-                                                    platform, locale)
-                file_path = '%s/%s' % (parent_dir,
-                                       c['previous_apk_base_name'] % replace_dict)
-                self.mkdir_p(parent_dir)
-                total_count += 1
-                if not self.download_file(url, file_path):
-                    self.add_summary("Unable to download %s:%s previous apk!" % (platform, locale),
-                                     level=ERROR)
-                else:
-                    successful_count += 1
-        level = INFO
-        if successful_count < total_count:
-            level = ERROR
-        self.add_summary("Downloaded %d of %d previous apks successfully." % \
-                         (successful_count, total_count), level=level)
+        url = c['old_buildid_base_url'] % replace_dict
+        output = self.get_output_from_command(["curl", "--silent", url])
+        if output.startswith("buildID="):
+            return output.replace("buildID=", "")
+        else:
+            self.error("Can't get buildID from %s!" % url)
+
+    def create_snippets(self):
+        c = self.config
+        dirs = self.query_abs_dirs()
+        for platform in c['update_platforms']:
+            buildid = self.query_previous_buildid(platform)
+            if not buildid:
+                self.add_summary("Can't get buildid for %s!", level=ERROR)
+                continue
+            # TODO generate snippets locally
+            # TODO figure out how best to lay out on disk (shouldn't block)
+
+    def upload_snippets(self):
+        pass
 
 if __name__ == '__main__':
     sign_android = SignAndroid()
