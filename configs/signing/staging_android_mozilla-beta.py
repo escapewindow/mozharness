@@ -12,6 +12,19 @@ FTP_UPLOAD_BASE_DIR = "/pub/mozilla.org/mobile/%(version)s-candidates/build%(bui
 #DOWNLOAD_BASE_URL = "http://%s%s" % (FTP_SERVER, FTP_UPLOAD_BASE_DIR)
 DOWNLOAD_BASE_URL = "http://ftp.mozilla.org/pub/mozilla.org/mobile/candidates/%(version)s-candidates/build%(buildnum)d"
 APK_BASE_NAME = "fennec-%(version)s.%(locale)s.android-arm.apk"
+FFXBLD_KEY = '%s/.ssh/ffxbld_dsa' % os.environ['HOME']
+
+STAGING_SNIPPET_URL = "http://stage.mozilla.org/pub/mozilla.org/mobile/candidates/%(version)s-candidates/build%(buildnum)d/%(apk_name)s"
+SNIPPET_TEMPLATE = """version=1
+type=complete
+url=%(url)s
+hashFunction=sha512
+hashValue=%(sha512_hash)s
+size=%(size)d
+build=%(buildid)s
+appv=%(version)s
+extv=%(version)s
+"""
 
 KEYSTORE = "%s/.android/android.keystore" % os.environ['HOME']
 #BASE_WORK_DIR = "%s/signing-work/fennec-%s" % (os.environ['HOME'], VERSION)
