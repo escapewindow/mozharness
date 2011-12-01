@@ -129,8 +129,8 @@ class SignAndroid(LocalesMixin, MercurialScript):
 # TODO unsigned url, signed url, ssh key/user/server/path,
 # --version
 # --buildnum
-# --previous-version
-# --previous-buildnum
+# --old-version
+# --old-buildnum
 # --keystore
 # previous build signed url, --ignore-locale, locales_file
 # aus key/user/server/path
@@ -150,8 +150,8 @@ class SignAndroid(LocalesMixin, MercurialScript):
                 "download-unsigned-bits",
                 "sign",
                 "verify-signatures",
-#                "upload-signed-bits"
-#                "download-previous-bits",
+                "upload-signed-bits",
+                "download-previous-bits",
 #                "create-snippets",
 #                "upload-snippets",
             ],
@@ -314,6 +314,47 @@ class SignAndroid(LocalesMixin, MercurialScript):
                                   '--apk=%s' % signed_path],
                                  cwd=dirs['abs_work_dir'],
                                  error_list=verification_error_list)
+
+    def upload_signed_bits(self):
+        # TODO writeme
+        self.warning("Not implemented yet.")
+
+    def download_previous_bits(self):
+        # TODO this shares so much with download_unsigned bits that
+        # they should be able to share logic.
+        c = self.config
+        dirs = self.query_abs_dirs()
+        locales = self.query_locales()
+        base_url = c['download_base_url'] + '/' + \
+                   c['download_signed_base_subdir'] + '/' + \
+                   c['previous_apk_base_name']
+        replace_dict = {
+            'buildnum': c['buildnum'],
+            'version': c['version'],
+        }
+        successful_count = 0
+        total_count = 0
+        for platform in c['platforms']:
+            replace_dict['platform'] = platform
+            for locale in locales:
+                replace_dict['locale'] = locale
+                url = base_url % replace_dict
+                parent_dir = '%s/previous/%s/%s' % (dirs['abs_work_dir'],
+                                                    platform, locale)
+                file_path = '%s/%s' % (parent_dir,
+                                       c['previous_apk_base_name'] % replace_dict)
+                self.mkdir_p(parent_dir)
+                total_count += 1
+                if not self.download_file(url, file_path):
+                    self.add_summary("Unable to download %s:%s previous apk!" % (platform, locale),
+                                     level=ERROR)
+                else:
+                    successful_count += 1
+        level = INFO
+        if successful_count < total_count:
+            level = ERROR
+        self.add_summary("Downloaded %d of %d previous apks successfully." % \
+                         (successful_count, total_count), level=level)
 
 if __name__ == '__main__':
     sign_android = SignAndroid()

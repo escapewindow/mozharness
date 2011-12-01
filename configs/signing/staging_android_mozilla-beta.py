@@ -4,6 +4,8 @@ import os
 
 LOCALES = ["en-US", "multi"]
 VERSION = "9.0b3"
+OLD_VERSION = "9.0b2"
+OLD_BUILDNUM = 1
 BUILDNUM = 1
 TAG = "FENNEC_9_0b3_RELEASE"
 AUS_SERVER = "dev-stage01.build.mozilla.org"
@@ -12,6 +14,8 @@ FTP_UPLOAD_BASE_DIR = "/pub/mozilla.org/mobile/%(version)s-candidates/build%(bui
 #DOWNLOAD_BASE_URL = "http://%s%s" % (FTP_SERVER, FTP_UPLOAD_BASE_DIR)
 DOWNLOAD_BASE_URL = "http://ftp.mozilla.org/pub/mozilla.org/mobile/candidates/%(version)s-candidates/build%(buildnum)d"
 APK_BASE_NAME = "fennec-%(version)s.%(locale)s.android-arm.apk"
+# because sign_android-0.8.sh renamed these wrong :(
+PREVIOUS_APK_BASE_NAME = "fennec-%(version)s.%(locale)s.eabi-arm.apk"
 FFXBLD_KEY = '%s/.ssh/ffxbld_dsa' % os.environ['HOME']
 
 STAGING_SNIPPET_URL = "http://stage.mozilla.org/pub/mozilla.org/mobile/candidates/%(version)s-candidates/build%(buildnum)d/%(apk_name)s"
@@ -48,9 +52,12 @@ config = {
     "download_base_url": DOWNLOAD_BASE_URL,
     "download_unsigned_base_subdir": "unsigned/%(platform)s/%(locale)s",
     "download_signed_base_subdir": "%(platform)s/%(locale)s",
+    "previous_apk_base_name": PREVIOUS_APK_BASE_NAME,
 
     "version": VERSION,
     "buildnum": BUILDNUM,
+    "old_version": VERSION,
+    "old_buildnum": OLD_BUILDNUM,
 
     "keystore": KEYSTORE,
     "key_alias": KEY_ALIAS,
