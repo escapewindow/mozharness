@@ -154,14 +154,17 @@ class OSMixin(object):
         TODO: should noop touch the filename? seems counter-noop.
         TODO: the initial log line should say "Downloading url to file_name"
         """
+        message = ""
         if not file_name:
             file_name = self.get_filename_from_url(url)
+        else:
+            message = " to %s" % file_name
         if self.config.get('noop'):
-            self.info("Downloading %s" % url)
+            self.info("Downloading %s%s" % (url, message))
             return file_name
         req = urllib2.Request(url)
         try:
-            self.info("Downloading %s" % url)
+            self.info("Downloading %s%s" % (url, message))
             f = urllib2.urlopen(req)
             local_file = open(file_name, 'wb')
             local_file.write(f.read())
