@@ -393,6 +393,8 @@ class SignAndroid(LocalesMixin, MercurialScript):
             'version': c['version'],
             'buildnum': c['buildnum'],
         }
+        total_count = 0
+        successful_count = 0
         for platform in c['update_platforms']:
             buildid = self.query_buildid(platform, c['buildid_base_url'])
             if not buildid:
@@ -412,10 +414,27 @@ class SignAndroid(LocalesMixin, MercurialScript):
                 replace_dict['size'] = self.query_filesize(signed_path)
                 replace_dict['sha512_hash'] = self.query_sha512sum(signed_path)
                 for channel, channel_dict in c['update_channels'].items():
+                    total_count += 1
                     replace_dict['url'] = channel_dict['url'] % replace_dict
                     contents = channel_dict['template'] % replace_dict
-                    self.info("Snippet for %s %s:\n%s" % (platform, locale, contents))
-            # TODO figure out how best to lay out on disk (shouldn't block)
+                    snippet_dir = "%s/update/%s/%s" % (dirs['abs_work_dir'], platform, locale)
+                    snippet_file = "%s/latest-%s" % (snippet_dir, channel)
+                    self.info("Creating snippet for %s %s %s" % (platform, locale, channel))
+                    self.mkdir_p(snippet_dir)
+                    try:
+                        fh = open(snippet_file, 'w')
+                        fh.write(contents)
+                        fh.close()
+                    except:
+                        self.add_summary("Unable to write to %s!" % snippet_file, level=ERROR)
+                        self.info("File contents: \n%s" % contents)
+                    else:
+                        successful_count += 1
+        level = INFO
+        if successful_count < total_count:
+            level = ERROR
+        self.add_summary("Created %d of %d snippets successfully." % \
+                         (successful_count, total_count), level=level)
 
     def upload_snippets(self):
         # TODO writeme
