@@ -88,6 +88,19 @@ TEST_JARSIGNER_ERROR_LIST = BASE_JARSIGNER_ERROR_LIST + [{
     "level": IGNORE,
 }]
 
+# From http://bytes.com/topic/python/answers/26569-finding-file-size,
+# for query_filesize()
+class SizedFile(file):
+    def __len__(self):
+        oldpos = self.tell()
+        self.seek(0, 2)
+        length = self.tell()
+        self.seek(oldpos)
+        return length
+
+
+
+# SignAndroid {{{1
 class SignAndroid(LocalesMixin, MercurialScript):
     config_options = [[
      ['--locale',],
@@ -153,10 +166,79 @@ class SignAndroid(LocalesMixin, MercurialScript):
                 "upload-signed-bits",
                 "create-snippets",
                 "upload-snippets",
+                "push-betatest-snippets",
+                "push-releasetest-snippets",
+                "push-release-snippets",
+            ],
+            default_actions=[
+                "passphrase",
+                "clobber",
+                "pull",
+                "download-unsigned-bits",
+                "sign",
+                "verify-signatures",
+                "upload-signed-bits",
+                "create-snippets",
+                "upload-snippets",
             ],
             require_config_file=require_config_file
         )
 
+    # Helper methods {{{2
+    # TODO query_filesize and query_sha512sum probably belong in
+    # mozharness.base somewhere
+    def query_filesize(self, file_path):
+        self.info("Determining filesize for %s" % file_path)
+        x = SizedFile(file_path)
+        length = len(x)
+        self.info(" %s" % str(length))
+        return length
+
+    def query_sha512sum(self, file_path):
+        self.info("Determining sha512sum for %s" % file_path)
+
+    def query_buildid(self, platform, base_url):
+        c = self.config
+        locales = self.query_locales()
+        replace_dict = {
+            'buildnum': c['buildnum'],
+            'version': c['version'],
+            'platform': platform,
+        }
+        url = base_url % replace_dict
+        # TODO stop using curl
+        output = self.get_output_from_command(["curl", "--silent", url])
+        if output.startswith("buildID="):
+            return output.replace("buildID=", "")
+        else:
+            self.error("Can't get buildID from %s!" % url)
+
+    def _sign(self, apk, error_list=None):
+        c = self.config
+        jarsigner = self.query_exe("jarsigner")
+        if error_list is None:
+            error_list = JARSIGNER_ERROR_LIST
+        # This needs to run silently, so no run_command() or
+        # get_output_from_command() (though I could add a
+        # suppress_command_echo=True or something?)
+        p = subprocess.Popen([jarsigner, "-keystore", c['keystore'],
+                             "-storepass", self.store_passphrase,
+                             "-keypass", self.key_passphrase,
+                             apk, c['key_alias']],
+                             stdout=subprocess.PIPE,
+                             stderr=subprocess.STDOUT)
+        parser = OutputParser(config=self.config, log_obj=self.log_obj,
+                              error_list=error_list)
+        loop = True
+        while loop:
+            if p.poll() is not None:
+                """Avoid losing the final lines of the log?"""
+                loop = False
+            for line in p.stdout:
+                parser.add_lines(line)
+        return parser.num_errors
+
+    # Actions {{{2
     def passphrase(self):
         if not self.store_passphrase:
             print "(store passphrase): ",
@@ -227,31 +309,6 @@ class SignAndroid(LocalesMixin, MercurialScript):
         self.add_summary("Downloaded %d of %d unsigned apks successfully." % \
                          (successful_count, total_count), level=level)
 
-    def _sign(self, apk, error_list=None):
-        c = self.config
-        jarsigner = self.query_exe("jarsigner")
-        if error_list is None:
-            error_list = JARSIGNER_ERROR_LIST
-        # This needs to run silently, so no run_command() or
-        # get_output_from_command() (though I could add a
-        # suppress_command_echo=True or something?)
-        p = subprocess.Popen([jarsigner, "-keystore", c['keystore'],
-                             "-storepass", self.store_passphrase,
-                             "-keypass", self.key_passphrase,
-                             apk, c['key_alias']],
-                             stdout=subprocess.PIPE,
-                             stderr=subprocess.STDOUT)
-        parser = OutputParser(config=self.config, log_obj=self.log_obj,
-                              error_list=error_list)
-        loop = True
-        while loop:
-            if p.poll() is not None:
-                """Avoid losing the final lines of the log?"""
-                loop = False
-            for line in p.stdout:
-                parser.add_lines(line)
-        return parser.num_errors
-
     def preflight_sign(self):
         if 'passphrase' not in self.actions:
             self.passphrase()
@@ -318,35 +375,45 @@ class SignAndroid(LocalesMixin, MercurialScript):
         # TODO writeme
         self.warning("Not implemented yet.")
 
-    def query_previous_buildid(self, platform):
-        c = self.config
-        locales = self.query_locales()
-        replace_dict = {
-            'buildnum': c['buildnum'],
-            'version': c['version'],
-            'platform': platform,
-        }
-        url = c['old_buildid_base_url'] % replace_dict
-        output = self.get_output_from_command(["curl", "--silent", url])
-        if output.startswith("buildID="):
-            return output.replace("buildID=", "")
-        else:
-            self.error("Can't get buildID from %s!" % url)
-
     def create_snippets(self):
         c = self.config
         dirs = self.query_abs_dirs()
+        locales = self.query_locales()
+        replace_dict = {
+            'version': c['version'],
+            'buildnum': c['buildnum'],
+        }
         for platform in c['update_platforms']:
-            buildid = self.query_previous_buildid(platform)
+            buildid = self.query_buildid(platform, c['buildid_base_url'])
             if not buildid:
-                self.add_summary("Can't get buildid for %s!", level=ERROR)
+                self.add_summary("Can't get buildid for %s! Skipping..." % platform, level=ERROR)
                 continue
-            # TODO generate snippets locally
+            replace_dict['platform'] = platform
+            replace_dict['buildid'] = buildid
+            for locale in locales:
+                replace_dict['locale'] = locale
+                parent_dir = '%s/%s/%s' % (dirs['abs_work_dir'],
+                                           platform, locale)
+                replace_dict['apk_name'] = c['apk_base_name'] % replace_dict
+                signed_path = '%s/%s' % (parent_dir, replace_dict['apk_name'])
+                if not os.path.exists(signed_path):
+                    self.add_summary("Unable to create snippet for %s:%s: apk doesn't exist!" % (platform, locale), level=ERROR)
+                    continue
+                replace_dict['size'] = self.query_filesize(signed_path)
+                replace_dict['sha512_hash'] = self.query_sha512sum(signed_path)
+                for channel, channel_dict in c['update_channels'].items():
+                    replace_dict['url'] = channel_dict['url'] % replace_dict
+                    contents = channel_dict['template'] % replace_dict
+                    self.info("Snippet for %s %s:\n%s" % (platform, locale, contents))
             # TODO figure out how best to lay out on disk (shouldn't block)
 
     def upload_snippets(self):
-        pass
+        # TODO writeme
+        self.warning("Not implemented yet.")
 
+
+
+# main {{{1
 if __name__ == '__main__':
     sign_android = SignAndroid()
     sign_android.run()
