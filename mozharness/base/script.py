@@ -347,7 +347,7 @@ class ShellMixin(object):
                     env=None, return_type='status', throw_exception=False):
         """Run a command, with logging and error parsing.
 
-        TODO: parse_at_end, context_ines
+        TODO: parse_at_end, context_lines
         TODO: retry_interval?
         TODO: error_level_override?
         TODO: Add a copy-pastable version of |command| if it's a list.
@@ -678,8 +678,9 @@ class BaseScript(ShellMixin, OSMixin, LogMixin, object):
         self.log(message, level=level)
 
     def copy_to_upload_dir(self, target, dest=None, short_desc="unknown",
-                           long_desc="unknown", error_level="error",
-                           rotate=False, max_backups=None):
+                           long_desc="unknown", log_level=DEBUG,
+                           error_level=ERROR, rotate=False,
+                           max_backups=None):
         """Copy target file to upload_dir/dest.
 
         Potentially update a manifest in the future if we go that route.
@@ -721,19 +722,19 @@ class BaseScript(ShellMixin, OSMixin, LogMixin, object):
                     # TODO more error checking?
                     if backup_num >= max_backups:
                         self.rmtree(os.path.join(dest_dir, dest_file, backup_num),
-                                    log_level=DEBUG)
+                                    log_level=log_level)
                     else:
                         self.move(os.path.join(dest_dir, dest_file, '.%d' % backup_num),
                                   os.path.join(dest_dir, dest_file, '.%d' % backup_num +1),
-                                  log_level=DEBUG)
-                if self.move(dest, "%s.1" % dest, log_level=DEBUG):
+                                  log_level=log_level)
+                if self.move(dest, "%s.1" % dest, log_level=log_level):
                     self.log("Unable to move %s!" % dest, level=error_level)
                     return -1
             else:
-                if self.rmtree(dest, log_level=DEBUG):
+                if self.rmtree(dest, log_level=log_level):
                     self.log("Unable to remove %s!" % dest, level=error_level)
                     return -1
-        self.copyfile(target, dest, log_level=DEBUG)
+        self.copyfile(target, dest, log_level=log_level)
         if os.path.exists(dest):
             return dest
         else:
