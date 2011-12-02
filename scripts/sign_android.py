@@ -44,6 +44,7 @@
 # TODO split out signing and transfers to helper objects so we can do
 #      the downloads/signing/uploads in parallel, speeding that up
 
+import hashlib
 import os
 import sys
 
@@ -194,8 +195,17 @@ class SignAndroid(LocalesMixin, MercurialScript):
         self.info(" %s" % str(length))
         return length
 
+    # TODO this should be parallelized with the to-be-written BaseHelper!
     def query_sha512sum(self, file_path):
         self.info("Determining sha512sum for %s" % file_path)
+        m = hashlib.sha512()
+        fh = open(file_path)
+        contents = fh.read()
+        fh.close()
+        m.update(contents)
+        sha512 = m.hexdigest()
+        self.info(" %s" % sha512)
+        return sha512
 
     def query_buildid(self, platform, base_url):
         c = self.config
