@@ -141,11 +141,48 @@ class SignAndroid(LocalesMixin, MercurialScript):
       "choices": ['production', 'nightly'],
       "help": "Specify the key alias"
      }
+    ],[
+     ['--update-platform',],
+     {"action": "extend",
+      "dest": "update_platforms",
+      "type": "choice",
+      "choices": SUPPORTED_PLATFORMS,
+      "help": "Specify the platform(s) to create update snippets for"
+     }
+    ],[
+     ['--version',],
+     {"action": "store",
+      "dest": "version",
+      "type": "string",
+      "help": "Specify the current version"
+     }
+    ],[
+     ['--old-version',],
+     {"action": "store",
+      "dest": "old_version",
+      "type": "string",
+      "help": "Specify the version to update from"
+     }
+    ],[
+     ['--buildnum',],
+     {"action": "store",
+      "dest": "buildnum",
+      "type": "int",
+      "default": 1,
+      "metavar": "INT",
+      "help": "Specify the current release build num (e.g. build1, build2)"
+     }
+    ],[
+     ['--old-buildnum',],
+     {"action": "store",
+      "dest": "old_buildnum",
+      "type": "int",
+      "default": 1,
+      "metavar": "INT",
+      "help": "Specify the release build num to update from (e.g. build1, build2)"
+     }
+
 # TODO unsigned url, signed url, ssh key/user/server/path,
-# --version
-# --buildnum
-# --old-version
-# --old-buildnum
 # --keystore
 # previous build signed url, --ignore-locale, locales_file
 # aus key/user/server/path
