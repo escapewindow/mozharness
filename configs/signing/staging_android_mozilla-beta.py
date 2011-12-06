@@ -3,8 +3,6 @@
 import os
 
 LOCALES = ["en-US", "multi"]
-#VERSION = "9.0b3"
-#BUILDNUM = 1
 TAG = "FENNEC_9_0b3_RELEASE"
 AUS_SERVER = "dev-stage01.build.mozilla.org"
 FTP_SERVER = "dev-stage01.build.mozilla.org"
@@ -32,9 +30,9 @@ extv=%(version)s
 """
 
 KEYSTORE = "%s/.android/android.keystore" % os.environ['HOME']
-#BASE_WORK_DIR = "%s/signing-work/fennec-%s" % (os.environ['HOME'], VERSION)
-BASE_WORK_DIR = "%s/signing-work/fennec-%s" % (os.getcwd(), VERSION)
-WORK_DIR = "build%s" % str(BUILDNUM)
+#BASE_WORK_DIR = "%s/signing-work/fennec-beta" % (os.environ['HOME'])
+BASE_WORK_DIR = "%s/signing-work/fennec-beta" % os.getcwd()
+WORK_DIR = "build"
 
 JARSIGNER = "/tools/jdk6/bin/jarsigner"
 KEY_ALIAS = "nightly"
