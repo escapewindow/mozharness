@@ -3,10 +3,8 @@
 import os
 
 LOCALES = ["en-US", "multi"]
-VERSION = "9.0b3"
-OLD_VERSION = "9.0b2"
-OLD_BUILDNUM = 1
-BUILDNUM = 1
+#VERSION = "9.0b3"
+#BUILDNUM = 1
 TAG = "FENNEC_9_0b3_RELEASE"
 AUS_SERVER = "dev-stage01.build.mozilla.org"
 FTP_SERVER = "dev-stage01.build.mozilla.org"
@@ -17,7 +15,8 @@ APK_BASE_NAME = "fennec-%(version)s.%(locale)s.android-arm.apk"
 # because sign_android-0.8.sh renamed these wrong :(
 BUILDID_BASE_URL = DOWNLOAD_BASE_URL + "/%(platform)_info.txt"
 OLD_BUILDID_BASE_URL = DOWNLOAD_BASE_URL + "/linux-android_info.txt"
-FFXBLD_KEY = '%s/.ssh/ffxbld_dsa' % os.environ['HOME']
+FFXBLD_SSH_KEY = '%s/.ssh/ffxbld_dsa' % os.environ['HOME']
+CLTBLD_SSH_KEY = '%s/.ssh/cltbld_dsa' % os.environ['HOME']
 
 RELEASE_UPDATE_URL = "http://download.mozilla.org/?product=fennec-%(version)s-complete&os=%(platform)s&lang=%(locale)s"
 BETATEST_UPDATE_URL = "http://stage.mozilla.org/pub/mozilla.org/mobile/candidates/%(version)s-candidates/build%(buildnum)d/%(apk_name)s"
@@ -46,7 +45,9 @@ config = {
     "work_dir": WORK_DIR,
 
     "locales": LOCALES,
-    "locales_file": "configs/mozilla/l10n-changesets_mobile-beta.json",
+    "locales_file": "buildbot-configs/mozilla/l10n-changesets_mobile-beta.json",
+    "release_config_file": "buildbot-configs/mozilla/staging_release-fennec-mozilla-beta.py",
+
     "platforms": ['android'],
     "update_platforms": ['android'],
     "update_channels": {
@@ -63,6 +64,7 @@ config = {
             'template': SNIPPET_TEMPLATE,
         },
     },
+    "ftp_upload_base_dir": FTP_UPLOAD_BASE_DIR,
 
     "apk_base_name": APK_BASE_NAME,
     "unsigned_apk_base_name": 'gecko-unsigned-unaligned.apk',
@@ -71,11 +73,6 @@ config = {
     "download_signed_base_subdir": "%(platform)s/%(locale)s",
     "buildid_base_url": OLD_BUILDID_BASE_URL,
     "old_buildid_base_url": OLD_BUILDID_BASE_URL,
-
-    "version": VERSION,
-    "buildnum": BUILDNUM,
-    "old_version": VERSION,
-    "old_buildnum": OLD_BUILDNUM,
 
     "keystore": KEYSTORE,
     "key_alias": KEY_ALIAS,
@@ -92,6 +89,6 @@ config = {
         "dest": "tools",
     },{
         "repo": "http://hg.mozilla.org/%(user_repo_override)s/buildbot-configs",
-        "dest": "configs",
+        "dest": "buildbot-configs",
     }],
 }

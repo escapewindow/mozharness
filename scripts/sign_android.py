@@ -157,6 +157,13 @@ class SignAndroid(LocalesMixin, MercurialScript):
       "help": "Specify the platform(s) to create update snippets for"
      }
     ],[
+     ['--release-config-file',],
+     {"action": "store",
+      "dest": "release_config_file",
+      "type": "string",
+      "help": "Specify the release config file to use"
+     }
+    ],[
      ['--version',],
      {"action": "store",
       "dest": "version",
@@ -205,6 +212,7 @@ class SignAndroid(LocalesMixin, MercurialScript):
     def __init__(self, require_config_file=True):
         self.store_passphrase = os.environ.get('android_storepass')
         self.key_passphrase = os.environ.get('android_keypass')
+        self.release_config = {}
         LocalesMixin.__init__(self)
         MercurialScript.__init__(self,
             config_options=self.config_options,
@@ -237,6 +245,43 @@ class SignAndroid(LocalesMixin, MercurialScript):
         )
 
     # Helper methods {{{2
+    def query_release_config(self):
+        if self.release_config:
+            return self.release_config
+        c = self.config
+        if c.get("release_config_file"):
+            self.info("Getting release config from %s..." % c["release_config_file"])
+            rc = None
+            try:
+                rc = self.parse_config_file(
+                    c["release_config_file"],
+                    config_dict_name="releaseConfig"
+                )
+            except IOError:
+                self.fatal("Release config file %s not found!" % c["release_config_file"])
+            except RuntimeError:
+                self.fatal("Invalid release config file %s!" % c["release_config_file"])
+            self.release_config['version'] = rc['version']
+            self.release_config['buildnum'] = rc['buildNumber']
+            self.release_config['old_version'] = rc['oldVersion']
+            self.release_config['old_buildnum'] = rc['oldBuildNumber']
+            self.release_config['ftp_server'] = rc['ftpServer']
+            # TODO verify these are right
+            self.release_config['ftp_user'] = rc['hgUsername']
+            self.release_config['ftp_ssh_key'] = rc['hgSshKey']
+            #
+            self.release_config['aus_server'] = rc['stagingServer']
+            self.release_config['aus_user'] = rc['ausUser']
+            self.release_config['aus_ssh_key'] = rc['ausSshKey']
+        else:
+            self.info("No release config file; using default config.")
+            for key in ('version', 'buildnum', 'old_version', 'old_buildnum',
+                        'ftp_server', 'ftp_user', 'ftp_ssh_key',
+                        'aus_server', 'aus_user', 'aus_ssh_key',):
+                self.release_config[key] = c[key]
+        self.info("Release config:\n%s" % self.release_config)
+        return self.release_config
+
     # TODO query_filesize and query_sha512sum probably belong in
     # mozharness.base somewhere
     def query_filesize(self, file_path):
@@ -258,14 +303,19 @@ class SignAndroid(LocalesMixin, MercurialScript):
         self.info(" %s" % sha512)
         return sha512
 
-    def query_buildid(self, platform, base_url):
+    def query_buildid(self, platform, base_url, buildnum=None, version=None):
         c = self.config
+        rc = self.query_release_config()
         locales = self.query_locales()
         replace_dict = {
-            'buildnum': c['buildnum'],
-            'version': c['version'],
+            'buildnum': rc['buildnum'],
+            'version': rc['version'],
             'platform': platform,
         }
+        if buildnum:
+            replace_dict['buildnum'] = buildnum
+        if version:
+            replace_dict['version'] = version
         url = base_url % replace_dict
         # TODO stop using curl
         output = self.get_output_from_command(["curl", "--silent", url])
@@ -338,14 +388,15 @@ class SignAndroid(LocalesMixin, MercurialScript):
 
     def download_unsigned_bits(self):
         c = self.config
+        rc = self.query_release_config()
         dirs = self.query_abs_dirs()
         locales = self.query_locales()
         base_url = c['download_base_url'] + '/' + \
                    c['download_unsigned_base_subdir'] + '/' + \
                    c.get('unsigned_apk_base_name', 'gecko-unsigned-unaligned.apk')
         replace_dict = {
-            'buildnum': c['buildnum'],
-            'version': c['version'],
+            'buildnum': rc['buildnum'],
+            'version': rc['version'],
         }
         successful_count = 0
         total_count = 0
@@ -355,7 +406,7 @@ class SignAndroid(LocalesMixin, MercurialScript):
                 replace_dict['locale'] = locale
                 url = base_url % replace_dict
                 parent_dir = '%s/%s/%s' % (dirs['abs_work_dir'],
-                                                    platform, locale)
+                                           platform, locale)
                 file_path = '%s/gecko_unsigned_unaligned.apk' % parent_dir
                 self.mkdir_p(parent_dir)
                 total_count += 1
@@ -377,6 +428,7 @@ class SignAndroid(LocalesMixin, MercurialScript):
 
     def sign(self):
         c = self.config
+        rc = self.query_release_config()
         dirs = self.query_abs_dirs()
         locales = self.query_locales()
         successful_count = 0
@@ -385,11 +437,11 @@ class SignAndroid(LocalesMixin, MercurialScript):
         for platform in c['platforms']:
             for locale in locales:
                 parent_dir = '%s/%s/%s' % (dirs['abs_work_dir'],
-                                                    platform, locale)
+                                           platform, locale)
                 unsigned_unaligned_path = '%s/gecko_unsigned_unaligned.apk' % parent_dir
                 unaligned_path = '%s/gecko_unaligned.apk' % parent_dir
                 signed_path = '%s/%s' % (parent_dir,
-                    c['apk_base_name'] % {'version': c['version'],
+                    c['apk_base_name'] % {'version': rc['version'],
                                           'locale': locale})
                 self.mkdir_p(parent_dir)
                 total_count += 1
@@ -413,6 +465,7 @@ class SignAndroid(LocalesMixin, MercurialScript):
 
     def verify_signatures(self):
         c = self.config
+        rc = self.query_release_config()
         dirs = self.query_abs_dirs()
         verification_error_list = BaseErrorList + [{
             "regex": re.compile(r'''^Invalid$'''),
@@ -423,7 +476,7 @@ class SignAndroid(LocalesMixin, MercurialScript):
         for platform in c['platforms']:
             for locale in locales:
                 signed_path = '%s/%s/%s' % (platform, locale,
-                    c['apk_base_name'] % {'version': c['version'],
+                    c['apk_base_name'] % {'version': rc['version'],
                                           'locale': locale})
                 self.run_command([c['signature_verification_script'],
                                   '--tools-dir=tools/',
@@ -438,11 +491,12 @@ class SignAndroid(LocalesMixin, MercurialScript):
 
     def create_snippets(self):
         c = self.config
+        rc = self.query_release_config()
         dirs = self.query_abs_dirs()
         locales = self.query_locales()
         replace_dict = {
-            'version': c['version'],
-            'buildnum': c['buildnum'],
+            'version': rc['version'],
+            'buildnum': rc['buildnum'],
         }
         total_count = 0
         successful_count = 0
