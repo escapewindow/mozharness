@@ -109,7 +109,14 @@ class SignAndroid(LocalesMixin, MercurialScript):
      {"action": "extend",
       "dest": "locales",
       "type": "string",
-      "help": "Specify the locale(s) to sign"
+      "help": "Specify the locale(s) to sign and update"
+     }
+    ],[
+     ['--locales-file',],
+     {"action": "store",
+      "dest": "locales_file",
+      "type": "string",
+      "help": "Specify a json file to determine which locales to sign and update"
      }
     ],[
      ['--tag-override',],
@@ -181,10 +188,16 @@ class SignAndroid(LocalesMixin, MercurialScript):
       "metavar": "INT",
       "help": "Specify the release build num to update from (e.g. build1, build2)"
      }
+    ],[
+     ['--keystore',],
+     {"action": "store",
+      "dest": "keystore",
+      "type": "string",
+      "help": "Specify the location of the signing keystore"
+     }
 
 # TODO unsigned url, signed url, ssh key/user/server/path,
-# --keystore
-# previous build signed url, --ignore-locale, locales_file
+# previous build signed url,
 # aus key/user/server/path
 # verify aus url?
     ]]
