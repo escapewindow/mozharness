@@ -180,7 +180,7 @@ pre-context-line setting in error_list.)
                     if error_check['substr'] in line:
                         match = True
                 elif 'regex' in error_check:
-                    if re.search(error_check['regex'], line):
+                    if error_check['regex'].search(line):
                         match = True
                 else:
                     self.warn("error_list: 'substr' and 'regex' not in %s" % \

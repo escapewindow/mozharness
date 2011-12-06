@@ -354,8 +354,8 @@ class ShellMixin(object):
         TODO: print env if set
 
         error_list example:
-        [{'regex': '^Error: LOL J/K', level=IGNORE},
-         {'regex': '^Error:', level=ERROR, contextLines='5:5'},
+        [{'regex': re.compile('^Error: LOL J/K'), level=IGNORE},
+         {'regex': re.compile('^Error:'), level=ERROR, contextLines='5:5'},
          {'substr': 'THE WORLD IS ENDING', level=FATAL, contextLines='20:'}
         ]
         """
@@ -715,7 +715,7 @@ class BaseScript(ShellMixin, OSMixin, LogMixin, object):
                 oldest_backup = None
                 backup_regex = re.compile("^%s\.(\d+)$" % dest_file)
                 for filename in os.listdir(dest_dir):
-                    r = re.match(backup_regex, filename)
+                    r = backup_regex.match(filename)
                     if r and r.groups()[0] > oldest_backup:
                         oldest_backup = r.groups()[0]
                 for backup_num in range(oldest_backup, 0, -1):

@@ -53,6 +53,7 @@ sys.path.insert(1, os.path.dirname(sys.path[0]))
 
 from copy import deepcopy
 import getpass
+import re
 import subprocess
 
 from mozharness.base.errors import BaseErrorList, SSHErrorList
@@ -71,11 +72,11 @@ BASE_JARSIGNER_ERROR_LIST = [{
     "level": FATAL,
     "explanation": "The store passphrase is probably incorrect!",
 },{
-    "regex": "jarsigner: key associated with .* not a private key",
+    "regex": re.compile("jarsigner: key associated with .* not a private key"),
     "level": FATAL,
     "explanation": "The key passphrase is probably incorrect!",
 },{
-    "regex": "jarsigner error: java.lang.RuntimeException: keystore load: .* .No such file or directory",
+    "regex": re.compile("jarsigner error: java.lang.RuntimeException: keystore load: .* .No such file or directory"),
     "level": FATAL,
     "explanation": "The keystore doesn't exist!",
 }]
@@ -364,7 +365,7 @@ class SignAndroid(LocalesMixin, MercurialScript):
         c = self.config
         dirs = self.query_abs_dirs()
         verification_error_list = BaseErrorList + [{
-            "regex": r'''^Invalid$''',
+            "regex": re.compile(r'''^Invalid$'''),
             "level": FATAL,
             "explanation": "Signature is invalid!"
         }]

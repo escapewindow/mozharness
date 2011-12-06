@@ -50,6 +50,8 @@ appropriate level (please don't die on any errors; please die on any
 warning; etc.) or platform or language or whatever.
 """
 
+import re
+
 from mozharness.base.log import DEBUG, INFO, WARNING, ERROR, CRITICAL, FATAL, IGNORE
 
 # Exceptions
@@ -80,7 +82,7 @@ SSHErrorList = BaseErrorList + [
 ]
 
 HgErrorList = BaseErrorList + [
- {'regex': r'''^abort:''', 'level': ERROR},
+ {'regex': re.compile(r'''^abort:'''), 'level': ERROR},
  {'substr': r'''unknown exception encountered''', 'level': ERROR},
 ]
 
@@ -90,19 +92,19 @@ PythonErrorList = BaseErrorList + [
  {'substr': r'''TypeError: ''', 'level': ERROR},
  {'substr': r'''NameError: ''', 'level': ERROR},
  {'substr': r'''ZeroDivisionError: ''', 'level': ERROR},
- {'regex': r'''raise \w*Exception: ''', 'level': CRITICAL},
- {'regex': r'''raise \w*Error: ''', 'level': CRITICAL},
+ {'regex': re.compile(r'''raise \w*Exception: '''), 'level': CRITICAL},
+ {'regex': re.compile(r'''raise \w*Error: '''), 'level': CRITICAL},
 ]
 
 # We may need to have various MakefileErrorLists for differing amounts of
 # warning-ignoring-ness.
 MakefileErrorList = BaseErrorList + [
  {'substr': r'''No rule to make target ''', 'level': ERROR},
- {'regex': r'''akefile.*was not found\.''', 'level': ERROR},
- {'regex': r'''Stop\.$''', 'level': ERROR},
- {'regex': r''':\d+: error:''', 'level': ERROR},
- {'regex': r'''make\[\d+\]: \*\*\* \[.*\] Error \d+''', 'level': ERROR},
- {'regex': r''':\d+: warning:''', 'level': WARNING},
+ {'regex': re.compile(r'''akefile.*was not found\.'''), 'level': ERROR},
+ {'regex': re.compile(r'''Stop\.$'''), 'level': ERROR},
+ {'regex': re.compile(r''':\d+: error:'''), 'level': ERROR},
+ {'regex': re.compile(r'''make\[\d+\]: \*\*\* \[.*\] Error \d+'''), 'level': ERROR},
+ {'regex': re.compile(r''':\d+: warning:'''), 'level': WARNING},
  {'substr': r'''Warning: ''', 'level': WARNING},
 ]
 

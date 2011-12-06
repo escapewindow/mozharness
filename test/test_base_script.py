@@ -1,5 +1,6 @@
 import gc
 import os
+import re
 import shutil
 import subprocess
 import sys
@@ -163,7 +164,7 @@ class TestScript(unittest.TestCase):
                       error_list=[{
                        'substr': "error", 'level': ERROR
                       },{
-                       'regex': ',$', 'level': IGNORE,
+                       'regex': re.compile(',$'), 'level': IGNORE,
                       },{
                        'substr': ']$', 'level': WARNING,
                       }])
