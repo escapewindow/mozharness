@@ -103,9 +103,10 @@ class OSMixin(object):
         return 0
 
     def _is_windows(self):
-        if platform.system() in ("Windows",):
+        system = platform.system()
+        if system in ("Windows", "Microsoft"):
             return True
-        if platform.system().startswith("CYGWIN"):
+        if system.startswith("CYGWIN"):
             return True
 
     def _rmdir_recursive(self, path):
@@ -146,19 +147,24 @@ class OSMixin(object):
 
     # http://www.techniqal.com/blog/2008/07/31/python-file-read-write-with-urllib2/
     # TODO thinking about creating a transfer object.
-    def download_file(self, url, file_name=None,
-                     error_level=ERROR, exit_code=-1):
+    def download_file(self, url, file_name=None, parent_dir=None,
+                      create_parent_dir=True, error_level=ERROR,
+                      exit_code=-1):
         """Python wget.
-        TODO: option to mkdir_p dirname(file_name) if it doesn't exist.
-        TODO: parent_dir option.
         TODO: should noop touch the filename? seems counter-noop.
         TODO: the initial log line should say "Downloading url to file_name"
         """
         message = ""
         if not file_name:
-            file_name = self.get_filename_from_url(url)
-        else:
-            message = " to %s" % file_name
+            try:
+                file_name = self.get_filename_from_url(url)
+            except AttributeError:
+                self.log("Unable to get filename from %s; bad url?" % url,
+                         level=error_level, exit_code=exit_code)
+                return
+        if parent_dir:
+            file_name = os.path.join(parent_dir, file_name)
+        parent_dir = os.path.dirname(file_name)
         if self.config.get('noop'):
             self.info("Downloading %s%s" % (url, message))
             return file_name
@@ -166,6 +172,8 @@ class OSMixin(object):
         try:
             self.info("Downloading %s%s" % (url, message))
             f = urllib2.urlopen(req)
+            if create_parent_dir and parent_dir:
+                self.mkdir_p(parent_dir)
             local_file = open(file_name, 'wb')
             local_file.write(f.read())
             local_file.close()
@@ -192,7 +200,10 @@ class OSMixin(object):
         # determine directory to extract to
         if extdir is None:
             extdir = os.path.dirname(path)
-        elif not os.path.exists(extdir):
+        elif not os.path.isdir(extdir):
+            if os.path.isfile(extdir):
+                self.log("%s is a file!" % extdir, level=error_level,
+                         exit_code=exit_code)
             self.mkdir_p(extdir)
         self.info("Extracting %s to %s" % (os.path.abspath(path),
                                            os.path.abspath(extdir)))
@@ -200,13 +211,27 @@ class OSMixin(object):
             if zipfile.is_zipfile(path):
                 bundle = zipfile.ZipFile(path)
                 namelist = bundle.namelist()
+                if hasattr(bundle, 'extractall'):
+                    bundle.extractall(path=extdir)
+                # zipfile.extractall doesn't exist in Python 2.5
+                else:
+                    for name in namelist:
+                        filename = os.path.realpath(os.path.join(extdir, name))
+                        if name.endswith("/"):
+                            os.makedirs(filename)
+                        else:
+                            path = os.path.dirname(filename)
+                            if not os.path.isdir(path):
+                                os.makedirs(path)
+                            dest = open(filename, "wb")
+                            dest.write(bundle.read(name))
             elif tarfile.is_tarfile(path):
                 bundle = tarfile.open(path)
                 namelist = bundle.getnames()
+                bundle.extractall(path=extdir)
             else:
-                # unkown filetype
+                # unknown filetype
                 self.warning("Unsupported file type: %s" % path)
-            bundle.extractall(path=extdir)
             bundle.close()
         except (zipfile.BadZipfile, zipfile.LargeZipFile,
                 tarfile.ReadError, tarfile.CompressionError), e:
@@ -221,13 +246,11 @@ class OSMixin(object):
         # namelist returns paths with forward slashes even in windows
         top_level_files = [os.path.join(extdir, name) for name in namelist
                                  if len(name.rstrip('/').split('/')) == 1]
-        # namelist doesn't include folders  in windows, append these to the list
-        if platform.system() == "Windows":
-            for name in namelist:
-                root = name[:name.find('/')]
-                if root not in top_level_files:
-                    top_level_files.append(root)
-        # return list of paths of top level extracted files
+        # namelist doesn't include folders, append these to the list
+        for name in namelist:
+            root = os.path.join(extdir, name[:name.find('/')])
+            if root not in top_level_files:
+                top_level_files.append(root)
         return top_level_files
 
     def move(self, src, dest, log_level=INFO, error_level=ERROR,
@@ -343,7 +366,7 @@ class ShellMixin(object):
         return self.config.get(exe_dict, {}).get(exe_name, exe_name)
 
     def run_command(self, command, cwd=None, error_list=None, parse_at_end=False,
-                    halt_on_failure=False, success_codes=[0],
+                    halt_on_failure=False, success_codes=None,
                     env=None, return_type='status', throw_exception=False):
         """Run a command, with logging and error parsing.
 
@@ -361,6 +384,8 @@ class ShellMixin(object):
         """
         if error_list is None:
             error_list = []
+        if success_codes is None:
+            success_codes = [0]
         if cwd:
             if not os.path.isdir(cwd):
                 level = ERROR
