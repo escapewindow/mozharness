@@ -75,12 +75,12 @@ config = {
     "keystore": KEYSTORE,
     "key_alias": KEY_ALIAS,
     "exes": {
-        "jarsigner": "/usr/bin/jarsigner",
-        "zipalign": "/Users/asasaki/wrk/android-tools/android-sdk-mac_x86/tools/zipalign",
+        "jarsigner": JARSIGNER,
+        "zipalign": "/tools/android-sdk-r13/tools/zipalign",
     },
     "signature_verification_script": "tools/release/signing/verify-android-signature.sh",
 
-    "user_repo_override": "build",
+    "user_repo_override": "users/asasaki_mozilla.com",
     "tag_override": TAG,
     "repos": [{
         "repo": "http://hg.mozilla.org/%(user_repo_override)s/tools",

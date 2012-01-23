@@ -56,6 +56,7 @@ import getpass
 import re
 import subprocess
 
+from mozharness.base.config import parse_config_file
 from mozharness.base.errors import BaseErrorList, SSHErrorList
 from mozharness.base.log import OutputParser, DEBUG, INFO, WARNING, ERROR, \
      CRITICAL, FATAL, IGNORE
@@ -64,7 +65,7 @@ from mozharness.l10n.locales import LocalesMixin
 
 # So far this only references the ftp platform name.
 SUPPORTED_PLATFORMS = ["android", "android-xul"]
-BASE_JARSIGNER_ERROR_LIST = [{
+JARSIGNER_ERROR_LIST = [{
     "substr": "command not found",
     "level": FATAL,
 },{
@@ -79,16 +80,15 @@ BASE_JARSIGNER_ERROR_LIST = [{
     "regex": re.compile("jarsigner error: java.lang.RuntimeException: keystore load: .* .No such file or directory"),
     "level": FATAL,
     "explanation": "The keystore doesn't exist!",
-}]
-JARSIGNER_ERROR_LIST = BASE_JARSIGNER_ERROR_LIST + [{
+},{
     "substr": "jarsigner: unable to open jar file:",
     "level": FATAL,
     "explanation": "The apk is missing!",
 }]
-TEST_JARSIGNER_ERROR_LIST = BASE_JARSIGNER_ERROR_LIST + [{
+TEST_JARSIGNER_ERROR_LIST = [{
     "substr": "jarsigner: unable to open jar file:",
     "level": IGNORE,
-}]
+}] + JARSIGNER_ERROR_LIST
 
 # From http://bytes.com/topic/python/answers/26569-finding-file-size,
 # for query_filesize()
@@ -249,12 +249,14 @@ class SignAndroid(LocalesMixin, MercurialScript):
         if self.release_config:
             return self.release_config
         c = self.config
+        dirs = self.query_abs_dirs()
         if c.get("release_config_file"):
             self.info("Getting release config from %s..." % c["release_config_file"])
             rc = None
             try:
-                rc = self.parse_config_file(
-                    c["release_config_file"],
+                rc = parse_config_file(
+                    os.path.join(dirs['abs_work_dir'],
+                                 c["release_config_file"]),
                     config_dict_name="releaseConfig"
                 )
             except IOError:
