@@ -3,7 +3,7 @@
 import os
 
 LOCALES = ["en-US", "multi"]
-TAG = "FENNEC_9_0b3_RELEASE"
+TAG = "FENNEC_10_0b5_RELEASE"
 AUS_SERVER = "dev-stage01.build.mozilla.org"
 FTP_SERVER = "dev-stage01.build.mozilla.org"
 FTP_UPLOAD_BASE_DIR = "/pub/mozilla.org/mobile/%(version)s-candidates/build%(buildnum)d"
@@ -80,7 +80,7 @@ config = {
     },
     "signature_verification_script": "tools/release/signing/verify-android-signature.sh",
 
-    "user_repo_override": "users/asasaki_mozilla.com",
+    "user_repo_override": "build",
     "tag_override": TAG,
     "repos": [{
         "repo": "http://hg.mozilla.org/%(user_repo_override)s/tools",

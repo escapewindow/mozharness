@@ -413,7 +413,7 @@ class SignAndroid(LocalesMixin, MercurialScript):
                 self.mkdir_p(parent_dir)
                 total_count += 1
                 if not self.download_file(url, file_path):
-                    self.add_summary("Unable to download %s:%s unsigned apk!",
+                    self.add_summary("Unable to download %s:%s unsigned apk!" % (platform, locale),
                                      level=ERROR)
                 else:
                     successful_count += 1
