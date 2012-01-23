@@ -475,6 +475,7 @@ class SignAndroid(LocalesMixin, MercurialScript):
             "explanation": "Signature is invalid!"
         }]
         locales = self.query_locales()
+        env = self.query_env(partial_env=c.get("env"))
         for platform in c['platforms']:
             for locale in locales:
                 signed_path = '%s/%s/%s' % (platform, locale,
@@ -485,6 +486,7 @@ class SignAndroid(LocalesMixin, MercurialScript):
                                   '--%s' % c['key_alias'],
                                   '--apk=%s' % signed_path],
                                  cwd=dirs['abs_work_dir'],
+                                 env=env,
                                  error_list=verification_error_list)
 
     def upload_signed_bits(self):

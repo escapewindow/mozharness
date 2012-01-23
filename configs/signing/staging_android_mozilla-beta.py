@@ -34,7 +34,8 @@ KEYSTORE = "%s/.android/android.keystore" % os.environ['HOME']
 BASE_WORK_DIR = "%s/signing-work/fennec-beta" % os.getcwd()
 WORK_DIR = "build"
 
-JARSIGNER = "/tools/jdk6/bin/jarsigner"
+JAVA_HOME = "/tools/jdk6"
+JARSIGNER = "%s/bin/jarsigner" % JAVA_HOME
 KEY_ALIAS = "nightly"
 
 config = {
@@ -74,6 +75,9 @@ config = {
 
     "keystore": KEYSTORE,
     "key_alias": KEY_ALIAS,
+    "env": {
+        "PATH": "%(PATH)s:" + JAVA_HOME + "/bin",
+    },
     "exes": {
         "jarsigner": JARSIGNER,
         "zipalign": "/tools/android-sdk-r13/tools/zipalign",
