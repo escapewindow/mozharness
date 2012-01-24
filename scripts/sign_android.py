@@ -512,7 +512,9 @@ class SignAndroid(LocalesMixin, MercurialScript):
         successful_count = {'snippets': 0, 'links': 0}
         for platform in c['update_platforms']:
             buildid = self.query_buildid(platform, c['buildid_base_url'])
-            old_buildid = self.query_buildid(platform, c['old_buildid_base_url'])
+            old_buildid = self.query_buildid(platform, c['old_buildid_base_url'],
+                                             buildnum=rc['old_buildnum'],
+                                             version=rc['old_version'])
             if not buildid:
                 self.add_summary("Can't get buildid for %s! Skipping..." % platform, level=ERROR)
                 continue
@@ -542,7 +544,7 @@ class SignAndroid(LocalesMixin, MercurialScript):
                     self.mkdir_p(previous_dir)
                     status = self.run_command(
                         ['ln', '-s',
-                         '../../../../../%s/%s/latest-%s' % (platform, locale, channel),
+                         '../../../../snippets/%s/%s/latest-%s' % (platform, locale, channel),
                          channel],
                         cwd=previous_dir, error_list=BaseErrorList
                     )
@@ -550,7 +552,7 @@ class SignAndroid(LocalesMixin, MercurialScript):
                         successful_count['links'] += 1
                     # Create snippet
                     contents = channel_dict['template'] % replace_dict
-                    snippet_dir = "%s/update/%s/snippets/%s/%s" % (
+                    snippet_dir = "%s/update/%s/Fennec/snippets/%s/%s" % (
                       dirs['abs_work_dir'],
                       channel_dict['dir_base_name'] % (replace_dict),
                       platform, locale)
