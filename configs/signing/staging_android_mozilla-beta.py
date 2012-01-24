@@ -6,6 +6,8 @@ LOCALES = ["en-US", "multi"]
 TAG = "FENNEC_10_0b5_RELEASE"
 AUS_SERVER = "dev-stage01.build.mozilla.org"
 FTP_SERVER = "dev-stage01.build.mozilla.org"
+#AUS_UPLOAD_BASE_DIR = "/opt/aus2/incoming/3/Fennec"
+AUS_UPLOAD_BASE_DIR = "/opt/aus2/snippets/staging/Fennec-%(version)s-build%(buildnum)d"
 FTP_UPLOAD_BASE_DIR = "/pub/mozilla.org/mobile/candidates/%(version)s-candidates/build%(buildnum)d"
 #DOWNLOAD_BASE_URL = "http://%s%s" % (FTP_SERVER, FTP_UPLOAD_BASE_DIR)
 DOWNLOAD_BASE_URL = "http://ftp.mozilla.org/pub/mozilla.org/mobile/candidates/%(version)s-candidates/build%(buildnum)d"
@@ -68,6 +70,12 @@ config = {
     # which doesn't work with dev-stage01.
     "ftp_ssh_key": FFXBLD_SSH_KEY,
     "ftp_user": "ffxbld",
+    "aus_upload_base_dir": AUS_UPLOAD_BASE_DIR,
+    # TODO push to the basedir, -test for releasetest and betatest.
+    # no -test for release.
+    # --create-previous-links
+    # get rid of push-*-snippets or consolidate
+    # add backupsnip/pushsnip steps?
 
     "apk_base_name": APK_BASE_NAME,
     "unsigned_apk_base_name": 'gecko-unsigned-unaligned.apk',
