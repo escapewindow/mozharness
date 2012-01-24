@@ -546,7 +546,7 @@ class SignAndroid(LocalesMixin, MercurialScript):
                     total_count += 1
                     replace_dict['url'] = channel_dict['url'] % replace_dict
                     contents = channel_dict['template'] % replace_dict
-                    snippet_dir = "%s/update/%s/%s" % (dirs['abs_work_dir'], platform, locale)
+                    snippet_dir = "%s/snippets/%s/%s" % (dirs['abs_work_dir'], platform, locale)
                     snippet_file = "%s/latest-%s" % (snippet_dir, channel)
                     self.info("Creating snippet for %s %s %s" % (platform, locale, channel))
                     self.mkdir_p(snippet_dir)
@@ -566,8 +566,28 @@ class SignAndroid(LocalesMixin, MercurialScript):
                          (successful_count, total_count), level=level)
 
     def upload_snippets(self):
-        # TODO writeme
-        self.warning("Not implemented yet.")
+        c = self.config
+        rc = self.query_release_config()
+        dirs = self.query_abs_dirs()
+        update_dir = os.path.join(dirs['abs_work_dir'], 'snippets')
+        if not os.path.exists(update_dir):
+            self.error("No such directory %s! Skipping..." % update_dir)
+            return
+        rsync = self.query_exe("rsync")
+        ssh = self.query_exe("ssh")
+        ftp_upload_dir = c['ftp_upload_base_dir'] % {
+            'version': rc['version'],
+            'buildnum': rc['buildnum'],
+        }
+        cmd = [ssh, '-i', rc['ftp_ssh_key'],
+               '%s@%s' % (rc['ftp_user'], rc['ftp_server']),
+               'mkdir', '-p', ftp_upload_dir]
+        self.run_command(cmd, cwd=dirs['abs_work_dir'],
+                         error_list=SSHErrorList)
+        cmd = [rsync, '-e', 'ssh -i %s' % rc['ftp_ssh_key'], '-azv', 'snippets']
+        cmd += ["%s@%s:%s/" % (rc['ftp_user'], rc['ftp_server'], ftp_upload_dir)]
+        self.run_command(cmd, cwd=dirs['abs_work_dir'],
+                         error_list=SSHErrorList)
 
 
 
