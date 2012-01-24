@@ -39,8 +39,6 @@
 
 """
 # TODO partner repacks downloading/signing
-# TODO query_unsigned_paths() type methods that return a list of all
-#      [unsigned] directories for all platforms/locales
 # TODO split out signing and transfers to helper objects so we can do
 #      the downloads/signing/uploads in parallel, speeding that up
 
@@ -202,11 +200,6 @@ class SignAndroid(LocalesMixin, MercurialScript):
       "type": "string",
       "help": "Specify the location of the signing keystore"
      }
-
-# TODO unsigned url, signed url, ssh key/user/server/path,
-# previous build signed url,
-# aus key/user/server/path
-# verify aus url?
     ]]
 
     def __init__(self, require_config_file=True):
@@ -254,10 +247,8 @@ class SignAndroid(LocalesMixin, MercurialScript):
             self.release_config['old_version'] = rc['oldVersion']
             self.release_config['old_buildnum'] = rc['oldBuildNumber']
             self.release_config['ftp_server'] = rc['ftpServer']
-            # TODO verify these are right
             self.release_config['ftp_user'] = c.get('ftp_user', rc['hgUsername'])
             self.release_config['ftp_ssh_key'] = c.get('ftp_ssh_key', rc['hgSshKey'])
-            #
             self.release_config['aus_server'] = rc['stagingServer']
             self.release_config['aus_user'] = rc['ausUser']
             self.release_config['aus_ssh_key'] = os.path.join(os.environ['HOME'], '.ssh', rc['ausSshKey'])
