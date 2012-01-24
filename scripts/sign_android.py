@@ -226,9 +226,6 @@ class SignAndroid(LocalesMixin, MercurialScript):
                 "upload-signed-bits",
                 "create-snippets",
                 "upload-snippets",
-                "push-betatest-snippets",
-                "push-releasetest-snippets",
-                "push-release-snippets",
             ],
             default_actions=[
                 "passphrase",
@@ -274,7 +271,7 @@ class SignAndroid(LocalesMixin, MercurialScript):
             #
             self.release_config['aus_server'] = rc['stagingServer']
             self.release_config['aus_user'] = rc['ausUser']
-            self.release_config['aus_ssh_key'] = rc['ausSshKey']
+            self.release_config['aus_ssh_key'] = os.path.join(os.environ['HOME'], '.ssh', rc['ausSshKey'])
         else:
             self.info("No release config file; using default config.")
             for key in ('version', 'buildnum', 'old_version', 'old_buildnum',
@@ -546,7 +543,10 @@ class SignAndroid(LocalesMixin, MercurialScript):
                     total_count += 1
                     replace_dict['url'] = channel_dict['url'] % replace_dict
                     contents = channel_dict['template'] % replace_dict
-                    snippet_dir = "%s/snippets/%s/%s" % (dirs['abs_work_dir'], platform, locale)
+                    snippet_dir = "%s/snippets/%s/%s/%s" % (
+                      dirs['abs_work_dir'],
+                      channel_dict['dir_base_name'] % (replace_dict),
+                      platform, locale)
                     snippet_file = "%s/latest-%s" % (snippet_dir, channel)
                     self.info("Creating snippet for %s %s %s" % (platform, locale, channel))
                     self.mkdir_p(snippet_dir)
@@ -575,18 +575,19 @@ class SignAndroid(LocalesMixin, MercurialScript):
             return
         rsync = self.query_exe("rsync")
         ssh = self.query_exe("ssh")
-        ftp_upload_dir = c['ftp_upload_base_dir'] % {
+        aus_upload_dir = c['aus_upload_base_dir'] % {
             'version': rc['version'],
             'buildnum': rc['buildnum'],
         }
-        cmd = [ssh, '-i', rc['ftp_ssh_key'],
-               '%s@%s' % (rc['ftp_user'], rc['ftp_server']),
-               'mkdir', '-p', ftp_upload_dir]
+        cmd = [ssh, '-i', rc['aus_ssh_key'],
+               '%s@%s' % (rc['aus_user'], rc['aus_server']),
+               'mkdir', '-p', aus_upload_dir]
         self.run_command(cmd, cwd=dirs['abs_work_dir'],
                          error_list=SSHErrorList)
-        cmd = [rsync, '-e', 'ssh -i %s' % rc['ftp_ssh_key'], '-azv', 'snippets']
-        cmd += ["%s@%s:%s/" % (rc['ftp_user'], rc['ftp_server'], ftp_upload_dir)]
-        self.run_command(cmd, cwd=dirs['abs_work_dir'],
+        cmd = [rsync, '-e', 'ssh -i %s' % rc['aus_ssh_key'], '-azv', '.']
+        cmd += ["%s@%s:%s/." % (rc['aus_user'], rc['aus_server'], aus_upload_dir)]
+        self.run_command(cmd,
+                         cwd=os.path.join(dirs['abs_work_dir'], 'snippets'),
                          error_list=SSHErrorList)
 
 
