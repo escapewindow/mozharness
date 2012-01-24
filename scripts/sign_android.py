@@ -269,8 +269,8 @@ class SignAndroid(LocalesMixin, MercurialScript):
             self.release_config['old_buildnum'] = rc['oldBuildNumber']
             self.release_config['ftp_server'] = rc['ftpServer']
             # TODO verify these are right
-            self.release_config['ftp_user'] = rc['hgUsername']
-            self.release_config['ftp_ssh_key'] = rc['hgSshKey']
+            self.release_config['ftp_user'] = c.get('ftp_user', rc['hgUsername'])
+            self.release_config['ftp_ssh_key'] = c.get('ftp_ssh_key', rc['hgSshKey'])
             #
             self.release_config['aus_server'] = rc['stagingServer']
             self.release_config['aus_user'] = rc['ausUser']
@@ -490,8 +490,28 @@ class SignAndroid(LocalesMixin, MercurialScript):
                                  error_list=verification_error_list)
 
     def upload_signed_bits(self):
-        # TODO writeme
-        self.warning("Not implemented yet.")
+        c = self.config
+        if not c['platforms']:
+            self.info("No platforms to rsync! Skipping...")
+            return
+        rc = self.query_release_config()
+        dirs = self.query_abs_dirs()
+        rsync = self.query_exe("rsync")
+        ssh = self.query_exe("ssh")
+        ftp_upload_dir = c['ftp_upload_base_dir'] % {
+            'version': rc['version'],
+            'buildnum': rc['buildnum'],
+        }
+        cmd = [ssh, '-i', rc['ftp_ssh_key'],
+               '%s@%s' % (rc['ftp_user'], rc['ftp_server']),
+               'mkdir', '-p', ftp_upload_dir]
+        self.run_command(cmd, cwd=dirs['abs_work_dir'],
+                         error_list=SSHErrorList)
+        cmd = [rsync, '-e', 'ssh -i %s' % rc['ftp_ssh_key'], '-azv']
+        cmd += c['platforms']
+        cmd += ["%s@%s:%s/" % (rc['ftp_user'], rc['ftp_server'], ftp_upload_dir)]
+        self.run_command(cmd, cwd=dirs['abs_work_dir'],
+                         error_list=SSHErrorList)
 
     def create_snippets(self):
         c = self.config

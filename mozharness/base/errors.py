@@ -60,11 +60,11 @@ class VCSException(Exception):
 
 # ErrorLists {{{1
 
-# For ssh, scp, rsync over ssh
 BaseErrorList = [
  {'substr': r'''command not found''', 'level': ERROR},
 ]
 
+# For ssh, scp, rsync over ssh
 SSHErrorList = BaseErrorList + [
  {'substr': r'''Name or service not known''', 'level': ERROR},
  {'substr': r'''Could not resolve hostname''', 'level': ERROR},
@@ -78,7 +78,8 @@ SSHErrorList = BaseErrorList + [
  {'substr': r'''WARNING:''', 'level': WARNING},
  {'substr': r'''rsync error:''', 'level': ERROR},
  {'substr': r'''Broken pipe:''', 'level': ERROR},
- {'substr': r'''connection unexpectedly closed:''', 'level': ERROR},
+ {'substr': r'''Permission denied:''', 'level': ERROR},
+ {'substr': r'''connection unexpectedly closed''', 'level': ERROR},
 ]
 
 HgErrorList = BaseErrorList + [

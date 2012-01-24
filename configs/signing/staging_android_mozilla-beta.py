@@ -6,7 +6,7 @@ LOCALES = ["en-US", "multi"]
 TAG = "FENNEC_10_0b5_RELEASE"
 AUS_SERVER = "dev-stage01.build.mozilla.org"
 FTP_SERVER = "dev-stage01.build.mozilla.org"
-FTP_UPLOAD_BASE_DIR = "/pub/mozilla.org/mobile/%(version)s-candidates/build%(buildnum)d"
+FTP_UPLOAD_BASE_DIR = "/pub/mozilla.org/mobile/candidates/%(version)s-candidates/build%(buildnum)d"
 #DOWNLOAD_BASE_URL = "http://%s%s" % (FTP_SERVER, FTP_UPLOAD_BASE_DIR)
 DOWNLOAD_BASE_URL = "http://ftp.mozilla.org/pub/mozilla.org/mobile/candidates/%(version)s-candidates/build%(buildnum)d"
 APK_BASE_NAME = "fennec-%(version)s.%(locale)s.android-arm.apk"
@@ -64,6 +64,10 @@ config = {
         },
     },
     "ftp_upload_base_dir": FTP_UPLOAD_BASE_DIR,
+    # These should be from release_config, but that has stage-ffxbld
+    # which doesn't work with dev-stage01.
+    "ftp_ssh_key": FFXBLD_SSH_KEY,
+    "ftp_user": "ffxbld",
 
     "apk_base_name": APK_BASE_NAME,
     "unsigned_apk_base_name": 'gecko-unsigned-unaligned.apk',
