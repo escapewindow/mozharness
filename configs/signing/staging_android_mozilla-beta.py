@@ -14,7 +14,7 @@ DOWNLOAD_BASE_URL = "http://ftp.mozilla.org/pub/mozilla.org/mobile/candidates/%(
 APK_BASE_NAME = "fennec-%(version)s.%(locale)s.android-arm.apk"
 # because sign_android-0.8.sh renamed these wrong :(
 BUILDID_BASE_URL = DOWNLOAD_BASE_URL + "/%(platform)_info.txt"
-OLD_BUILDID_BASE_URL = DOWNLOAD_BASE_URL + "/linux-android_info.txt"
+OLD_STYLE_BUILDID_BASE_URL = DOWNLOAD_BASE_URL + "/linux-android_info.txt"
 FFXBLD_SSH_KEY = '%s/.ssh/ffxbld_dsa' % os.environ['HOME']
 CLTBLD_SSH_KEY = '%s/.ssh/cltbld_dsa' % os.environ['HOME']
 
@@ -51,6 +51,9 @@ config = {
 
     "platforms": ['android'],
     "update_platforms": ['android'],
+    "update_platform_map": {
+        'android': 'Android_arm-eabi-gcc3',
+    }
     "update_channels": {
         'release': {
             'url': RELEASE_UPDATE_URL,
@@ -82,8 +85,8 @@ config = {
     "download_base_url": DOWNLOAD_BASE_URL,
     "download_unsigned_base_subdir": "unsigned/%(platform)s/%(locale)s",
     "download_signed_base_subdir": "%(platform)s/%(locale)s",
-    "buildid_base_url": OLD_BUILDID_BASE_URL,
-    "old_buildid_base_url": OLD_BUILDID_BASE_URL,
+    "buildid_base_url": OLD_STYLE_BUILDID_BASE_URL,
+    "old_buildid_base_url": OLD_STYLE_BUILDID_BASE_URL,
 
     "keystore": KEYSTORE,
     "key_alias": KEY_ALIAS,
