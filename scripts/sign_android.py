@@ -227,17 +227,6 @@ class SignAndroid(LocalesMixin, MercurialScript):
                 "create-snippets",
                 "upload-snippets",
             ],
-            default_actions=[
-                "passphrase",
-                "clobber",
-                "pull",
-                "download-unsigned-bits",
-                "sign",
-                "verify-signatures",
-                "upload-signed-bits",
-                "create-snippets",
-                "upload-snippets",
-            ],
             require_config_file=require_config_file
         )
 
@@ -519,10 +508,11 @@ class SignAndroid(LocalesMixin, MercurialScript):
             'version': rc['version'],
             'buildnum': rc['buildnum'],
         }
-        total_count = 0
-        successful_count = 0
+        total_count = {'snippets': 0, 'links': 0}
+        successful_count = {'snippets': 0, 'links': 0}
         for platform in c['update_platforms']:
             buildid = self.query_buildid(platform, c['buildid_base_url'])
+            old_buildid = self.query_buildid(platform, c['old_buildid_base_url'])
             if not buildid:
                 self.add_summary("Can't get buildid for %s! Skipping..." % platform, level=ERROR)
                 continue
@@ -540,10 +530,27 @@ class SignAndroid(LocalesMixin, MercurialScript):
                 replace_dict['size'] = self.query_filesize(signed_path)
                 replace_dict['sha512_hash'] = self.query_sha512sum(signed_path)
                 for channel, channel_dict in c['update_channels'].items():
-                    total_count += 1
+                    total_count['snippets'] += 1
+                    total_count['links'] += 1
                     replace_dict['url'] = channel_dict['url'] % replace_dict
+                    # Create previous link
+                    previous_dir = os.path.join(dirs['abs_work_dir'], 'update',
+                                                channel_dict['dir_base_name'] % (replace_dict),
+                                                'Fennec', rc['old_version'],
+                                                c['update_platform_map'][platform],
+                                                old_buildid, locale)
+                    self.mkdir_p(previous_dir)
+                    status = self.run_command(
+                        ['ln', '-s',
+                         '../../../../../%s/%s/latest-%s' % (platform, locale, channel),
+                         channel],
+                        cwd=previous_dir, error_list=BaseErrorList
+                    )
+                    if not status:
+                        successful_count['links'] += 1
+                    # Create snippet
                     contents = channel_dict['template'] % replace_dict
-                    snippet_dir = "%s/snippets/%s/%s/%s" % (
+                    snippet_dir = "%s/update/%s/snippets/%s/%s" % (
                       dirs['abs_work_dir'],
                       channel_dict['dir_base_name'] % (replace_dict),
                       platform, locale)
@@ -558,18 +565,20 @@ class SignAndroid(LocalesMixin, MercurialScript):
                         self.add_summary("Unable to write to %s!" % snippet_file, level=ERROR)
                         self.info("File contents: \n%s" % contents)
                     else:
-                        successful_count += 1
+                        successful_count['snippets'] += 1
         level = INFO
-        if successful_count < total_count:
-            level = ERROR
-        self.add_summary("Created %d of %d snippets successfully." % \
-                         (successful_count, total_count), level=level)
+        for k in successful_count.keys():
+            if successful_count[k] < total_count[k]:
+                level = ERROR
+            self.add_summary("Created %d of %d %s successfully." % \
+                             (successful_count[k], total_count[k], k),
+                             level=level)
 
     def upload_snippets(self):
         c = self.config
         rc = self.query_release_config()
         dirs = self.query_abs_dirs()
-        update_dir = os.path.join(dirs['abs_work_dir'], 'snippets')
+        update_dir = os.path.join(dirs['abs_work_dir'], 'update',)
         if not os.path.exists(update_dir):
             self.error("No such directory %s! Skipping..." % update_dir)
             return
@@ -586,9 +595,7 @@ class SignAndroid(LocalesMixin, MercurialScript):
                          error_list=SSHErrorList)
         cmd = [rsync, '-e', 'ssh -i %s' % rc['aus_ssh_key'], '-azv', '.']
         cmd += ["%s@%s:%s/." % (rc['aus_user'], rc['aus_server'], aus_upload_dir)]
-        self.run_command(cmd,
-                         cwd=os.path.join(dirs['abs_work_dir'], 'snippets'),
-                         error_list=SSHErrorList)
+        self.run_command(cmd, cwd=update_dir, error_list=SSHErrorList)
 
 
 

@@ -53,7 +53,7 @@ config = {
     "update_platforms": ['android'],
     "update_platform_map": {
         'android': 'Android_arm-eabi-gcc3',
-    }
+    },
     "update_channels": {
         'release': {
             'url': RELEASE_UPDATE_URL,
