@@ -78,7 +78,6 @@ config = {
     "ftp_user": "ffxbld",
 
     "aus_upload_base_dir": AUS_UPLOAD_BASE_DIR,
-    # TODO --create-previous-links
 
     "apk_base_name": APK_BASE_NAME,
     "unsigned_apk_base_name": 'gecko-unsigned-unaligned.apk',
