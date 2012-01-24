@@ -80,6 +80,7 @@ SSHErrorList = BaseErrorList + [
  {'substr': r'''Broken pipe:''', 'level': ERROR},
  {'substr': r'''Permission denied:''', 'level': ERROR},
  {'substr': r'''connection unexpectedly closed''', 'level': ERROR},
+ {'substr': r'''Warning: Identity file''', 'level': ERROR},
 ]
 
 HgErrorList = BaseErrorList + [
