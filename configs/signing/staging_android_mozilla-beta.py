@@ -15,8 +15,8 @@ APK_BASE_NAME = "fennec-%(version)s.%(locale)s.android-arm.apk"
 # because sign_android-0.8.sh renamed these wrong :(
 BUILDID_BASE_URL = DOWNLOAD_BASE_URL + "/%(platform)_info.txt"
 OLD_STYLE_BUILDID_BASE_URL = DOWNLOAD_BASE_URL + "/linux-android_info.txt"
-FFXBLD_SSH_KEY = '%s/.ssh/ffxbld_dsa' % os.environ['HOME']
-CLTBLD_SSH_KEY = '%s/.ssh/cltbld_dsa' % os.environ['HOME']
+FFXBLD_SSH_KEY = '~/.ssh/ffxbld_dsa'
+CLTBLD_SSH_KEY = '~/.ssh/id_rsa'
 
 RELEASE_UPDATE_URL = "http://download.mozilla.org/?product=fennec-%(version)s-complete&os=%(platform)s&lang=%(locale)s"
 BETATEST_UPDATE_URL = "http://stage.mozilla.org/pub/mozilla.org/mobile/candidates/%(version)s-candidates/build%(buildnum)d/%(apk_name)s"
@@ -77,6 +77,7 @@ config = {
     "ftp_ssh_key": FFXBLD_SSH_KEY,
     "ftp_user": "ffxbld",
 
+    "aus_ssh_key": CLTBLD_SSH_KEY,
     "aus_upload_base_dir": AUS_UPLOAD_BASE_DIR,
 
     "apk_base_name": APK_BASE_NAME,

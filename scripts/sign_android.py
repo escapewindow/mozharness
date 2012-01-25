@@ -251,7 +251,7 @@ class SignAndroid(LocalesMixin, MercurialScript):
             self.release_config['ftp_ssh_key'] = c.get('ftp_ssh_key', rc['hgSshKey'])
             self.release_config['aus_server'] = rc['stagingServer']
             self.release_config['aus_user'] = rc['ausUser']
-            self.release_config['aus_ssh_key'] = os.path.join(os.environ['HOME'], '.ssh', rc['ausSshKey'])
+            self.release_config['aus_ssh_key'] = c.get('aus_ssh_key', '~/.ssh/%s' % rc['ausSshKey'])
         else:
             self.info("No release config file; using default config.")
             for key in ('version', 'buildnum', 'old_version', 'old_buildnum',
@@ -479,12 +479,12 @@ class SignAndroid(LocalesMixin, MercurialScript):
             'version': rc['version'],
             'buildnum': rc['buildnum'],
         }
-        cmd = [ssh, '-i', rc['ftp_ssh_key'],
+        cmd = [ssh, '-oIdentityFile=%s' % rc['ftp_ssh_key'],
                '%s@%s' % (rc['ftp_user'], rc['ftp_server']),
                'mkdir', '-p', ftp_upload_dir]
         self.run_command(cmd, cwd=dirs['abs_work_dir'],
                          error_list=SSHErrorList)
-        cmd = [rsync, '-e', 'ssh -i %s' % rc['ftp_ssh_key'], '-azv']
+        cmd = [rsync, '-e', 'ssh -oIdentityFile=%s' % rc['ftp_ssh_key'], '-azv']
         cmd += c['platforms']
         cmd += ["%s@%s:%s/" % (rc['ftp_user'], rc['ftp_server'], ftp_upload_dir)]
         self.run_command(cmd, cwd=dirs['abs_work_dir'],
@@ -581,12 +581,12 @@ class SignAndroid(LocalesMixin, MercurialScript):
             'version': rc['version'],
             'buildnum': rc['buildnum'],
         }
-        cmd = [ssh, '-i', rc['aus_ssh_key'],
+        cmd = [ssh, '-oIdentityFile=%s' % rc['aus_ssh_key'],
                '%s@%s' % (rc['aus_user'], rc['aus_server']),
                'mkdir', '-p', aus_upload_dir]
         self.run_command(cmd, cwd=dirs['abs_work_dir'],
                          error_list=SSHErrorList)
-        cmd = [rsync, '-e', 'ssh -i %s' % rc['aus_ssh_key'], '-azv', '.']
+        cmd = [rsync, '-e', 'ssh -oIdentityFile=%s' % rc['aus_ssh_key'], '-azv', '.']
         cmd += ["%s@%s:%s/." % (rc['aus_user'], rc['aus_server'], aus_upload_dir)]
         self.run_command(cmd, cwd=update_dir, error_list=SSHErrorList)
 

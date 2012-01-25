@@ -81,6 +81,7 @@ SSHErrorList = BaseErrorList + [
  {'substr': r'''Permission denied:''', 'level': ERROR},
  {'substr': r'''connection unexpectedly closed''', 'level': ERROR},
  {'substr': r'''Warning: Identity file''', 'level': ERROR},
+ {'substr': r'''command-line line 0: Missing argument''', 'level': ERROR},
 ]
 
 HgErrorList = BaseErrorList + [
