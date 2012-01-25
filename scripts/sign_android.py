@@ -272,9 +272,7 @@ class SignAndroid(LocalesMixin, MercurialScript):
         return sha512
 
     def query_buildid(self, platform, base_url, buildnum=None, version=None):
-        c = self.config
         rc = self.query_release_config()
-        locales = self.query_locales()
         replace_dict = {
             'buildnum': rc['buildnum'],
             'version': rc['version'],
@@ -285,12 +283,15 @@ class SignAndroid(LocalesMixin, MercurialScript):
         if version:
             replace_dict['version'] = version
         url = base_url % replace_dict
+        # ghetto retry.
+        for count in range (1, 11):
         # TODO stop using curl
-        output = self.get_output_from_command(["curl", "--silent", url])
-        if output.startswith("buildID="):
-            return output.replace("buildID=", "")
-        else:
-            self.error("Can't get buildID from %s!" % url)
+            output = self.get_output_from_command(["curl", "--silent", url])
+            if output.startswith("buildID="):
+                return output.replace("buildID=", "")
+            else:
+                self.warning("Can't get buildID from %s (try %d)" % (url, count))
+        self.critical("Can't get buildID from %s!" % url)
 
     def _sign(self, apk, error_list=None):
         c = self.config
