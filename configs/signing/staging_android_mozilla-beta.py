@@ -91,7 +91,7 @@ config = {
     "keystore": KEYSTORE,
     "key_alias": KEY_ALIAS,
     "env": {
-        "PATH": JAVA_HOME + "/bin:%(PATH)s:",
+        "PATH": JAVA_HOME + "/bin:%(PATH)s",
     },
     "exes": {
         "jarsigner": JARSIGNER,
@@ -99,7 +99,7 @@ config = {
     },
     "signature_verification_script": "tools/release/signing/verify-android-signature.sh",
 
-    "user_repo_override": "users/asasaki_mozilla.com",
+    "user_repo_override": "users/stage-ffxbld",
     "tag_override": TAG,
     "repos": [{
         "repo": "http://hg.mozilla.org/%(user_repo_override)s/tools",
