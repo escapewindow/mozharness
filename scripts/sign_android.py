@@ -321,11 +321,9 @@ class SignAndroid(LocalesMixin, MercurialScript):
     # Actions {{{2
     def passphrase(self):
         if not self.store_passphrase:
-            print "(store passphrase): ",
-            self.store_passphrase = getpass.getpass()
+            self.store_passphrase = getpass.getpass("Store passphrase: ")
         if not self.key_passphrase:
-            print "(key passphrase): ",
-            self.key_passphrase = getpass.getpass()
+            self.key_passphrase = getpass.getpass("Key passphrase: ")
 
     def verify_passphrases(self):
         c = self.config
