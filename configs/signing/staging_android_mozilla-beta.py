@@ -91,7 +91,7 @@ config = {
     "keystore": KEYSTORE,
     "key_alias": KEY_ALIAS,
     "env": {
-        "PATH": "%(PATH)s:" + JAVA_HOME + "/bin",
+        "PATH": JAVA_HOME + "/bin:%(PATH)s:",
     },
     "exes": {
         "jarsigner": JARSIGNER,
