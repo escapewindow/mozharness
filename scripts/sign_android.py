@@ -326,7 +326,6 @@ class SignAndroid(LocalesMixin, MercurialScript):
             self.key_passphrase = getpass.getpass("Key passphrase: ")
 
     def verify_passphrases(self):
-        c = self.config
         self.info("Verifying passphrases...")
         status = self._sign("NOTAREALAPK", error_list=TEST_JARSIGNER_ERROR_LIST)
         if status == 0:
@@ -438,6 +437,16 @@ class SignAndroid(LocalesMixin, MercurialScript):
             "regex": re.compile(r'''^Invalid$'''),
             "level": FATAL,
             "explanation": "Signature is invalid!"
+        },{
+            "substr": "filename not matched",
+            "level": ERROR,
+        },{
+            "substr": "ERROR: Could not unzip",
+            "level": ERROR,
+        },{
+            "regex": re.compile(r'''Are you sure this is a (nightly|release) package'''),
+            "level": FATAL,
+            "explanation": "Not signed!"
         }]
         locales = self.query_locales()
         env = self.query_env(partial_env=c.get("env"))
@@ -472,7 +481,8 @@ class SignAndroid(LocalesMixin, MercurialScript):
                'mkdir', '-p', ftp_upload_dir]
         self.run_command(cmd, cwd=dirs['abs_work_dir'],
                          error_list=SSHErrorList)
-        cmd = [rsync, '-e', 'ssh -oIdentityFile=%s' % rc['ftp_ssh_key'], '-azv']
+        cmd = [rsync, '-e']
+        cmd += ['%s -oIdentityFile=%s' % (ssh, rc['ftp_ssh_key']), '-azv']
         cmd += c['platforms']
         cmd += ["%s@%s:%s/" % (rc['ftp_user'], rc['ftp_server'], ftp_upload_dir)]
         self.run_command(cmd, cwd=dirs['abs_work_dir'],
@@ -519,12 +529,14 @@ class SignAndroid(LocalesMixin, MercurialScript):
                                                 channel_dict['dir_base_name'] % (replace_dict),
                                                 'Fennec', rc['old_version'],
                                                 c['update_platform_map'][platform],
-                                                old_buildid, locale)
+                                                old_buildid, locale, channel)
                     self.mkdir_p(previous_dir)
+                    self.run_command(["touch", "partial.txt"],
+                                     cwd=previous_dir, error_list=BaseErrorList)
                     status = self.run_command(
                         ['ln', '-s',
-                         '../../../../snippets/%s/%s/latest-%s' % (platform, locale, channel),
-                         channel],
+                         '../../../../../snippets/%s/%s/latest-%s' % (platform, locale, channel),
+                         'complete.txt'],
                         cwd=previous_dir, error_list=BaseErrorList
                     )
                     if not status:
@@ -574,8 +586,9 @@ class SignAndroid(LocalesMixin, MercurialScript):
                'mkdir', '-p', aus_upload_dir]
         self.run_command(cmd, cwd=dirs['abs_work_dir'],
                          error_list=SSHErrorList)
-        cmd = [rsync, '-e', 'ssh -oIdentityFile=%s' % rc['aus_ssh_key'], '-azv', '.']
-        cmd += ["%s@%s:%s/." % (rc['aus_user'], rc['aus_server'], aus_upload_dir)]
+        cmd = [rsync, '-e']
+        cmd += ['%s -oIdentityFile=%s' % (ssh, rc['aus_ssh_key']), '-azv', './']
+        cmd += ["%s@%s:%s/" % (rc['aus_user'], rc['aus_server'], aus_upload_dir)]
         self.run_command(cmd, cwd=update_dir, error_list=SSHErrorList)
 
 
