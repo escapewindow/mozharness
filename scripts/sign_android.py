@@ -88,16 +88,6 @@ TEST_JARSIGNER_ERROR_LIST = [{
     "level": IGNORE,
 }] + JARSIGNER_ERROR_LIST
 
-# From http://bytes.com/topic/python/answers/26569-finding-file-size,
-# for query_filesize()
-class SizedFile(file):
-    def __len__(self):
-        oldpos = self.tell()
-        self.seek(0, 2)
-        length = self.tell()
-        self.seek(oldpos)
-        return length
-
 
 
 # SignAndroid {{{1
@@ -265,8 +255,7 @@ class SignAndroid(LocalesMixin, MercurialScript):
     # mozharness.base somewhere
     def query_filesize(self, file_path):
         self.info("Determining filesize for %s" % file_path)
-        x = SizedFile(file_path)
-        length = len(x)
+        length = os.path.getsize(file_path)
         self.info(" %s" % str(length))
         return length
 
