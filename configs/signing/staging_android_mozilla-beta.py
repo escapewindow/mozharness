@@ -2,15 +2,15 @@
 
 import os
 
-LOCALES = ["en-US", "multi"]
+ADDITIONAL_LOCALES = ["en-US", "multi"]
 TAG = "default"
 AUS_SERVER = "dev-stage01.build.mozilla.org"
 FTP_SERVER = "dev-stage01.build.mozilla.org"
 AUS_UPLOAD_BASE_DIR = "/opt/aus2/snippets/staging"
 AUS_DIR_BASE_NAME = "Fennec-%(version)s-build%(buildnum)d"
 FTP_UPLOAD_BASE_DIR = "/pub/mozilla.org/mobile/candidates/%(version)s-candidates/build%(buildnum)d"
-#DOWNLOAD_BASE_URL = "http://%s%s" % (FTP_SERVER, FTP_UPLOAD_BASE_DIR)
-DOWNLOAD_BASE_URL = "http://ftp.mozilla.org/pub/mozilla.org/mobile/candidates/%(version)s-candidates/build%(buildnum)d"
+DOWNLOAD_BASE_URL = "http://%s%s" % (FTP_SERVER, FTP_UPLOAD_BASE_DIR)
+#DOWNLOAD_BASE_URL = "http://ftp.mozilla.org/pub/mozilla.org/mobile/candidates/%(version)s-candidates/build%(buildnum)d"
 APK_BASE_NAME = "fennec-%(version)s.%(locale)s.android-arm.apk"
 # because sign_android-0.8.sh renamed these wrong :(
 BUILDID_BASE_URL = DOWNLOAD_BASE_URL + "/%(platform)_info.txt"
@@ -32,9 +32,6 @@ extv=%(version)s
 """
 
 KEYSTORE = "%s/.android/android.keystore" % os.environ['HOME']
-#BASE_WORK_DIR = "%s/signing-work/fennec-beta" % (os.environ['HOME'])
-BASE_WORK_DIR = "%s/signing-work/fennec-beta" % os.getcwd()
-WORK_DIR = "build"
 
 JAVA_HOME = "/tools/jdk6"
 JARSIGNER = "%s/bin/jarsigner" % JAVA_HOME
@@ -42,10 +39,8 @@ KEY_ALIAS = "nightly"
 
 config = {
     "log_name": "sign_android",
-    "base_work_dir": BASE_WORK_DIR,
-    "work_dir": WORK_DIR,
 
-    "locales": LOCALES,
+    "additional_locales": ADDITIONAL_LOCALES,
     "locales_file": "buildbot-configs/mozilla/l10n-changesets_mobile-beta.json",
     "release_config_file": "buildbot-configs/mozilla/staging_release-fennec-mozilla-beta.py",
 
@@ -108,7 +103,7 @@ config = {
     },
     "signature_verification_script": "tools/release/signing/verify-android-signature.sh",
 
-    "user_repo_override": "users/stage-ffxbld",
+    "user_repo_override": "users/asasaki_mozilla.com",
     "tag_override": TAG,
     "repos": [{
         "repo": "http://hg.mozilla.org/%(user_repo_override)s/tools",
