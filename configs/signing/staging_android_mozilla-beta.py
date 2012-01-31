@@ -2,7 +2,7 @@
 
 import os
 
-ADDITIONAL_LOCALES = ["en-US", "multi", "this-will-fail"]
+ADDITIONAL_LOCALES = ["en-US", "multi"]
 TAG = "default"
 AUS_SERVER = "dev-stage01.build.mozilla.org"
 FTP_SERVER = "dev-stage01.build.mozilla.org"
@@ -93,7 +93,7 @@ config = {
     },
     "signature_verification_script": "tools/release/signing/verify-android-signature.sh",
 
-    "user_repo_override": "users/asasaki_mozilla.com",
+    "user_repo_override": "users/stage-ffxbld",
     "tag_override": TAG,
     "repos": [{
         "repo": "http://hg.mozilla.org/%(user_repo_override)s/tools",
