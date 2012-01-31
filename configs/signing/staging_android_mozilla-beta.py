@@ -87,6 +87,15 @@ config = {
     "download_signed_base_subdir": "%(platform)s/%(locale)s",
     "buildid_base_url": BUILDID_BASE_URL,
     "old_buildid_base_url": OLD_STYLE_BUILDID_BASE_URL,
+    "actions": [
+                "passphrase",
+                "clobber",
+                "pull",
+                "download-unsigned-bits",
+                "sign",
+                "verify-signatures",
+                "upload-signed-bits",
+               ],
 
     "keystore": KEYSTORE,
     "key_alias": KEY_ALIAS,
