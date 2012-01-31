@@ -38,9 +38,6 @@
 """sign_android.py
 
 """
-# TODO partner repacks downloading/signing
-# TODO split out signing and transfers to helper objects so we can do
-#      the downloads/signing/uploads in parallel, speeding that up
 
 import hashlib
 import os
@@ -104,7 +101,7 @@ class MobileSingleLocale(LocalesMixin, SigningMixin, MercurialScript):
      {"action": "store",
       "dest": "locales_file",
       "type": "string",
-      "help": "Specify a json file to determine which locales to sign and update"
+      "help": "Specify a file to determine which locales to sign and update"
      }
     ],[
      ['--tag-override',],
@@ -129,14 +126,6 @@ class MobileSingleLocale(LocalesMixin, SigningMixin, MercurialScript):
       "help": "Override the user repo path for all repos"
      }
     ],[
-     ['--key-alias',],
-     {"action": "store",
-      "dest": "key_alias",
-      "type": "choice",
-      "choices": ['production', 'nightly'],
-      "help": "Specify the key alias"
-     }
-    ],[
      ['--update-platform',],
      {"action": "extend",
       "dest": "update_platforms",
@@ -157,31 +146,6 @@ class MobileSingleLocale(LocalesMixin, SigningMixin, MercurialScript):
       "dest": "version",
       "type": "string",
       "help": "Specify the current version"
-     }
-    ],[
-     ['--old-version',],
-     {"action": "store",
-      "dest": "old_version",
-      "type": "string",
-      "help": "Specify the version to update from"
-     }
-    ],[
-     ['--buildnum',],
-     {"action": "store",
-      "dest": "buildnum",
-      "type": "int",
-      "default": 1,
-      "metavar": "INT",
-      "help": "Specify the current release build num (e.g. build1, build2)"
-     }
-    ],[
-     ['--old-buildnum',],
-     {"action": "store",
-      "dest": "old_buildnum",
-      "type": "int",
-      "default": 1,
-      "metavar": "INT",
-      "help": "Specify the release build num to update from (e.g. build1, build2)"
      }
     ],[
      ['--keystore',],
