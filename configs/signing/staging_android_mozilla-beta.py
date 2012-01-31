@@ -75,7 +75,7 @@ config = {
     "aus_upload_base_dir": AUS_UPLOAD_BASE_DIR,
 
     "apk_base_name": APK_BASE_NAME,
-    "unsigned_apk_base_name": 'fennec-%(version)s.%(locale)s.android-arm.apk',
+    "unsigned_apk_base_name": APK_BASE_NAME,
     "download_base_url": DOWNLOAD_BASE_URL,
     "download_unsigned_base_subdir": "unsigned/%(platform)s/%(locale)s",
     "download_signed_base_subdir": "%(platform)s/%(locale)s",

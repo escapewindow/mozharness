@@ -1,6 +1,6 @@
 #!/usr/bin/env python
 
-LOCALES = ["en-US", "multi"]
+ADDITIONAL_LOCALES = ["en-US", "multi"]
 TAG = "default"
 #AUS_SERVER = "dev-stage01.build.mozilla.org"
 AUS_SERVER = "aus2-staging.mozilla.org"
@@ -41,7 +41,7 @@ config = {
     "log_name": "sign_android_beta",
     "work_dir": "beta",
 
-    "locales": LOCALES,
+    "additional_locales": ADDITIONAL_LOCALES,
     "locales_file": "buildbot-configs/mozilla/l10n-changesets_mobile-beta.json",
     "release_config_file": "buildbot-configs/mozilla/release-fennec-mozilla-beta.py",
 
@@ -77,7 +77,7 @@ config = {
     "aus_upload_base_dir": AUS_UPLOAD_BASE_DIR,
 
     "apk_base_name": APK_BASE_NAME,
-    "unsigned_apk_base_name": 'gecko-unsigned-unaligned.apk',
+    "unsigned_apk_base_name": APK_BASE_NAME,
     "download_base_url": DOWNLOAD_BASE_URL,
     "download_unsigned_base_subdir": "unsigned/%(platform)s/%(locale)s",
     "download_signed_base_subdir": "%(platform)s/%(locale)s",
