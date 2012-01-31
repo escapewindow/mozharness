@@ -196,6 +196,7 @@ class SignAndroid(LocalesMixin, MercurialScript):
         self.store_passphrase = os.environ.get('android_storepass')
         self.key_passphrase = os.environ.get('android_keypass')
         self.release_config = {}
+        self.failures = []
         LocalesMixin.__init__(self)
         MercurialScript.__init__(self,
             config_options=self.config_options,
@@ -323,6 +324,16 @@ class SignAndroid(LocalesMixin, MercurialScript):
                 parser.add_lines(line)
         return parser.num_errors
 
+    def add_failure(self, platform, locale):
+        s = "%s_%s" % (platform, locale)
+        if s not in self.failures:
+            self.failures.append(s)
+            self.return_code += 1
+
+    def query_failure(self, platform, locale):
+        s = "%s_%s" % (platform, locale)
+        return s in self.failures
+
     # Actions {{{2
     def passphrase(self):
         if not self.store_passphrase:
@@ -385,6 +396,7 @@ class SignAndroid(LocalesMixin, MercurialScript):
                 if not self.download_file(url, file_path):
                     self.add_summary("Unable to download %s:%s unsigned apk!" % (platform, locale),
                                      level=ERROR)
+                    self.add_failure(platform, locale)
                 else:
                     successful_count += 1
         level = INFO
@@ -408,6 +420,9 @@ class SignAndroid(LocalesMixin, MercurialScript):
         zipalign = self.query_exe("zipalign")
         for platform in c['platforms']:
             for locale in locales:
+                if self.query_failure(platform, locale):
+                    self.warning("%s:%s had previous issues; skipping!" % (platform, locale))
+                    continue
                 unsigned_path = '%s/unsigned/%s/%s/gecko.ap_' % (dirs['abs_work_dir'], platform, locale)
                 signed_dir = '%s/%s/%s' % (dirs['abs_work_dir'], platform, locale)
                 signed_file_name = c['apk_base_name'] % {'version': rc['version'],
@@ -428,6 +443,7 @@ class SignAndroid(LocalesMixin, MercurialScript):
                                       error_list=BaseErrorList):
                         self.add_summary("Unable to align %s:%s apk!",
                                          level=ERROR)
+                        self.add_failure(platform, locale)
                         self.rmtree(signed_dir)
                     else:
                         successful_count += 1
@@ -460,20 +476,28 @@ class SignAndroid(LocalesMixin, MercurialScript):
         env = self.query_env(partial_env=c.get("env"))
         for platform in c['platforms']:
             for locale in locales:
+                if self.query_failure(platform, locale):
+                    self.warning("%s:%s had previous issues; skipping!" % (platform, locale))
+                    continue
                 signed_path = '%s/%s/%s' % (platform, locale,
                     c['apk_base_name'] % {'version': rc['version'],
                                           'locale': locale})
                 if not os.path.exists(os.path.join(dirs['abs_work_dir'],
                                                    signed_path)):
                     self.error("%s doesn't exist!" % signed_path)
+                    self.add_failure(platform, locale)
                     continue
-                self.run_command([c['signature_verification_script'],
-                                  '--tools-dir=tools/',
-                                  '--%s' % c['key_alias'],
-                                  '--apk=%s' % signed_path],
-                                 cwd=dirs['abs_work_dir'],
-                                 env=env,
-                                 error_list=verification_error_list)
+                status = self.run_command(
+                    [c['signature_verification_script'],
+                    '--tools-dir=tools/',
+                    '--%s' % c['key_alias'],
+                    '--apk=%s' % signed_path],
+                    cwd=dirs['abs_work_dir'],
+                    env=env,
+                    error_list=verification_error_list
+                )
+                if status:
+                    self.add_failure(platform, locale)
 
     def upload_signed_bits(self):
         c = self.config
@@ -522,6 +546,9 @@ class SignAndroid(LocalesMixin, MercurialScript):
             replace_dict['platform'] = platform
             replace_dict['buildid'] = buildid
             for locale in locales:
+                if self.query_failure(platform, locale):
+                    self.warning("%s:%s had previous issues; skipping!" % (platform, locale))
+                    continue
                 replace_dict['locale'] = locale
                 parent_dir = '%s/%s/%s' % (dirs['abs_work_dir'],
                                            platform, locale)
