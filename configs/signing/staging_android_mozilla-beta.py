@@ -2,7 +2,7 @@
 
 import os
 
-ADDITIONAL_LOCALES = ["en-US", "multi"]
+ADDITIONAL_LOCALES = ["en-US", "multi", "this-will-fail"]
 TAG = "default"
 AUS_SERVER = "dev-stage01.build.mozilla.org"
 FTP_SERVER = "dev-stage01.build.mozilla.org"
@@ -40,6 +40,7 @@ KEY_ALIAS = "nightly"
 config = {
     "log_name": "sign_android",
 
+    "locales": ['fr'],
     "additional_locales": ADDITIONAL_LOCALES,
     "locales_file": "buildbot-configs/mozilla/l10n-changesets_mobile-beta.json",
     "release_config_file": "buildbot-configs/mozilla/staging_release-fennec-mozilla-beta.py",
@@ -76,7 +77,7 @@ config = {
     "aus_upload_base_dir": AUS_UPLOAD_BASE_DIR,
 
     "apk_base_name": APK_BASE_NAME,
-    "unsigned_apk_base_name": 'gecko-unsigned-unaligned.apk',
+    "unsigned_apk_base_name": 'fennec-%(version)s.%(locale)s.android-arm.apk',
     "download_base_url": DOWNLOAD_BASE_URL,
     "download_unsigned_base_subdir": "unsigned/%(platform)s/%(locale)s",
     "download_signed_base_subdir": "%(platform)s/%(locale)s",

@@ -293,9 +293,14 @@ class SignAndroid(LocalesMixin, MercurialScript):
                 self.warning("Can't get buildID from %s (try %d)" % (url, count))
         self.critical("Can't get buildID from %s!" % url)
 
-    def _sign(self, apk, error_list=None):
+    def _sign(self, apk, meta_inf=True, error_list=None):
         c = self.config
         jarsigner = self.query_exe("jarsigner")
+        zip_bin = self.query_exe("zip")
+        if meta_inf:
+            # Get rid of previous signature.
+            # TODO error checking, but allow for no META-INF/ in the zipfile.
+            self.run_command(zip_bin, apk, '-d', 'META-INF/*')
         if error_list is None:
             error_list = JARSIGNER_ERROR_LIST
         # This needs to run silently, so no run_command() or
@@ -327,7 +332,8 @@ class SignAndroid(LocalesMixin, MercurialScript):
 
     def verify_passphrases(self):
         self.info("Verifying passphrases...")
-        status = self._sign("NOTAREALAPK", error_list=TEST_JARSIGNER_ERROR_LIST)
+        status = self._sign("NOTAREALAPK", meta_inf=False,
+                            error_list=TEST_JARSIGNER_ERROR_LIST)
         if status == 0:
             self.info("Passphrases are good.")
         else:
@@ -373,7 +379,7 @@ class SignAndroid(LocalesMixin, MercurialScript):
                 url = base_url % replace_dict
                 parent_dir = '%s/%s/%s' % (dirs['abs_work_dir'],
                                            platform, locale)
-                file_path = '%s/gecko_unsigned_unaligned.apk' % parent_dir
+                file_path = '%s/gecko.ap_' % parent_dir
                 self.mkdir_p(parent_dir)
                 total_count += 1
                 if not self.download_file(url, file_path):
@@ -404,20 +410,21 @@ class SignAndroid(LocalesMixin, MercurialScript):
             for locale in locales:
                 parent_dir = '%s/%s/%s' % (dirs['abs_work_dir'],
                                            platform, locale)
-                unsigned_unaligned_path = '%s/gecko_unsigned_unaligned.apk' % parent_dir
-                unaligned_path = '%s/gecko_unaligned.apk' % parent_dir
+                unsigned_path = '%s/gecko.ap_' % parent_dir
                 signed_path = '%s/%s' % (parent_dir,
                     c['apk_base_name'] % {'version': rc['version'],
                                           'locale': locale})
                 self.mkdir_p(parent_dir)
                 total_count += 1
                 self.info("Signing %s %s." % (platform, locale))
-                self.copyfile(unsigned_unaligned_path, unaligned_path)
-                if self._sign(unaligned_path) != 0:
+                if not os.path.exists(unsigned_path):
+                    self.error("Missing apk %s!" % unsigned_path)
+                    continue
+                if self._sign(unsigned_path) != 0:
                     self.add_summary("Unable to sign %s:%s apk!",
                                      level=FATAL)
                 elif self.run_command([zipalign, '-f', '4',
-                                       unaligned_path, signed_path],
+                                       unsigned_path, signed_path],
                                       error_list=BaseErrorList):
                     self.add_summary("Unable to align %s:%s apk!",
                                      level=FATAL)
@@ -455,6 +462,9 @@ class SignAndroid(LocalesMixin, MercurialScript):
                 signed_path = '%s/%s/%s' % (platform, locale,
                     c['apk_base_name'] % {'version': rc['version'],
                                           'locale': locale})
+                if not os.path.exists(signed_path):
+                    self.error("%s doesn't exist!" % signed_path)
+                    continue
                 self.run_command([c['signature_verification_script'],
                                   '--tools-dir=tools/',
                                   '--%s' % c['key_alias'],
