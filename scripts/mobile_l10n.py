@@ -50,7 +50,6 @@ import sys
 sys.path.insert(1, os.path.dirname(sys.path[0]))
 
 from copy import deepcopy
-import getpass
 import re
 import subprocess
 
@@ -91,8 +90,8 @@ TEST_JARSIGNER_ERROR_LIST = [{
 
 
 
-# SignAndroid {{{1
-class SignAndroid(LocalesMixin, SigningMixin, MercurialScript):
+# MobileSingleLocale {{{1
+class MobileSingleLocale(LocalesMixin, SigningMixin, MercurialScript):
     config_options = [[
      ['--locale',],
      {"action": "extend",
@@ -194,23 +193,13 @@ class SignAndroid(LocalesMixin, SigningMixin, MercurialScript):
     ]]
 
     def __init__(self, require_config_file=True):
-        self.store_passphrase = os.environ.get('android_storepass')
-        self.key_passphrase = os.environ.get('android_keypass')
-        self.release_config = {}
         LocalesMixin.__init__(self)
         SigningMixin.__init__(self)
         MercurialScript.__init__(self,
             config_options=self.config_options,
             all_actions=[
-                "passphrase",
                 "clobber",
                 "pull",
-                "download-unsigned-bits",
-                "sign",
-                "verify-signatures",
-                "upload-signed-bits",
-                "create-snippets",
-                "upload-snippets",
             ],
             require_config_file=require_config_file
         )
@@ -253,90 +242,13 @@ class SignAndroid(LocalesMixin, SigningMixin, MercurialScript):
         self.info("Release config:\n%s" % self.release_config)
         return self.release_config
 
-    # TODO query_filesize and query_sha512sum probably belong in
-    # mozharness.base somewhere
-    def query_filesize(self, file_path):
-        self.info("Determining filesize for %s" % file_path)
-        length = os.path.getsize(file_path)
-        self.info(" %s" % str(length))
-        return length
-
-    # TODO this should be parallelized with the to-be-written BaseHelper!
-    def query_sha512sum(self, file_path):
-        self.info("Determining sha512sum for %s" % file_path)
-        m = hashlib.sha512()
-        fh = open(file_path)
-        contents = fh.read()
-        fh.close()
-        m.update(contents)
-        sha512 = m.hexdigest()
-        self.info(" %s" % sha512)
-        return sha512
-
     def query_buildid(self, platform, base_url, buildnum=None, version=None):
-        rc = self.query_release_config()
-        replace_dict = {
-            'buildnum': rc['buildnum'],
-            'version': rc['version'],
-            'platform': platform,
-        }
-        if buildnum:
-            replace_dict['buildnum'] = buildnum
-        if version:
-            replace_dict['version'] = version
-        url = base_url % replace_dict
-        # ghetto retry.
-        for count in range (1, 11):
-        # TODO stop using curl
-            output = self.get_output_from_command(["curl", "--silent", url])
-            if output.startswith("buildID="):
-                return output.replace("buildID=", "")
-            else:
-                self.warning("Can't get buildID from %s (try %d)" % (url, count))
-        self.critical("Can't get buildID from %s!" % url)
+        # TODO rewrite for nightly.
+        pass
 
     def _sign(self, apk, error_list=None):
-        c = self.config
-        jarsigner = self.query_exe("jarsigner")
-        if error_list is None:
-            error_list = JARSIGNER_ERROR_LIST
-        # This needs to run silently, so no run_command() or
-        # get_output_from_command() (though I could add a
-        # suppress_command_echo=True or something?)
-        p = subprocess.Popen([jarsigner, "-keystore", c['keystore'],
-                             "-storepass", self.store_passphrase,
-                             "-keypass", self.key_passphrase,
-                             apk, c['key_alias']],
-                             stdout=subprocess.PIPE,
-                             stderr=subprocess.STDOUT)
-        parser = OutputParser(config=self.config, log_obj=self.log_obj,
-                              error_list=error_list)
-        loop = True
-        while loop:
-            if p.poll() is not None:
-                """Avoid losing the final lines of the log?"""
-                loop = False
-            for line in p.stdout:
-                parser.add_lines(line)
-        return parser.num_errors
-
-    # Actions {{{2
-    def passphrase(self):
-        if not self.store_passphrase:
-            self.store_passphrase = getpass.getpass("Store passphrase: ")
-        if not self.key_passphrase:
-            self.key_passphrase = getpass.getpass("Key passphrase: ")
-
-    def verify_passphrases(self):
-        self.info("Verifying passphrases...")
-        status = self._sign("NOTAREALAPK", error_list=TEST_JARSIGNER_ERROR_LIST)
-        if status == 0:
-            self.info("Passphrases are good.")
-        else:
-            self.fatal("Unable to verify passphrases!")
-
-    def postflight_passphrase(self):
-        self.verify_passphrases()
+        # TODO rewrite to use mozpass.py
+        pass
 
     def pull(self):
         c = self.config
@@ -353,83 +265,6 @@ class SignAndroid(LocalesMixin, SigningMixin, MercurialScript):
             repos = c['repos']
         self.vcs_checkout_repos(repos, parent_dir=dirs['abs_work_dir'],
                                 tag_override=c.get('tag_override'))
-
-    def download_unsigned_bits(self):
-        c = self.config
-        rc = self.query_release_config()
-        dirs = self.query_abs_dirs()
-        locales = self.query_locales()
-        base_url = c['download_base_url'] + '/' + \
-                   c['download_unsigned_base_subdir'] + '/' + \
-                   c.get('unsigned_apk_base_name', 'gecko-unsigned-unaligned.apk')
-        replace_dict = {
-            'buildnum': rc['buildnum'],
-            'version': rc['version'],
-        }
-        successful_count = 0
-        total_count = 0
-        for platform in c['platforms']:
-            replace_dict['platform'] = platform
-            for locale in locales:
-                replace_dict['locale'] = locale
-                url = base_url % replace_dict
-                parent_dir = '%s/%s/%s' % (dirs['abs_work_dir'],
-                                           platform, locale)
-                file_path = '%s/gecko_unsigned_unaligned.apk' % parent_dir
-                self.mkdir_p(parent_dir)
-                total_count += 1
-                if not self.download_file(url, file_path):
-                    self.add_summary("Unable to download %s:%s unsigned apk!" % (platform, locale),
-                                     level=ERROR)
-                else:
-                    successful_count += 1
-        level = INFO
-        if successful_count < total_count:
-            level = ERROR
-        self.add_summary("Downloaded %d of %d unsigned apks successfully." % \
-                         (successful_count, total_count), level=level)
-
-    def preflight_sign(self):
-        if 'passphrase' not in self.actions:
-            self.passphrase()
-            self.verify_passphrases()
-
-    def sign(self):
-        c = self.config
-        rc = self.query_release_config()
-        dirs = self.query_abs_dirs()
-        locales = self.query_locales()
-        successful_count = 0
-        total_count = 0
-        zipalign = self.query_exe("zipalign")
-        for platform in c['platforms']:
-            for locale in locales:
-                parent_dir = '%s/%s/%s' % (dirs['abs_work_dir'],
-                                           platform, locale)
-                unsigned_unaligned_path = '%s/gecko_unsigned_unaligned.apk' % parent_dir
-                unaligned_path = '%s/gecko_unaligned.apk' % parent_dir
-                signed_path = '%s/%s' % (parent_dir,
-                    c['apk_base_name'] % {'version': rc['version'],
-                                          'locale': locale})
-                self.mkdir_p(parent_dir)
-                total_count += 1
-                self.info("Signing %s %s." % (platform, locale))
-                self.copyfile(unsigned_unaligned_path, unaligned_path)
-                if self._sign(unaligned_path) != 0:
-                    self.add_summary("Unable to sign %s:%s apk!",
-                                     level=FATAL)
-                elif self.run_command([zipalign, '-f', '4',
-                                       unaligned_path, signed_path],
-                                      error_list=BaseErrorList):
-                    self.add_summary("Unable to align %s:%s apk!",
-                                     level=FATAL)
-                else:
-                    successful_count += 1
-        level = INFO
-        if successful_count < total_count:
-            level = ERROR
-        self.add_summary("Signed %d of %d apks successfully." % \
-                         (successful_count, total_count), level=level)
 
     def verify_signatures(self):
         c = self.config
@@ -465,7 +300,6 @@ class SignAndroid(LocalesMixin, SigningMixin, MercurialScript):
                                  env=env,
                                  error_list=verification_error_list)
 
-    def upload_signed_bits(self):
         c = self.config
         if not c['platforms']:
             self.info("No platforms to rsync! Skipping...")
@@ -597,5 +431,5 @@ class SignAndroid(LocalesMixin, SigningMixin, MercurialScript):
 
 # main {{{1
 if __name__ == '__main__':
-    sign_android = SignAndroid()
-    sign_android.run()
+    single_locale = MobileSingleLocale()
+    single_locale.run()
