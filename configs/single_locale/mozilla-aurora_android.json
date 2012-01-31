@@ -1,5 +1,4 @@
 {
-    "work_dir": ".",
     "log_name": "single_locale",
     "objdir": "obj-l10n",
     "locales_file": "build/mobile/android/locales/all-locales",
