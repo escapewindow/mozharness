@@ -36,9 +36,9 @@ JARSIGNER = "%s/bin/jarsigner" % JAVA_HOME
 KEY_ALIAS = "nightly"
 
 config = {
-    "log_name": "sign_android",
+    "log_name": "sign_android_staging_beta",
+    "work_dir": "staging_beta",
 
-    "locales": ['fr'],
     "additional_locales": ADDITIONAL_LOCALES,
     "locales_file": "buildbot-configs/mozilla/l10n-changesets_mobile-beta.json",
     "release_config_file": "buildbot-configs/mozilla/staging_release-fennec-mozilla-beta.py",

@@ -32,15 +32,14 @@ extv=%(version)s
 """
 
 KEYSTORE = "/home/cltsign/.android/android-release.keystore"
-WORK_DIR = "build"
 
 JAVA_HOME = "/tools/jdk-1.6.0_17"
 JARSIGNER = "%s/bin/jarsigner" % JAVA_HOME
 KEY_ALIAS = "release"
 
 config = {
-    "log_name": "sign_android",
-    "work_dir": WORK_DIR,
+    "log_name": "sign_android_beta",
+    "work_dir": "beta",
 
     "locales": LOCALES,
     "locales_file": "buildbot-configs/mozilla/l10n-changesets_mobile-beta.json",
