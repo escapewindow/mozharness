@@ -12,9 +12,7 @@ FTP_UPLOAD_BASE_DIR = "/pub/mozilla.org/mobile/candidates/%(version)s-candidates
 #DOWNLOAD_BASE_URL = "http://%s%s" % (FTP_SERVER, FTP_UPLOAD_BASE_DIR)
 DOWNLOAD_BASE_URL = "http://ftp.mozilla.org/pub/mozilla.org/mobile/candidates/%(version)s-candidates/build%(buildnum)d"
 APK_BASE_NAME = "fennec-%(version)s.%(locale)s.android-arm.apk"
-# because sign_android-0.8.sh renamed these wrong :(
-BUILDID_BASE_URL = DOWNLOAD_BASE_URL + "/%(platform)_info.txt"
-OLD_STYLE_BUILDID_BASE_URL = DOWNLOAD_BASE_URL + "/linux-android_info.txt"
+BUILDID_BASE_URL = DOWNLOAD_BASE_URL + "/%(platform)s_info.txt"
 FFXBLD_SSH_KEY = '~/.ssh/ffxbld_dsa'
 #FFXBLD_SSH_KEY = '~/staging_ssh/ffxbld_dsa'
 CLTBLD_SSH_KEY = '~/.ssh/cltbld_dsa'
@@ -85,7 +83,7 @@ config = {
     "download_unsigned_base_subdir": "unsigned/%(platform)s/%(locale)s",
     "download_signed_base_subdir": "%(platform)s/%(locale)s",
     "buildid_base_url": BUILDID_BASE_URL,
-    "old_buildid_base_url": OLD_STYLE_BUILDID_BASE_URL,
+    "old_buildid_base_url": BUILDID_BASE_URL,
     "actions": [
                 "passphrase",
                 "clobber",
