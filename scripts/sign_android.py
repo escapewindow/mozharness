@@ -300,7 +300,7 @@ class SignAndroid(LocalesMixin, MercurialScript):
         if meta_inf:
             # Get rid of previous signature.
             # TODO error checking, but allow for no META-INF/ in the zipfile.
-            self.run_command(zip_bin, apk, '-d', 'META-INF/*')
+            self.run_command([zip_bin, apk, '-d', 'META-INF/*'])
         if error_list is None:
             error_list = JARSIGNER_ERROR_LIST
         # This needs to run silently, so no run_command() or
@@ -377,7 +377,7 @@ class SignAndroid(LocalesMixin, MercurialScript):
             for locale in locales:
                 replace_dict['locale'] = locale
                 url = base_url % replace_dict
-                parent_dir = '%s/%s/%s' % (dirs['abs_work_dir'],
+                parent_dir = '%s/unsigned/%s/%s' % (dirs['abs_work_dir'],
                                            platform, locale)
                 file_path = '%s/gecko.ap_' % parent_dir
                 self.mkdir_p(parent_dir)
@@ -408,13 +408,11 @@ class SignAndroid(LocalesMixin, MercurialScript):
         zipalign = self.query_exe("zipalign")
         for platform in c['platforms']:
             for locale in locales:
-                parent_dir = '%s/%s/%s' % (dirs['abs_work_dir'],
-                                           platform, locale)
-                unsigned_path = '%s/gecko.ap_' % parent_dir
-                signed_path = '%s/%s' % (parent_dir,
-                    c['apk_base_name'] % {'version': rc['version'],
-                                          'locale': locale})
-                self.mkdir_p(parent_dir)
+                unsigned_path = '%s/unsigned/%s/%s/gecko.ap_' % (dirs['abs_work_dir'], platform, locale)
+                signed_dir = '%s/%s/%s' % (dirs['abs_work_dir'], platform, locale)
+                signed_file_name = c['apk_base_name'] % {'version': rc['version'],
+                                                         'locale': locale}
+                signed_path = "%s/%s" % (signed_dir, signed_file_name)
                 total_count += 1
                 self.info("Signing %s %s." % (platform, locale))
                 if not os.path.exists(unsigned_path):
@@ -423,13 +421,16 @@ class SignAndroid(LocalesMixin, MercurialScript):
                 if self._sign(unsigned_path) != 0:
                     self.add_summary("Unable to sign %s:%s apk!",
                                      level=FATAL)
-                elif self.run_command([zipalign, '-f', '4',
+                else:
+                    self.mkdir_p(signed_dir)
+                    if self.run_command([zipalign, '-f', '4',
                                        unsigned_path, signed_path],
                                       error_list=BaseErrorList):
-                    self.add_summary("Unable to align %s:%s apk!",
-                                     level=FATAL)
-                else:
-                    successful_count += 1
+                        self.add_summary("Unable to align %s:%s apk!",
+                                         level=ERROR)
+                        self.rmtree(signed_dir)
+                    else:
+                        successful_count += 1
         level = INFO
         if successful_count < total_count:
             level = ERROR
@@ -462,7 +463,8 @@ class SignAndroid(LocalesMixin, MercurialScript):
                 signed_path = '%s/%s/%s' % (platform, locale,
                     c['apk_base_name'] % {'version': rc['version'],
                                           'locale': locale})
-                if not os.path.exists(signed_path):
+                if not os.path.exists(os.path.join(dirs['abs_work_dir'],
+                                                   signed_path)):
                     self.error("%s doesn't exist!" % signed_path)
                     continue
                 self.run_command([c['signature_verification_script'],
