@@ -307,12 +307,19 @@ class SignAndroid(LocalesMixin, MercurialScript):
         # This needs to run silently, so no run_command() or
         # get_output_from_command() (though I could add a
         # suppress_command_echo=True or something?)
-        p = subprocess.Popen([jarsigner, "-keystore", c['keystore'],
-                             "-storepass", self.store_passphrase,
-                             "-keypass", self.key_passphrase,
-                             apk, c['key_alias']],
-                             stdout=subprocess.PIPE,
-                             stderr=subprocess.STDOUT)
+        try:
+            p = subprocess.Popen([jarsigner, "-keystore", c['keystore'],
+                                 "-storepass", self.store_passphrase,
+                                 "-keypass", self.key_passphrase,
+                                 apk, c['key_alias']],
+                                 stdout=subprocess.PIPE,
+                                 stderr=subprocess.STDOUT)
+        except OSError:
+            self.dump_exception("Error while signing %s (missing %s?):" % (apk, jarsigner))
+            return -1
+        except ValueError:
+            self.dump_exception("Popen called with invalid arguments during signing?")
+            return -2
         parser = OutputParser(config=self.config, log_obj=self.log_obj,
                               error_list=error_list)
         loop = True
@@ -327,14 +334,15 @@ class SignAndroid(LocalesMixin, MercurialScript):
     def add_failure(self, platform, locale,
                     message="%(platform)s:%(locale)s failed.",
                     level=ERROR):
-        s = "%s_%s" % (platform, locale)
+        s = "%s:%s" % (platform, locale)
         if s not in self.failures:
             self.failures.append(s)
             self.return_code += 1
-            self.add_summary(message, level=level)
+            self.add_summary(message % {'platform': platform, 'locale': locale},
+                             level=level)
 
     def query_failure(self, platform, locale):
-        s = "%s_%s" % (platform, locale)
+        s = "%s:%s" % (platform, locale)
         return s in self.failures
 
     # Actions {{{2
@@ -350,6 +358,8 @@ class SignAndroid(LocalesMixin, MercurialScript):
                             error_list=TEST_JARSIGNER_ERROR_LIST)
         if status == 0:
             self.info("Passphrases are good.")
+        elif status < 0:
+            self.fatal("Encountered errors while trying to sign!")
         else:
             self.fatal("Unable to verify passphrases!")
 
@@ -398,7 +408,7 @@ class SignAndroid(LocalesMixin, MercurialScript):
                 total_count += 1
                 if not self.download_file(url, file_path):
                     self.add_failure(platform, locale,
-                                     message="Unable to download %s:%s unsigned apk!" % (platform, locale))
+                                     message="Unable to download %(platform)s:%(locale)s unsigned apk!")
                 else:
                     successful_count += 1
         level = INFO
@@ -444,7 +454,7 @@ class SignAndroid(LocalesMixin, MercurialScript):
                                        unsigned_path, signed_path],
                                       error_list=BaseErrorList):
                         self.add_failure(platform, locale,
-                                         message="Unable to align %s:%s apk!" % (platform, locale))
+                                         message="Unable to align %(platform)s:%(locale)s apk!")
                         self.rmtree(signed_dir)
                     else:
                         successful_count += 1
@@ -486,7 +496,7 @@ class SignAndroid(LocalesMixin, MercurialScript):
                 if not os.path.exists(os.path.join(dirs['abs_work_dir'],
                                                    signed_path)):
                     self.add_failure(platform, locale,
-                                     message="Can't sign nonexistent %s:%s apk!" % (platform, locale))
+                                     message="Can't verify nonexistent %(platform)s:%(locale)s apk!")
                     continue
                 status = self.run_command(
                     [c['signature_verification_script'],
@@ -499,7 +509,7 @@ class SignAndroid(LocalesMixin, MercurialScript):
                 )
                 if status:
                     self.add_failure(platform, locale,
-                                     message="Errors signing %s:%s apk!" % (platform, locale))
+                                     message="Errors verifying %(platform)s:%(locale)s apk!")
 
     def upload_signed_bits(self):
         c = self.config
