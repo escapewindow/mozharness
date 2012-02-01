@@ -294,11 +294,11 @@ class SignAndroid(LocalesMixin, MercurialScript):
                 self.warning("Can't get buildID from %s (try %d)" % (url, count))
         self.critical("Can't get buildID from %s!" % url)
 
-    def _sign(self, apk, meta_inf=True, error_list=None):
+    def _sign(self, apk, remove_signature=True, error_list=None):
         c = self.config
         jarsigner = self.query_exe("jarsigner")
         zip_bin = self.query_exe("zip")
-        if meta_inf:
+        if remove_signature:
             # Get rid of previous signature.
             # TODO error checking, but allow for no META-INF/ in the zipfile.
             self.run_command([zip_bin, apk, '-d', 'META-INF/*'])
@@ -354,7 +354,7 @@ class SignAndroid(LocalesMixin, MercurialScript):
 
     def verify_passphrases(self):
         self.info("Verifying passphrases...")
-        status = self._sign("NOTAREALAPK", meta_inf=False,
+        status = self._sign("NOTAREALAPK", remove_signature=False,
                             error_list=TEST_JARSIGNER_ERROR_LIST)
         if status == 0:
             self.info("Passphrases are good.")
