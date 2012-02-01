@@ -209,8 +209,8 @@ class SignAndroid(LocalesMixin, SigningMixin, MercurialScript):
                 "sign",
                 "verify-signatures",
                 "upload-signed-bits",
-                "create-snippets",
-                "upload-snippets",
+#                "create-snippets",
+#                "upload-snippets",
             ],
             require_config_file=require_config_file
         )
