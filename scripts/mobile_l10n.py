@@ -163,6 +163,7 @@ class MobileSingleLocale(LocalesMixin, SigningMixin, MercurialScript):
             all_actions=[
                 "clobber",
                 "pull",
+                "setup",
             ],
             require_config_file=require_config_file
         )
@@ -230,6 +231,17 @@ class MobileSingleLocale(LocalesMixin, SigningMixin, MercurialScript):
         self.vcs_checkout_repos(repos, parent_dir=dirs['abs_work_dir'],
                                 tag_override=c.get('tag_override'))
         self.pull_locale_source()
+
+    def preflight_setup(self):
+        if 'clobber' not in self.actions:
+            c = self.config
+            dirs = self.query_abs_dirs()
+            objdir = os.path.join(dirs['abs_work_dir'], c['mozilla_dir'],
+                                  c['objdir'])
+            self.rmtree(objdir)
+
+    def setup(self):
+        pass
 
     def verify_signatures(self):
         c = self.config
