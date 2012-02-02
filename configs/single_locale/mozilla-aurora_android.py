@@ -2,6 +2,9 @@ MOZILLA_DIR = "mozilla-aurora"
 JAVA_HOME = "/tools/jdk6"
 JARSIGNER = "tools/release/signing/mozpass.py"
 OBJDIR = "obj-l10n"
+EN_US_BINARY_URL = "http://stage.mozilla.org/pub/mozilla.org/mobile/nightly/latest-mozilla-aurora-android/en-US"
+# Use central b/c of robocop hackery
+#EN_US_BINARY_URL = "http://stage.mozilla.org/pub/mozilla.org/mobile/nightly/latest-mozilla-central-android/en-US"
 STAGE_SERVER = "dev-stage01.build.mozilla.org"
 STAGE_USER = "ffxbld"
 STAGE_SSH_KEY = "~/.ssh/ffxbld_dsa"
@@ -18,19 +21,21 @@ config = {
     "ignore_locales": ["en-US", "multi"],
     "repos": [{
         "repo": "http://hg.mozilla.org/releases/mozilla-aurora",
-        "tag": "default",
+        "revision": "default",
+# pre-robocop
+#        "revision": "5221f1397829",
         "dest": MOZILLA_DIR,
     },{
         "repo": "http://hg.mozilla.org/build/buildbot-configs",
-        "tag": "default",
+        "revision": "default",
         "dest": "buildbot-configs"
     },{
         "repo": "http://hg.mozilla.org/build/tools",
-        "tag": "default",
+        "revision": "default",
         "dest": "tools"
     },{
         "repo": "http://hg.mozilla.org/build/compare-locales",
-        "tag": "RELEASE_AUTOMATION"
+        "revision": "RELEASE_AUTOMATION"
     }],
     "hg_l10n_base": "http://hg.mozilla.org/releases/l10n/mozilla-aurora",
     "hg_l10n_tag": "default",
@@ -39,7 +44,7 @@ config = {
         "JAVA_HOME": JAVA_HOME,
         "PATH": JAVA_HOME + "/bin:%(PATH)s",
         "MOZ_OBJDIR": OBJDIR,
-        "EN_US_BINARY_URL": "http://stage.mozilla.org/pub/mozilla.org/mobile/nightly/latest-mozilla-aurora-android/en-US",
+        "EN_US_BINARY_URL": EN_US_BINARY_URL,
         "JARSIGNER": "%(abs_work_dir)s/" + JARSIGNER,
         "LOCALE_MERGEDIR": "%(abs_merge_dir)s/",
         "UPLOAD_USER": STAGE_USER,
