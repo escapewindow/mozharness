@@ -50,7 +50,7 @@ import re
 import subprocess
 
 from mozharness.base.config import parse_config_file
-from mozharness.base.errors import BaseErrorList, SSHErrorList
+from mozharness.base.errors import BaseErrorList, MakefileErrorList, SSHErrorList
 from mozharness.base.log import OutputParser, DEBUG, INFO, WARNING, ERROR, \
      CRITICAL, FATAL, IGNORE
 from mozharness.base.signing import SigningMixin
@@ -156,6 +156,7 @@ class MobileSingleLocale(LocalesMixin, SigningMixin, MercurialScript):
     ]]
 
     def __init__(self, require_config_file=True):
+        env = None
         LocalesMixin.__init__(self)
         SigningMixin.__init__(self)
         MercurialScript.__init__(self,
@@ -243,12 +244,23 @@ class MobileSingleLocale(LocalesMixin, SigningMixin, MercurialScript):
     def setup(self):
         c = self.config
         dirs = self.query_abs_dirs()
-        mozconfig_path = os.path.join(dirs['abs_work_dir'],
-                                      c['mozilla_dir'], '.mozconfig')
+        mozconfig_path = os.path.join(dirs['abs_mozilla_dir'], '.mozconfig')
         self.copyfile(os.path.join(dirs['abs_work_dir'], c['mozconfig']),
                       mozconfig_path)
         # TODO stop using cat
         self.run_command(["cat", mozconfig_path])
+        env = self.query_env()
+        self.run_command(["make", "-f", "client.mk", "configure"],
+                         cwd=dirs['abs_mozilla_dir'],
+                         env=env,
+                         error_list=MakefileErrorList,
+                         halt_on_failure=True)
+        for make_dir in c.get('make_dirs', []):
+            self.run_command(["make"],
+                             cwd=os.path.join(dirs['abs_objdir'], make_dir),
+                             env=env,
+                             error_list=MakefileErrorList,
+                             halt_on_failure=True)
 
     def verify_signatures(self):
         c = self.config
