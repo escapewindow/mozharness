@@ -38,6 +38,7 @@
 """Generic VCS support.
 """
 
+from copy import deepcopy
 import os
 import re
 import subprocess
@@ -96,7 +97,7 @@ class VCSMixin(object):
         self.chdir(parent_dir)
         try:
             for repo_dict in repo_list:
-                kwargs = repo_dict.copy()
+                kwargs = deepcopy(repo_dict)
                 if tag_override:
                     kwargs['revision'] = tag_override
                 self.vcs_checkout(**kwargs)
