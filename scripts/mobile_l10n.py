@@ -112,11 +112,11 @@ class MobileSingleLocale(LocalesMixin, SigningMixin, MercurialScript):
      }
     ],[
      ['--platform',],
-     {"action": "extend",
-      "dest": "platforms",
+     {"action": "store",
+      "dest": "platform",
       "type": "choice",
       "choices": SUPPORTED_PLATFORMS,
-      "help": "Specify the platform(s) to sign"
+      "help": "Specify the platform to sign"
      }
     ],[
      ['--user-repo-override',],
@@ -126,12 +126,30 @@ class MobileSingleLocale(LocalesMixin, SigningMixin, MercurialScript):
       "help": "Override the user repo path for all repos"
      }
     ],[
-     ['--update-platform',],
-     {"action": "extend",
-      "dest": "update_platforms",
-      "type": "choice",
-      "choices": SUPPORTED_PLATFORMS,
-      "help": "Specify the platform(s) to create update snippets for"
+     ['--enable-upload',],
+     {"action": "store_true",
+      "default": False,
+      "dest": "enable_upload",
+      "help": "Enable uploading of repacked bits and snippets"
+     }
+    ],[
+     ['--disable-upload',],
+     {"action": "store_false",
+      "dest": "enable_upload",
+      "help": "Enable uploading of repacked bits and snippets"
+     }
+    ],[
+     ['--enable-updates',],
+     {"action": "store_true",
+      "default": False,
+      "dest": "enable_updates",
+      "help": "Enable snippet creation of repacked bits"
+     }
+    ],[
+     ['--disable-updates',],
+     {"action": "store_false",
+      "dest": "enable_updates",
+      "help": "Enable snippet creation of repacked bits"
      }
     ],[
      ['--release-config-file',],
@@ -170,6 +188,7 @@ class MobileSingleLocale(LocalesMixin, SigningMixin, MercurialScript):
             require_config_file=require_config_file
         )
         self.repack_env = None
+        self.upload_env = None
         self.buildid = None
         self.revision = None
         self.make_ident_output = None
@@ -182,6 +201,16 @@ class MobileSingleLocale(LocalesMixin, SigningMixin, MercurialScript):
         repack_env = self.query_env(partial_env=c.get("repack_env"))
         self.repack_env = repack_env
         return self.repack_env
+
+    def query_upload_env(self):
+        if self.upload_env:
+            return self.upload_env
+        c = self.config
+        buildid = self.query_buildid()
+        upload_env = self.query_env(partial_env=c.get("upload_env"),
+                                    replace_dict={'buildid': buildid})
+        self.upload_env = upload_env
+        return self.upload_env
 
     def _query_make_ident_output(self):
         if self.make_ident_output:
@@ -342,15 +371,22 @@ class MobileSingleLocale(LocalesMixin, SigningMixin, MercurialScript):
         dirs = self.query_abs_dirs()
         locales = self.query_locales()
         make = self.query_exe("make")
-        env = self.query_repack_env()
+        repack_env = self.query_repack_env()
+        upload_env = self.query_upload_env()
         for locale in locales:
             if self.run_compare_locales(locale):
                 continue
             self.run_command([make, "installers-%s" % locale],
                              cwd=dirs['abs_locales_dir'],
-                             env=env,
+                             env=repack_env,
                              error_list=MakefileErrorList,
                              halt_on_failure=False)
+            if c.get('enable_upload'):
+                self.run_command([make, "upload", "AB_CD=%s" % locale],
+                                 cwd=dirs['abs_locales_dir'],
+                                 env=upload_env,
+                                 error_list=MakefileErrorList,
+                                 halt_on_failure=False)
 
     def verify_signatures(self):
         c = self.config

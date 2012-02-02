@@ -5,10 +5,10 @@ OBJDIR = "obj-l10n"
 EN_US_BINARY_URL = "http://stage.mozilla.org/pub/mozilla.org/mobile/nightly/latest-mozilla-aurora-android/en-US"
 # Use central b/c of robocop hackery
 #EN_US_BINARY_URL = "http://stage.mozilla.org/pub/mozilla.org/mobile/nightly/latest-mozilla-central-android/en-US"
-STAGE_SERVER = "dev-stage01.build.mozilla.org"
+STAGE_SERVER = "dev-stage01.build.sjc1.mozilla.com"
 STAGE_USER = "ffxbld"
 STAGE_SSH_KEY = "~/.ssh/ffxbld_dsa"
-AUS_SERVER = "dev-stage01.build.mozilla.org"
+AUS_SERVER = "dev-stage01.build.sjc1.mozilla.com"
 AUS_USER = "ffxbld"
 AUS_SSH_KEY = "~/.ssh/ffxbld_dsa"
 AUS_UPLOAD_BASE_DIR = "/opt/aus2/incoming/2/Fennec/%(branch)s/%(build_target)s/%(buildid)s/%(locale)s"
@@ -47,11 +47,16 @@ config = {
         "EN_US_BINARY_URL": EN_US_BINARY_URL,
         "JARSIGNER": "%(abs_work_dir)s/" + JARSIGNER,
         "LOCALE_MERGEDIR": "%(abs_merge_dir)s/",
+    },
+    "upload_env": {
         "UPLOAD_USER": STAGE_USER,
         "UPLOAD_SSH_KEY": STAGE_SSH_KEY,
         "UPLOAD_HOST": STAGE_SERVER,
+        "POST_UPLOAD_CMD": "post_upload.py -b mozilla-aurora-android-l10n -p mobile -i %(buildid)s --release-to-latest --release-to-dated",
         "UPLOAD_TO_TEMP": "1",
     },
+    "enable_upload": True,
+    "enable_updaates": True,
     "merge_locales": True,
     "make_dirs": ['config'],
     "mozilla_dir": MOZILLA_DIR,
