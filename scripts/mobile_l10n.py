@@ -241,7 +241,14 @@ class MobileSingleLocale(LocalesMixin, SigningMixin, MercurialScript):
             self.rmtree(objdir)
 
     def setup(self):
-        pass
+        c = self.config
+        dirs = self.query_abs_dirs()
+        mozconfig_path = os.path.join(dirs['abs_work_dir'],
+                                      c['mozilla_dir'], '.mozconfig')
+        self.copyfile(os.path.join(dirs['abs_work_dir'], c['mozconfig']),
+                      mozconfig_path)
+        # TODO stop using cat
+        self.run_command(["cat", mozconfig_path])
 
     def verify_signatures(self):
         c = self.config

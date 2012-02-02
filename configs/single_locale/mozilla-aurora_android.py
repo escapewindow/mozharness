@@ -30,6 +30,7 @@ config = {
     },
     "merge_locales": True,
     "mozilla_dir": MOZILLA_DIR,
+    # TODO change to MOZILLA_DIR/mobile/android/config/mozconfigs/android/l10n-mozconfig when that lands.
     "mozconfig": "buildbot-configs/mozilla2/android/mozilla-aurora/nightly/l10n-mozconfig",
     "jarsigner": "tools/release/signing/mozpass.py",
 
