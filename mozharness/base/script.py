@@ -323,7 +323,8 @@ class ShellMixin(object):
     def __init__(self):
         self.env = None
 
-    def query_env(self, partial_env=None, replace_dict=None):
+    def query_env(self, partial_env=None, replace_dict=None,
+                  set_self_env=None):
         """Environment query/generation method.
 
         The default, self.query_env(), will look for self.config['env']
@@ -334,14 +335,14 @@ class ShellMixin(object):
         self.config['env'], and we don't save self.env as it's a one-off.
 
         """
-        set_self_env = False
         if partial_env is None:
             if self.env is not None:
                 return self.env
             partial_env = self.config.get('env', None)
             if partial_env is None:
                 partial_env = {}
-            set_self_env = True
+            if set_self_env is None:
+                set_self_env = True
         env = os.environ.copy()
         if replace_dict is None:
             replace_dict = {}
