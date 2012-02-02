@@ -40,6 +40,7 @@
 """
 
 import os
+import re
 import sys
 
 # load modules from parent dir
@@ -156,7 +157,6 @@ class MobileSingleLocale(LocalesMixin, SigningMixin, MercurialScript):
     ]]
 
     def __init__(self, require_config_file=True):
-        env = None
         LocalesMixin.__init__(self)
         SigningMixin.__init__(self)
         MercurialScript.__init__(self,
@@ -168,8 +168,62 @@ class MobileSingleLocale(LocalesMixin, SigningMixin, MercurialScript):
             ],
             require_config_file=require_config_file
         )
+        self.repack_env = None
+        self.buildid = None
+        self.revision = None
+        self.make_ident_output = None
 
     # Helper methods {{{2
+    def query_repack_env(self):
+        if self.repack_env:
+            return self.repack_env
+        c = self.config
+        repack_env = self.query_env(partial_env=c.get("repack_env"))
+        self.repack_env = repack_env
+        return self.repack_env
+
+    def _query_make_ident_output(self):
+        if self.make_ident_output:
+            return self.make_ident_output
+        env = self.query_repack_env()
+        dirs = self.query_abs_dirs()
+        output = self.get_output_from_command(["make", "ident"],
+                                              cwd=dirs['abs_locales_dir'],
+                                              env=env,
+                                              halt_on_failure=True)
+        self.make_ident_output = output
+        return output
+
+    def _query_local_build_id(self):
+        if self.buildid:
+            return self.buildid
+        r = re.compile("buildid (\d+)")
+        output = self._query_make_ident_output()
+        for line in output.splitlines():
+            m = r.match(line)
+            if m:
+                self.buildid = m.groups()[0]
+        return self.buildid
+
+    def _query_local_revision(self):
+        if self.revision:
+            return revision
+        r = re.compile(r"gecko_revision ([0-9a-f]{12}\+?)")
+        output = self._query_make_ident_output()
+        for line in output.splitlines():
+            m = r.match(line)
+            if m:
+                self.revision = m.groups()[0]
+        return self.revision
+
+    def query_buildid(self, platform=None, base_url=None, buildnum=None,
+                      version=None):
+        # TODO enable release-style buildid queries a la sign_android.py
+        return self._query_local_build_id()
+
+    def query_revision(self):
+        return self._query_local_revision()
+
     def query_release_config(self):
         if self.release_config:
             return self.release_config
@@ -206,10 +260,6 @@ class MobileSingleLocale(LocalesMixin, SigningMixin, MercurialScript):
                 self.release_config[key] = c[key]
         self.info("Release config:\n%s" % self.release_config)
         return self.release_config
-
-    def query_buildid(self, platform, base_url, buildnum=None, version=None):
-        # TODO rewrite for nightly.
-        pass
 
     def _sign(self, apk, error_list=None):
         # TODO rewrite to use mozpass.py
@@ -249,7 +299,7 @@ class MobileSingleLocale(LocalesMixin, SigningMixin, MercurialScript):
                       mozconfig_path)
         # TODO stop using cat
         self.run_command(["cat", mozconfig_path])
-        env = self.query_env()
+        env = self.query_repack_env()
         self.run_command(["make", "-f", "client.mk", "configure"],
                          cwd=dirs['abs_mozilla_dir'],
                          env=env,
@@ -261,6 +311,26 @@ class MobileSingleLocale(LocalesMixin, SigningMixin, MercurialScript):
                              env=env,
                              error_list=MakefileErrorList,
                              halt_on_failure=True)
+        self.run_command(["make", "wget-en-US"],
+                         cwd=dirs['abs_locales_dir'],
+                         env=env,
+                         error_list=MakefileErrorList,
+                         halt_on_failure=True)
+        self.run_command(["make", "unpack"],
+                         cwd=dirs['abs_locales_dir'],
+                         env=env,
+                         error_list=MakefileErrorList,
+                         halt_on_failure=True)
+        revision = self.query_revision()
+        if not revision:
+            self.fatal("Can't determine revision!")
+        # TODO do this through VCSMixin instead of hardcoding hg
+        hg = self.query_exe("hg")
+        self.run_command([hg, "update", "-r", revision],
+                         cwd=dirs["abs_mozilla_dir"],
+                         env=env,
+                         error_list=BaseErrorList,
+                         halt_on_failure=True)
 
     def verify_signatures(self):
         c = self.config
@@ -282,7 +352,7 @@ class MobileSingleLocale(LocalesMixin, SigningMixin, MercurialScript):
             "explanation": "Not signed!"
         }]
         locales = self.query_locales()
-        env = self.query_env(partial_env=c.get("env"))
+        env = self.query_repack_env(partial_env=c.get("env"))
         for platform in c['platforms']:
             for locale in locales:
                 signed_path = '%s/%s/%s' % (platform, locale,

@@ -1,5 +1,6 @@
 MOZILLA_DIR = "mozilla-aurora"
 JAVA_HOME = "/tools/jdk6"
+JARSIGNER = "tools/release/signing/mozpass.py"
 OBJDIR = "obj-l10n"
 STAGE_SERVER = "dev-stage01.build.mozilla.org"
 STAGE_USER = "ffxbld"
@@ -34,17 +35,23 @@ config = {
     "hg_l10n_base": "http://hg.mozilla.org/releases/l10n/mozilla-aurora",
     "hg_l10n_tag": "default",
     "l10n_dir": MOZILLA_DIR,
-    "env": {
+    "repack_env": {
         "JAVA_HOME": JAVA_HOME,
         "PATH": JAVA_HOME + "/bin:%(PATH)s",
         "MOZ_OBJDIR": OBJDIR,
+        "EN_US_BINARY_URL": "http://stage.mozilla.org/pub/mozilla.org/mobile/nightly/latest-mozilla-aurora-android/en-US",
+        "JARSIGNER": "%(abs_work_dir)s/" + JARSIGNER,
+        "UPLOAD_USER": STAGE_USER,
+        "UPLOAD_SSH_KEY": STAGE_SSH_KEY,
+        "UPLOAD_HOST": STAGE_SERVER,
+        "UPLOAD_TO_TEMP": "1",
     },
     "merge_locales": True,
     "make_dirs": ['config'],
     "mozilla_dir": MOZILLA_DIR,
     # TODO change to MOZILLA_DIR/mobile/android/config/mozconfigs/android/l10n-mozconfig when that lands.
     "mozconfig": "buildbot-configs/mozilla2/android/mozilla-aurora/nightly/l10n-mozconfig",
-    "jarsigner": "tools/release/signing/mozpass.py",
+    "jarsigner": JARSIGNER,
 
     # TODO ideally we could get this info from a central location.
     # However, the agility of these individual config files might trump that.

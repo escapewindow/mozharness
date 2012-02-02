@@ -344,9 +344,11 @@ class ShellMixin(object):
             if set_self_env is None:
                 set_self_env = True
         env = os.environ.copy()
+        dirs = self.query_abs_dirs()
         if replace_dict is None:
             replace_dict = {}
         replace_dict['PATH'] = os.environ['PATH']
+        replace_dict['abs_work_dir'] = dirs['abs_work_dir']
         for key in partial_env.keys():
             env[key] = partial_env[key] % replace_dict
             self.debug("ENV: %s is now %s" % (key, env[key]))
