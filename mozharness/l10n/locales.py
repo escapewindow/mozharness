@@ -158,6 +158,40 @@ class LocalesMixin(object):
         self.abs_dirs = abs_dirs
         return self.abs_dirs
 
+    # This requires self to inherit a VCSMixin.
+    def pull_locale_source(self):
+        c = self.config
+        dirs = self.query_abs_dirs()
+        self.mkdir_p(dirs['abs_l10n_dir'])
+        repos = []
+        replace_dict = {}
+        # Replace %(user_repo_override)s with c['user_repo_override']
+        if c.get("user_repo_override"):
+            replace_dict['user_repo_override'] = c['user_repo_override']
+            for repo_dict in c.get('l10n_repos', []):
+                repo_dict['repo'] = repo_dict['repo'] % replace_dict
+                repos.append(repo_dict)
+        else:
+            repos = c.get("l10n_repos")
+        if repos:
+            self.vcs_checkout_repos(repos, tag_override=c.get('tag_override'))
+        locales = self.query_locales()
+        locale_repos = []
+        hg_l10n_base = c['hg_l10n_base']
+        if c.get("user_repo_override"):
+            hg_l10n_base = hg_l10n_base % {"user_repo_override": c["user_repo_override"]}
+        for locale in locales:
+            tag = c.get('hg_l10n_tag', 'default')
+            if hasattr(self, 'locale_dict'):
+                tag = self.locale_dict[locale]
+            locale_repos.append({
+                'repo': "%s/%s" % (hg_l10n_base, locale),
+                'tag': tag
+            })
+        self.vcs_checkout_repos(repo_list=locale_repos,
+                                parent_dir=dirs['abs_l10n_dir'],
+                                tag_override=c.get('tag_override'))
+
 # __main__ {{{1
 
 if __name__ == '__main__':

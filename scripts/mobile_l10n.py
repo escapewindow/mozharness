@@ -39,7 +39,6 @@
 
 """
 
-import hashlib
 import os
 import sys
 
@@ -214,6 +213,7 @@ class MobileSingleLocale(LocalesMixin, SigningMixin, MercurialScript):
         # TODO rewrite to use mozpass.py
         pass
 
+    # Actions {{{2
     def pull(self):
         c = self.config
         dirs = self.query_abs_dirs()
@@ -229,6 +229,7 @@ class MobileSingleLocale(LocalesMixin, SigningMixin, MercurialScript):
             repos = c['repos']
         self.vcs_checkout_repos(repos, parent_dir=dirs['abs_work_dir'],
                                 tag_override=c.get('tag_override'))
+        self.pull_locale_source()
 
     def verify_signatures(self):
         c = self.config

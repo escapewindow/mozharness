@@ -38,6 +38,7 @@
 """Signing methods
 """
 
+import hashlib
 import os
 
 from mozharness.base.log import DEBUG, INFO, WARNING, ERROR, CRITICAL, FATAL, IGNORE
@@ -45,6 +46,8 @@ from mozharness.base.log import DEBUG, INFO, WARNING, ERROR, CRITICAL, FATAL, IG
 # SigningMixin {{{1
 
 class SigningMixin(object):
+    """Generic signing helper methods.
+    """
     def query_filesize(self, file_path):
         self.info("Determining filesize for %s" % file_path)
         length = os.path.getsize(file_path)
