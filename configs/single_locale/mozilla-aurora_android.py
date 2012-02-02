@@ -1,6 +1,13 @@
 MOZILLA_DIR = "mozilla-aurora"
 JAVA_HOME = "/tools/jdk6"
 OBJDIR = "obj-l10n"
+STAGE_SERVER = "dev-stage01.build.mozilla.org"
+STAGE_USER = "ffxbld"
+STAGE_SSH_KEY = "~/.ssh/ffxbld_dsa"
+AUS_SERVER = "dev-stage01.build.mozilla.org"
+AUS_USER = "ffxbld"
+AUS_SSH_KEY = "~/.ssh/ffxbld_dsa"
+AUS_UPLOAD_BASE_DIR = "/opt/aus2/incoming/2/Fennec/%(branch)s/%(build_target)s/%(buildid)s/%(locale)s"
 
 config = {
     "log_name": "single_locale",
@@ -38,6 +45,20 @@ config = {
     # TODO change to MOZILLA_DIR/mobile/android/config/mozconfigs/android/l10n-mozconfig when that lands.
     "mozconfig": "buildbot-configs/mozilla2/android/mozilla-aurora/nightly/l10n-mozconfig",
     "jarsigner": "tools/release/signing/mozpass.py",
+
+    # TODO ideally we could get this info from a central location.
+    # However, the agility of these individual config files might trump that.
+    # Upload
+    "stage_server": STAGE_SERVER,
+    "stage_user": STAGE_USER,
+    "stage_ssh_key": STAGE_SSH_KEY,
+
+    # AUS
+    "build_target": "Android_arm-eabi-gcc3",
+    "aus_server": AUS_SERVER,
+    "aus_user": AUS_USER,
+    "aus_ssh_key": AUS_SSH_KEY,
+    "aus_upload_base_dir": AUS_UPLOAD_BASE_DIR,
 
     # TODO deleteme
     "locales": ['de', 'es-ES'],
