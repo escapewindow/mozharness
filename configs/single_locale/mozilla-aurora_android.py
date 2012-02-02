@@ -1,4 +1,4 @@
-{
+config = {
     "log_name": "single_locale",
     "objdir": "obj-l10n",
     "locales_file": "build/mobile/android/locales/all-locales",
@@ -27,8 +27,11 @@
         "JAVA_HOME": "/tools/jdk",
         "PATH": "%(PATH)s:/tools/jdk/bin"
     },
-    "merge_locales": true,
+    "merge_locales": True,
     "mozilla_dir": "mozilla-aurora",
     "mozconfig": "buildbot-configs/mozilla2/android/mozilla-aurora/nightly/l10n-mozconfig",
-    "jarsigner": "tools/release/signing/mozpass.py"
+    "jarsigner": "tools/release/signing/mozpass.py",
+
+    # TODO deleteme
+    "no_actions": ['clobber'],
 }
