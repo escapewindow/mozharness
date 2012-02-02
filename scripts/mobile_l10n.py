@@ -165,6 +165,7 @@ class MobileSingleLocale(LocalesMixin, SigningMixin, MercurialScript):
                 "clobber",
                 "pull",
                 "setup",
+                "repack",
             ],
             require_config_file=require_config_file
         )
@@ -298,25 +299,28 @@ class MobileSingleLocale(LocalesMixin, SigningMixin, MercurialScript):
         self.copyfile(os.path.join(dirs['abs_work_dir'], c['mozconfig']),
                       mozconfig_path)
         # TODO stop using cat
-        self.run_command(["cat", mozconfig_path])
+        cat = self.query_exe("cat")
+        hg = self.query_exe("hg")
+        make = self.query_exe("make")
+        self.run_command([cat, mozconfig_path])
         env = self.query_repack_env()
-        self.run_command(["make", "-f", "client.mk", "configure"],
+        self.run_command([make, "-f", "client.mk", "configure"],
                          cwd=dirs['abs_mozilla_dir'],
                          env=env,
                          error_list=MakefileErrorList,
                          halt_on_failure=True)
         for make_dir in c.get('make_dirs', []):
-            self.run_command(["make"],
+            self.run_command([make],
                              cwd=os.path.join(dirs['abs_objdir'], make_dir),
                              env=env,
                              error_list=MakefileErrorList,
                              halt_on_failure=True)
-        self.run_command(["make", "wget-en-US"],
+        self.run_command([make, "wget-en-US"],
                          cwd=dirs['abs_locales_dir'],
                          env=env,
                          error_list=MakefileErrorList,
                          halt_on_failure=True)
-        self.run_command(["make", "unpack"],
+        self.run_command([make, "unpack"],
                          cwd=dirs['abs_locales_dir'],
                          env=env,
                          error_list=MakefileErrorList,
@@ -325,12 +329,26 @@ class MobileSingleLocale(LocalesMixin, SigningMixin, MercurialScript):
         if not revision:
             self.fatal("Can't determine revision!")
         # TODO do this through VCSMixin instead of hardcoding hg
-        hg = self.query_exe("hg")
         self.run_command([hg, "update", "-r", revision],
                          cwd=dirs["abs_mozilla_dir"],
                          env=env,
                          error_list=BaseErrorList,
                          halt_on_failure=True)
+
+    def repack(self):
+        c = self.config
+        dirs = self.query_abs_dirs()
+        locales = self.query_locales()
+        make = self.query_exe("make")
+        env = self.query_repack_env()
+        for locale in locales:
+            if self.run_compare_locales(locale):
+                continue
+            self.run_command([make, "installers-%s" % locale],
+                             cwd=dirs['abs_locales_dir'],
+                             env=env,
+                             error_list=MakefileErrorList,
+                             halt_on_failure=False)
 
     def verify_signatures(self):
         c = self.config

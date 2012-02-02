@@ -41,6 +41,7 @@ config = {
         "MOZ_OBJDIR": OBJDIR,
         "EN_US_BINARY_URL": "http://stage.mozilla.org/pub/mozilla.org/mobile/nightly/latest-mozilla-aurora-android/en-US",
         "JARSIGNER": "%(abs_work_dir)s/" + JARSIGNER,
+        "LOCALE_MERGEDIR": "%(abs_merge_dir)s/",
         "UPLOAD_USER": STAGE_USER,
         "UPLOAD_SSH_KEY": STAGE_SSH_KEY,
         "UPLOAD_HOST": STAGE_SERVER,
