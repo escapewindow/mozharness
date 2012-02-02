@@ -35,7 +35,7 @@
 # the terms of any one of the MPL, the GPL or the LGPL.
 #
 # ***** END LICENSE BLOCK *****
-"""Signing methods
+"""Generic signing methods.
 """
 
 import hashlib
@@ -65,12 +65,3 @@ class SigningMixin(object):
         sha512 = m.hexdigest()
         self.info(" %s" % sha512)
         return sha512
-
-
-
-# __main__ {{{1
-
-if __name__ == '__main__':
-    '''TODO: unit tests.
-    '''
-    pass

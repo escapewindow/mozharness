@@ -365,6 +365,7 @@ class MobileSingleLocale(LocalesMixin, SigningMixin, MercurialScript):
                          halt_on_failure=True)
 
     def repack(self):
+        # TODO rename? This is highly overloaded for a repack() method.
         # TODO per-locale logs and reporting.
         # TODO query_locales chunking.
         c = self.config
@@ -373,20 +374,43 @@ class MobileSingleLocale(LocalesMixin, SigningMixin, MercurialScript):
         make = self.query_exe("make")
         repack_env = self.query_repack_env()
         upload_env = self.query_upload_env()
+        successful_repacks = total_repacks = 0
+        successful_uploads = total_uploads = 0
+        successful_snippets = total_snippets = 0
         for locale in locales:
+            total_repacks += 1
             if self.run_compare_locales(locale):
+                # TODO add_failure -> BaseScript
+                self.add_summary("%s failed in compare-locales!" % locale,
+                                 level=ERROR)
                 continue
-            self.run_command([make, "installers-%s" % locale],
-                             cwd=dirs['abs_locales_dir'],
-                             env=repack_env,
-                             error_list=MakefileErrorList,
-                             halt_on_failure=False)
+            if self.run_command([make, "installers-%s" % locale],
+                                cwd=dirs['abs_locales_dir'],
+                                env=repack_env,
+                                error_list=MakefileErrorList,
+                                halt_on_failure=False):
+                self.add_summary("%s failed in make installers-%s!" % (locale, locale),
+                                 level=ERROR)
+                continue
+            # TODO verify signature
+            # TODO create a mozharness/signing.py ?
+            successful_repacks += 1
             if c.get('enable_upload'):
-                self.run_command([make, "upload", "AB_CD=%s" % locale],
-                                 cwd=dirs['abs_locales_dir'],
-                                 env=upload_env,
-                                 error_list=MakefileErrorList,
-                                 halt_on_failure=False)
+                total_uploads += 1
+                if self.run_command([make, "upload", "AB_CD=%s" % locale],
+                                    cwd=dirs['abs_locales_dir'],
+                                    env=upload_env,
+                                    error_list=MakefileErrorList,
+                                    halt_on_failure=False):
+                    self.add_summary("%s failed in make upload!" % (locale),
+                                     level=ERROR)
+                    continue
+                successful_uploads += 1
+            if c.get('enable_updates'):
+                total_updates += 1
+                # TODO create snippets
+                # TODO upload snippets
+        # TODO final add_summaries
 
     def verify_signatures(self):
         c = self.config
