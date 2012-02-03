@@ -349,7 +349,7 @@ class MobileSingleLocale(LocalesMixin, MobileSigningMixin, MercurialScript):
             )
             if status:
                 self.add_failure(locale, message="Errors verifying %s apk!" % locale)
-                self.rmtree(signed_path)
+                # No need to rm because upload is per-locale
                 continue
             successful_repacks += 1
         level=INFO

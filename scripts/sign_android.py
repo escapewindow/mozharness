@@ -490,6 +490,7 @@ class SignAndroid(LocalesMixin, MobileSigningMixin, MercurialScript):
                 if status:
                     self.add_failure(platform, locale,
                                      message="Errors verifying %(platform)s:%(locale)s apk!")
+                    # rm to avoid uploading ?
                     self.rmtree(signed_path)
 
     def upload_signed_bits(self):
