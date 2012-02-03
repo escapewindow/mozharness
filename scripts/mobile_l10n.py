@@ -349,7 +349,7 @@ class MobileSingleLocale(LocalesMixin, SigningMixin, MercurialScript):
                 self.add_failure(locale, message="%s failed in make installers-%s!" % (locale, locale))
                 continue
             # TODO verify signature
-            # TODO create a mozharness/signing.py ?
+            # TODO create a mozharness/mozilla/signing.py ?
             successful_repacks += 1
             if c.get('enable_upload'):
                 total_uploads += 1
@@ -361,6 +361,8 @@ class MobileSingleLocale(LocalesMixin, SigningMixin, MercurialScript):
                     self.add_failure(locale, message="%s failed in make upload!" % (locale))
                     continue
                 successful_uploads += 1
+        # TODO updates to a different function.
+        # make echo-variable-PACKAGE AB_CD=es-ES
             if c.get('enable_updates'):
                 total_updates += 1
                 # TODO create snippets
