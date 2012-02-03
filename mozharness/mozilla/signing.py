@@ -60,6 +60,19 @@ AndroidSignatureVerificationErrorList = BaseErrorList + [{
     "explanation": "Not signed!"
 }]
 
+# TODO I'm not sure how many templates we will need.
+# This will be sufficient for the moment.
+SNIPPET_TEMPLATE = """version=1
+type=complete
+url=%(url)s
+hashFunction=sha512
+hashValue=%(sha512_hash)s
+size=%(size)d
+build=%(buildid)s
+appv=%(version)s
+extv=%(version)s
+"""
+
 
 # SigningMixin {{{1
 

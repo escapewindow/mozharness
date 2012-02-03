@@ -159,6 +159,7 @@ class MobileSingleLocale(LocalesMixin, MobileSigningMixin, MercurialScript):
                 "setup",
                 "repack",
                 "upload-repacks",
+                "create-snippets",
             ],
             require_config_file=require_config_file
         )
@@ -381,14 +382,13 @@ class MobileSingleLocale(LocalesMixin, MobileSigningMixin, MercurialScript):
         if successful_uploads < total_uploads:
             level=ERROR
         self.add_summary("Uploaded %d of %d apks successfully." % (successful_uploads, total_uploads), level=level)
-        # make echo-variable-PACKAGE AB_CD=es-ES
-        # TODO create snippets
-        # TODO upload snippets
 
     def create_snippets(self):
         pass
+        # TODO create snippets
 
     def upload_snippets(self):
+        # TODO upload snippets
         c = self.config
         rc = self.query_release_config()
         dirs = self.query_abs_dirs()
