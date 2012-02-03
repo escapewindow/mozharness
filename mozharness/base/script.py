@@ -559,6 +559,7 @@ class BaseScript(ShellMixin, OSMixin, LogMixin, object):
         if config_options is None:
             config_options = []
         self.summary_list = []
+        self.failures = []
         rw_config = BaseConfig(config_options=config_options,
                                **kwargs)
         self.config = rw_config.get_read_only_config()
@@ -707,6 +708,15 @@ class BaseScript(ShellMixin, OSMixin, LogMixin, object):
         # TODO write to a summary-only log?
         # Summaries need a lot more love.
         self.log(message, level=level)
+
+    def add_failure(self, key, message="%(key)s failed.", level=ERROR):
+        if key not in self.failures:
+            self.failures.append(key)
+            self.return_code += 1
+            self.add_summary(message % {'key': key}, level=level)
+
+    def query_failure(self, key):
+        return key in self.failures
 
     def copy_to_upload_dir(self, target, dest=None, short_desc="unknown",
                            long_desc="unknown", log_level=DEBUG,

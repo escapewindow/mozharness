@@ -197,7 +197,6 @@ class SignAndroid(LocalesMixin, SigningMixin, MercurialScript):
         self.store_passphrase = os.environ.get('android_storepass')
         self.key_passphrase = os.environ.get('android_keypass')
         self.release_config = {}
-        self.failures = []
         LocalesMixin.__init__(self)
         SigningMixin.__init__(self)
         MercurialScript.__init__(self,
@@ -333,19 +332,15 @@ class SignAndroid(LocalesMixin, SigningMixin, MercurialScript):
                 parser.add_lines(line)
         return parser.num_errors
 
-    def add_failure(self, platform, locale,
-                    message="%(platform)s:%(locale)s failed.",
-                    level=ERROR):
+    def add_failure(self, platform, locale, **kwargs):
         s = "%s:%s" % (platform, locale)
-        if s not in self.failures:
-            self.failures.append(s)
-            self.return_code += 1
-            self.add_summary(message % {'platform': platform, 'locale': locale},
-                             level=level)
+        if 'message' in kwargs:
+            kwargs['message'] = kwargs['message'] % {'platform': platform, 'locale': locale}
+        super(SignAndroid, self).add_failure(s, **kwargs)
 
     def query_failure(self, platform, locale):
         s = "%s:%s" % (platform, locale)
-        return s in self.failures
+        return super(SignAndroid, self).query_failure(s)
 
     # Actions {{{2
     def passphrase(self):
