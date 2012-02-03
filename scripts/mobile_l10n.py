@@ -243,7 +243,7 @@ class MobileSingleLocale(LocalesMixin, MobileSigningMixin, MercurialScript):
         self.base_package_name = self.get_output_from_command(
             [make, "echo-variable-PACKAGE", 'AB_CD="%(locale)s"'],
             cwd=dirs['abs_locales_dir'],
-            env=env)
+            env=env
         )
         # TODO error checking
         return self.base_package_name
@@ -375,83 +375,7 @@ class MobileSingleLocale(LocalesMixin, MobileSigningMixin, MercurialScript):
         # TODO upload snippets
 
     def create_snippets(self):
-        c = self.config
-        rc = self.query_release_config()
-        dirs = self.query_abs_dirs()
-        locales = self.query_locales()
-        replace_dict = {
-            'version': rc['version'],
-            'buildnum': rc['buildnum'],
-        }
-        total_count = {'snippets': 0, 'links': 0}
-        successful_count = {'snippets': 0, 'links': 0}
-        for platform in c['update_platforms']:
-            buildid = self.query_buildid(platform, c['buildid_base_url'])
-            old_buildid = self.query_buildid(platform, c['old_buildid_base_url'],
-                                             buildnum=rc['old_buildnum'],
-                                             version=rc['old_version'])
-            if not buildid:
-                self.add_summary("Can't get buildid for %s! Skipping..." % platform, level=ERROR)
-                continue
-            replace_dict['platform'] = platform
-            replace_dict['buildid'] = buildid
-            for locale in locales:
-                replace_dict['locale'] = locale
-                parent_dir = '%s/%s/%s' % (dirs['abs_work_dir'],
-                                           platform, locale)
-                replace_dict['apk_name'] = c['apk_base_name'] % replace_dict
-                signed_path = '%s/%s' % (parent_dir, replace_dict['apk_name'])
-                if not os.path.exists(signed_path):
-                    self.add_summary("Unable to create snippet for %s:%s: apk doesn't exist!" % (platform, locale), level=ERROR)
-                    continue
-                replace_dict['size'] = self.query_filesize(signed_path)
-                replace_dict['sha512_hash'] = self.query_sha512sum(signed_path)
-                for channel, channel_dict in c['update_channels'].items():
-                    total_count['snippets'] += 1
-                    total_count['links'] += 1
-                    replace_dict['url'] = channel_dict['url'] % replace_dict
-                    # Create previous link
-                    previous_dir = os.path.join(dirs['abs_work_dir'], 'update',
-                                                channel_dict['dir_base_name'] % (replace_dict),
-                                                'Fennec', rc['old_version'],
-                                                c['update_platform_map'][platform],
-                                                old_buildid, locale, channel)
-                    self.mkdir_p(previous_dir)
-                    self.run_command(["touch", "partial.txt"],
-                                     cwd=previous_dir, error_list=BaseErrorList)
-                    status = self.run_command(
-                        ['ln', '-s',
-                         '../../../../../snippets/%s/%s/latest-%s' % (platform, locale, channel),
-                         'complete.txt'],
-                        cwd=previous_dir, error_list=BaseErrorList
-                    )
-                    if not status:
-                        successful_count['links'] += 1
-                    # Create snippet
-                    contents = channel_dict['template'] % replace_dict
-                    snippet_dir = "%s/update/%s/Fennec/snippets/%s/%s" % (
-                      dirs['abs_work_dir'],
-                      channel_dict['dir_base_name'] % (replace_dict),
-                      platform, locale)
-                    snippet_file = "%s/latest-%s" % (snippet_dir, channel)
-                    self.info("Creating snippet for %s %s %s" % (platform, locale, channel))
-                    self.mkdir_p(snippet_dir)
-                    try:
-                        fh = open(snippet_file, 'w')
-                        fh.write(contents)
-                        fh.close()
-                    except:
-                        self.add_summary("Unable to write to %s!" % snippet_file, level=ERROR)
-                        self.info("File contents: \n%s" % contents)
-                    else:
-                        successful_count['snippets'] += 1
-        level = INFO
-        for k in successful_count.keys():
-            if successful_count[k] < total_count[k]:
-                level = ERROR
-            self.add_summary("Created %d of %d %s successfully." % \
-                             (successful_count[k], total_count[k], k),
-                             level=level)
+        pass
 
     def upload_snippets(self):
         c = self.config
