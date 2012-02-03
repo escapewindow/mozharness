@@ -53,8 +53,6 @@ config = {
         "POST_UPLOAD_CMD": "post_upload.py -b mozilla-aurora-android-l10n -p mobile -i %(buildid)s --release-to-latest --release-to-dated",
         "UPLOAD_TO_TEMP": "1",
     },
-    "enable_upload": True,
-    "enable_updaates": True,
     "merge_locales": True,
     "make_dirs": ['config'],
     "mozilla_dir": MOZILLA_DIR,

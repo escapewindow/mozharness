@@ -126,32 +126,6 @@ class MobileSingleLocale(LocalesMixin, SigningMixin, MercurialScript):
       "help": "Override the user repo path for all repos"
      }
     ],[
-     ['--enable-upload',],
-     {"action": "store_true",
-      "default": False,
-      "dest": "enable_upload",
-      "help": "Enable uploading of repacked bits and snippets"
-     }
-    ],[
-     ['--disable-upload',],
-     {"action": "store_false",
-      "dest": "enable_upload",
-      "help": "Enable uploading of repacked bits and snippets"
-     }
-    ],[
-     ['--enable-updates',],
-     {"action": "store_true",
-      "default": False,
-      "dest": "enable_updates",
-      "help": "Enable snippet creation of repacked bits"
-     }
-    ],[
-     ['--disable-updates',],
-     {"action": "store_false",
-      "dest": "enable_updates",
-      "help": "Enable snippet creation of repacked bits"
-     }
-    ],[
      ['--release-config-file',],
      {"action": "store",
       "dest": "release_config_file",
@@ -184,6 +158,7 @@ class MobileSingleLocale(LocalesMixin, SigningMixin, MercurialScript):
                 "pull",
                 "setup",
                 "repack",
+                "upload-repacks",
             ],
             require_config_file=require_config_file
         )
@@ -324,7 +299,6 @@ class MobileSingleLocale(LocalesMixin, SigningMixin, MercurialScript):
                          halt_on_failure=True)
 
     def repack(self):
-        # TODO rename? This is highly overloaded for a repack() method.
         # TODO per-locale logs and reporting.
         # TODO query_locales chunking.
         c = self.config
@@ -332,10 +306,7 @@ class MobileSingleLocale(LocalesMixin, SigningMixin, MercurialScript):
         locales = self.query_locales()
         make = self.query_exe("make")
         repack_env = self.query_repack_env()
-        upload_env = self.query_upload_env()
         successful_repacks = total_repacks = 0
-        successful_uploads = total_uploads = 0
-        successful_snippets = total_snippets = 0
         for locale in locales:
             total_repacks += 1
             if self.run_compare_locales(locale):
@@ -351,22 +322,39 @@ class MobileSingleLocale(LocalesMixin, SigningMixin, MercurialScript):
             # TODO verify signature
             # TODO create a mozharness/mozilla/signing.py ?
             successful_repacks += 1
-            if c.get('enable_upload'):
-                total_uploads += 1
-                if self.run_command([make, "upload", "AB_CD=%s" % locale],
-                                    cwd=dirs['abs_locales_dir'],
-                                    env=upload_env,
-                                    error_list=MakefileErrorList,
-                                    halt_on_failure=False):
-                    self.add_failure(locale, message="%s failed in make upload!" % (locale))
-                    continue
-                successful_uploads += 1
+        level=INFO
+        if successful_repacks < total_repacks:
+            level=ERROR
+        self.add_summary("Repacked %d of %d apks successfully." % (successful_repacks, total_repacks), level=level)
+
+    def upload_repacks(self):
+        c = self.config
+        dirs = self.query_abs_dirs()
+        locales = self.query_locales()
+        make = self.query_exe("make")
+        upload_env = self.query_upload_env()
+        successful_uploads = total_uploads = 0
+        for locale in locales:
+            if self.query_failure(locale):
+                self.warning("Skipping previously failed locale %s." % locale)
+                continue
+            total_uploads += 1
+            if self.run_command([make, "upload", "AB_CD=%s" % locale],
+                                cwd=dirs['abs_locales_dir'],
+                                env=upload_env,
+                                error_list=MakefileErrorList,
+                                halt_on_failure=False):
+                self.add_failure(locale, message="%s failed in make upload!" % (locale))
+                continue
+            successful_uploads += 1
+        level=INFO
+        if successful_uploads < total_uploads:
+            level=ERROR
+        self.add_summary("Uploaded %d of %d apks successfully." % (successful_uploads, total_uploads), level=level)
         # TODO updates to a different function.
         # make echo-variable-PACKAGE AB_CD=es-ES
-            if c.get('enable_updates'):
-                total_updates += 1
-                # TODO create snippets
-                # TODO upload snippets
+        # TODO create snippets
+        # TODO upload snippets
         # TODO final add_summaries
 
     def verify_signatures(self):
