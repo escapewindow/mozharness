@@ -38,6 +38,7 @@
 """Mozilla-specific signing methods.
 """
 
+import os
 import re
 
 from mozharness.base.errors import BaseErrorList
@@ -79,7 +80,47 @@ extv=%(version)s
 class SigningMixin(BaseSigningMixin):
     """Generic signing helper methods.
     """
-    pass
+    # Should this write to file too?
+    def create_complete_snippet(self, binary_path, version, buildid,
+                                url, snippet_dir, snippet_file="complete.txt",
+                                size=None, sha512_hash=None,
+                                error_level=ERROR):
+        """Create a complete snippet, and writes to file.
+        Returns True for success, False for failure.
+        """
+        self.info("Creating complete snippet for %s." % binary_path)
+        if not os.path.exists(binary_path):
+            self.error("Can't create complete snippet: %s doesn't exist!" % binary_path)
+            return False
+        replace_dict = {
+            'version': version,
+            'buildid': buildid,
+            'url': url,
+        }
+        # Allow these to be generated beforehand since we may be generating
+        # many snippets for the same binary_path, and calculating them
+        # multiple times isn't efficient.
+        if size:
+            replace_dict['size'] = size
+        else:
+            replace_dict['size'] = self.query_filesize(binary_path)
+        if sha512_hash:
+            replace_dict['sha512_hash'] = sha512_hash
+        else:
+            replace_dict['sha512_hash'] = self.query_sha512sum(binary_path)
+        contents = SNIPPET_TEMPLATE % replace_dict
+        self.mkdir_p(snippet_dir)
+        snippet_path = os.path.join(snippet_dir, snippet_file)
+        try:
+            fh = open(snippet_path, 'w')
+            fh.write(contents)
+            fh.close()
+        except:
+            self.log("Unable to write complete snippet to %s!" % snippet_path,
+                     level=level)
+            return False
+        else:
+            return True
 
 
 

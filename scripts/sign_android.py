@@ -551,12 +551,29 @@ class SignAndroid(LocalesMixin, MobileSigningMixin, MercurialScript):
                 if not os.path.exists(signed_path):
                     self.add_summary("Unable to create snippet for %s:%s: apk doesn't exist!" % (platform, locale), level=ERROR)
                     continue
-                replace_dict['size'] = self.query_filesize(signed_path)
-                replace_dict['sha512_hash'] = self.query_sha512sum(signed_path)
+                size = self.query_filesize(signed_path)
+                sha512_hash = self.query_sha512sum(signed_path)
                 for channel, channel_dict in c['update_channels'].items():
                     total_count['snippets'] += 1
                     total_count['links'] += 1
-                    replace_dict['url'] = channel_dict['url'] % replace_dict
+                    url = channel_dict['url'] % replace_dict
+                    # Create complete snippet
+                    self.info("Creating snippet for %s %s %s" % (platform, locale, channel))
+                    snippet_dir = "%s/update/%s/Fennec/snippets/%s/%s" % (
+                      dirs['abs_work_dir'],
+                      channel_dict['dir_base_name'] % (replace_dict),
+                      platform, locale)
+                    snippet_file = "latest-%s" % channel
+                    if self.create_complete_snippet(
+                        signed_path, rc['version'], buildid,
+                        url, snippet_dir, snippet_file,
+                        size, sha512_hash
+                    ):
+                        successful_count['snippets'] += 1
+                    else:
+                        self.add_failure(platform, locale,
+                                         message="Errors creating snippet for %(platform)s:%(locale)s!")
+                        continue
                     # Create previous link
                     previous_dir = os.path.join(dirs['abs_work_dir'], 'update',
                                                 channel_dict['dir_base_name'] % (replace_dict),
@@ -574,24 +591,6 @@ class SignAndroid(LocalesMixin, MobileSigningMixin, MercurialScript):
                     )
                     if not status:
                         successful_count['links'] += 1
-                    # Create snippet
-                    contents = channel_dict['template'] % replace_dict
-                    snippet_dir = "%s/update/%s/Fennec/snippets/%s/%s" % (
-                      dirs['abs_work_dir'],
-                      channel_dict['dir_base_name'] % (replace_dict),
-                      platform, locale)
-                    snippet_file = "%s/latest-%s" % (snippet_dir, channel)
-                    self.info("Creating snippet for %s %s %s" % (platform, locale, channel))
-                    self.mkdir_p(snippet_dir)
-                    try:
-                        fh = open(snippet_file, 'w')
-                        fh.write(contents)
-                        fh.close()
-                    except:
-                        self.add_summary("Unable to write to %s!" % snippet_file, level=ERROR)
-                        self.info("File contents: \n%s" % contents)
-                    else:
-                        successful_count['snippets'] += 1
         level = INFO
         for k in successful_count.keys():
             if successful_count[k] < total_count[k]:
