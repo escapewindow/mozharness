@@ -167,6 +167,7 @@ class MobileSingleLocale(LocalesMixin, MobileSigningMixin, MercurialScript):
         self.buildid = None
         self.revision = None
         self.make_ident_output = None
+        self.base_package_name = None
 
     # Helper methods {{{2
     def query_repack_env(self):
@@ -188,6 +189,9 @@ class MobileSingleLocale(LocalesMixin, MobileSigningMixin, MercurialScript):
         return self.upload_env
 
     def _query_make_ident_output(self):
+        """Get |make ident| output from the objdir.
+        Only valid after setup is run.
+        """
         if self.make_ident_output:
             return self.make_ident_output
         env = self.query_repack_env()
@@ -199,7 +203,10 @@ class MobileSingleLocale(LocalesMixin, MobileSigningMixin, MercurialScript):
         self.make_ident_output = output
         return output
 
-    def _query_local_build_id(self):
+    def query_buildid(self):
+        """Get buildid from the objdir.
+        Only valid after setup is run.
+        """
         if self.buildid:
             return self.buildid
         r = re.compile("buildid (\d+)")
@@ -210,7 +217,10 @@ class MobileSingleLocale(LocalesMixin, MobileSigningMixin, MercurialScript):
                 self.buildid = m.groups()[0]
         return self.buildid
 
-    def _query_local_revision(self):
+    def query_revision(self):
+        """Get revision from the objdir.
+        Only valid after setup is run.
+        """
         if self.revision:
             return self.revision
         r = re.compile(r"gecko_revision ([0-9a-f]{12}\+?)")
@@ -221,13 +231,22 @@ class MobileSingleLocale(LocalesMixin, MobileSigningMixin, MercurialScript):
                 self.revision = m.groups()[0]
         return self.revision
 
-    def query_buildid(self, platform=None, base_url=None, buildnum=None,
-                      version=None):
-        # TODO enable release-style buildid queries a la sign_android.py
-        return self._query_local_build_id()
-
-    def query_revision(self):
-        return self._query_local_revision()
+    def query_base_package_name(self):
+        """Get the package name from the objdir.
+        Only valid after setup is run.
+        """
+        if self.base_package_name:
+            return self.base_package_name
+        make = self.query_exe('make')
+        env = self.query_repack_env()
+        dirs = self.query_abs_dirs()
+        self.base_package_name = self.get_output_from_command(
+            [make, "echo-variable-PACKAGE", 'AB_CD="%(locale)s"'],
+            cwd=dirs['abs_locales_dir'],
+            env=env)
+        )
+        # TODO error checking
+        return self.base_package_name
 
     # Actions {{{2
     def pull(self):
@@ -319,6 +338,7 @@ class MobileSingleLocale(LocalesMixin, MobileSigningMixin, MercurialScript):
                                 halt_on_failure=False):
                 self.add_failure(locale, message="%s failed in make installers-%s!" % (locale, locale))
                 continue
+            # TODO query_repack_path()
             # TODO verify signature
             successful_repacks += 1
         level=INFO
@@ -350,69 +370,9 @@ class MobileSingleLocale(LocalesMixin, MobileSigningMixin, MercurialScript):
         if successful_uploads < total_uploads:
             level=ERROR
         self.add_summary("Uploaded %d of %d apks successfully." % (successful_uploads, total_uploads), level=level)
-        # TODO updates to a different function.
         # make echo-variable-PACKAGE AB_CD=es-ES
         # TODO create snippets
         # TODO upload snippets
-        # TODO final add_summaries
-
-    def verify_signatures(self):
-        c = self.config
-        rc = self.query_release_config()
-        dirs = self.query_abs_dirs()
-        verification_error_list = BaseErrorList + [{
-            "regex": re.compile(r'''^Invalid$'''),
-            "level": FATAL,
-            "explanation": "Signature is invalid!"
-        },{
-            "substr": "filename not matched",
-            "level": ERROR,
-        },{
-            "substr": "ERROR: Could not unzip",
-            "level": ERROR,
-        },{
-            "regex": re.compile(r'''Are you sure this is a (nightly|release) package'''),
-            "level": FATAL,
-            "explanation": "Not signed!"
-        }]
-        locales = self.query_locales()
-        env = self.query_repack_env()
-        for platform in c['platforms']:
-            for locale in locales:
-                signed_path = '%s/%s/%s' % (platform, locale,
-                    c['apk_base_name'] % {'version': rc['version'],
-                                          'locale': locale})
-                self.run_command([c['signature_verification_script'],
-                                  '--tools-dir=tools/',
-                                  '--%s' % c['key_alias'],
-                                  '--apk=%s' % signed_path],
-                                 cwd=dirs['abs_work_dir'],
-                                 env=env,
-                                 error_list=verification_error_list)
-
-        c = self.config
-        if not c['platforms']:
-            self.info("No platforms to rsync! Skipping...")
-            return
-        rc = self.query_release_config()
-        dirs = self.query_abs_dirs()
-        rsync = self.query_exe("rsync")
-        ssh = self.query_exe("ssh")
-        ftp_upload_dir = c['ftp_upload_base_dir'] % {
-            'version': rc['version'],
-            'buildnum': rc['buildnum'],
-        }
-        cmd = [ssh, '-oIdentityFile=%s' % rc['ftp_ssh_key'],
-               '%s@%s' % (rc['ftp_user'], rc['ftp_server']),
-               'mkdir', '-p', ftp_upload_dir]
-        self.run_command(cmd, cwd=dirs['abs_work_dir'],
-                         error_list=SSHErrorList)
-        cmd = [rsync, '-e']
-        cmd += ['%s -oIdentityFile=%s' % (ssh, rc['ftp_ssh_key']), '-azv']
-        cmd += c['platforms']
-        cmd += ["%s@%s:%s/" % (rc['ftp_user'], rc['ftp_server'], ftp_upload_dir)]
-        self.run_command(cmd, cwd=dirs['abs_work_dir'],
-                         error_list=SSHErrorList)
 
     def create_snippets(self):
         c = self.config
