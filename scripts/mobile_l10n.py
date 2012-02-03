@@ -241,7 +241,7 @@ class MobileSingleLocale(LocalesMixin, MobileSigningMixin, MercurialScript):
         env = self.query_repack_env()
         dirs = self.query_abs_dirs()
         self.base_package_name = self.get_output_from_command(
-            [make, "echo-variable-PACKAGE", 'AB_CD="%(locale)s"'],
+            [make, "echo-variable-PACKAGE", 'AB_CD=%(locale)s'],
             cwd=dirs['abs_locales_dir'],
             env=env
         )
@@ -325,6 +325,8 @@ class MobileSingleLocale(LocalesMixin, MobileSigningMixin, MercurialScript):
         locales = self.query_locales()
         make = self.query_exe("make")
         repack_env = self.query_repack_env()
+        base_package_name = self.query_base_package_name()
+        base_package_dir = os.path.join(dirs['abs_objdir'], 'dist')
         successful_repacks = total_repacks = 0
         for locale in locales:
             total_repacks += 1
@@ -338,8 +340,17 @@ class MobileSingleLocale(LocalesMixin, MobileSigningMixin, MercurialScript):
                                 halt_on_failure=False):
                 self.add_failure(locale, message="%s failed in make installers-%s!" % (locale, locale))
                 continue
-            # TODO query_repack_path()
-            # TODO verify signature
+            signed_path = os.path.join(base_package_dir,
+                                       base_package_name % {'locale': locale})
+            status = self.verify_android_signature(
+                signed_path,
+                script=c['signature_verification_script'],
+                env=repack_env
+            )
+            if status:
+                self.add_failure(locale, message="Errors verifying %s apk!" % locale)
+                self.rmtree(signed_path)
+                continue
             successful_repacks += 1
         level=INFO
         if successful_repacks < total_repacks:

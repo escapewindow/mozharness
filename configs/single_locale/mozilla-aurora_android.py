@@ -59,6 +59,7 @@ config = {
     # TODO change to MOZILLA_DIR/mobile/android/config/mozconfigs/android/l10n-mozconfig when that lands.
     "mozconfig": "buildbot-configs/mozilla2/android/mozilla-aurora/nightly/l10n-mozconfig",
     "jarsigner": JARSIGNER,
+    "signature_verification_script": "tools/release/signing/verify-android-signature.sh",
 
     # AUS
     "build_target": "Android_arm-eabi-gcc3",
