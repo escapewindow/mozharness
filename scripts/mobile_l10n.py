@@ -380,17 +380,14 @@ class MobileSingleLocale(LocalesMixin, SigningMixin, MercurialScript):
         for locale in locales:
             total_repacks += 1
             if self.run_compare_locales(locale):
-                # TODO add_failure -> BaseScript
-                self.add_summary("%s failed in compare-locales!" % locale,
-                                 level=ERROR)
+                self.add_failure(locale, message="%s failed in compare-locales!" % locale)
                 continue
             if self.run_command([make, "installers-%s" % locale],
                                 cwd=dirs['abs_locales_dir'],
                                 env=repack_env,
                                 error_list=MakefileErrorList,
                                 halt_on_failure=False):
-                self.add_summary("%s failed in make installers-%s!" % (locale, locale),
-                                 level=ERROR)
+                self.add_failure(locale, message="%s failed in make installers-%s!" % (locale, locale))
                 continue
             # TODO verify signature
             # TODO create a mozharness/signing.py ?
@@ -402,8 +399,7 @@ class MobileSingleLocale(LocalesMixin, SigningMixin, MercurialScript):
                                     env=upload_env,
                                     error_list=MakefileErrorList,
                                     halt_on_failure=False):
-                    self.add_summary("%s failed in make upload!" % (locale),
-                                     level=ERROR)
+                    self.add_failure(locale, message="%s failed in make upload!" % (locale))
                     continue
                 successful_uploads += 1
             if c.get('enable_updates'):

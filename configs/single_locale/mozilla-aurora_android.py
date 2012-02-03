@@ -2,9 +2,9 @@ MOZILLA_DIR = "mozilla-aurora"
 JAVA_HOME = "/tools/jdk6"
 JARSIGNER = "tools/release/signing/mozpass.py"
 OBJDIR = "obj-l10n"
-EN_US_BINARY_URL = "http://stage.mozilla.org/pub/mozilla.org/mobile/nightly/latest-mozilla-aurora-android/en-US"
+EN_US_BINARY_URL = "http://stage.mozilla.org/pub/mozilla.org/mobile/nightly/latest-mozilla-aurora-android"
 # Use central b/c of robocop hackery
-#EN_US_BINARY_URL = "http://stage.mozilla.org/pub/mozilla.org/mobile/nightly/latest-mozilla-central-android/en-US"
+#EN_US_BINARY_URL = "http://stage.mozilla.org/pub/mozilla.org/mobile/nightly/latest-mozilla-central-android"
 STAGE_SERVER = "dev-stage01.build.sjc1.mozilla.com"
 STAGE_USER = "ffxbld"
 STAGE_SSH_KEY = "~/.ssh/ffxbld_dsa"
@@ -18,7 +18,7 @@ config = {
     "objdir": OBJDIR,
     "locales_file": "%s/mobile/android/locales/all-locales" % MOZILLA_DIR,
     "locales_dir": "mobile/android/locales",
-    "ignore_locales": ["en-US", "multi"],
+    "ignore_locales": ["en-US"],
     "repos": [{
         "repo": "http://hg.mozilla.org/releases/mozilla-aurora",
         "revision": "default",
