@@ -3,8 +3,6 @@ JAVA_HOME = "/tools/jdk6"
 JARSIGNER = "tools/release/signing/mozpass.py"
 OBJDIR = "obj-l10n"
 EN_US_BINARY_URL = "http://stage.mozilla.org/pub/mozilla.org/mobile/nightly/latest-mozilla-aurora-android"
-# Use central b/c of robocop hackery
-#EN_US_BINARY_URL = "http://stage.mozilla.org/pub/mozilla.org/mobile/nightly/latest-mozilla-central-android"
 STAGE_SERVER = "dev-stage01.build.sjc1.mozilla.com"
 STAGE_USER = "ffxbld"
 STAGE_SSH_KEY = "~/.ssh/ffxbld_dsa"
@@ -22,8 +20,6 @@ config = {
     "repos": [{
         "repo": "http://hg.mozilla.org/releases/mozilla-aurora",
         "revision": "default",
-# pre-robocop
-#        "revision": "5221f1397829",
         "dest": MOZILLA_DIR,
     },{
         "repo": "http://hg.mozilla.org/build/buildbot-configs",
@@ -48,6 +44,8 @@ config = {
         "JARSIGNER": "%(abs_work_dir)s/" + JARSIGNER,
         "LOCALE_MERGEDIR": "%(abs_merge_dir)s/",
     },
+    # TODO ideally we could get this info from a central location.
+    # However, the agility of these individual config files might trump that.
     "upload_env": {
         "UPLOAD_USER": STAGE_USER,
         "UPLOAD_SSH_KEY": STAGE_SSH_KEY,
@@ -63,13 +61,6 @@ config = {
     # TODO change to MOZILLA_DIR/mobile/android/config/mozconfigs/android/l10n-mozconfig when that lands.
     "mozconfig": "buildbot-configs/mozilla2/android/mozilla-aurora/nightly/l10n-mozconfig",
     "jarsigner": JARSIGNER,
-
-    # TODO ideally we could get this info from a central location.
-    # However, the agility of these individual config files might trump that.
-    # Upload
-    "stage_server": STAGE_SERVER,
-    "stage_user": STAGE_USER,
-    "stage_ssh_key": STAGE_SSH_KEY,
 
     # AUS
     "build_target": "Android_arm-eabi-gcc3",
