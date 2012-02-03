@@ -46,7 +46,7 @@ from mozharness.base.errors import PythonErrorList
 from mozharness.base.log import DEBUG, INFO, WARNING, ERROR, FATAL
 from mozharness.base.python import virtualenv_config_options, VirtualenvMixin
 from mozharness.base.script import BaseScript
-from mozharness.buildbot import BuildbotMixin, TBPL_SUCCESS, TBPL_WARNING, TBPL_FAILURE, TBPL_RETRY
+from mozharness.mozilla.buildbot import BuildbotMixin, TBPL_SUCCESS, TBPL_WARNING, TBPL_FAILURE, TBPL_RETRY
 import urlparse
 import tarfile
 import zipfile

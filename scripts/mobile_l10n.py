@@ -56,7 +56,7 @@ from mozharness.base.log import OutputParser, DEBUG, INFO, WARNING, ERROR, \
      CRITICAL, FATAL, IGNORE
 from mozharness.base.signing import SigningMixin
 from mozharness.base.vcs.vcsbase import MercurialScript
-from mozharness.l10n.locales import LocalesMixin
+from mozharness.mozilla.l10n.locales import LocalesMixin
 
 # So far this only references the ftp platform name.
 SUPPORTED_PLATFORMS = ["android", "android-xul"]
@@ -212,7 +212,7 @@ class MobileSingleLocale(LocalesMixin, SigningMixin, MercurialScript):
 
     def _query_local_revision(self):
         if self.revision:
-            return revision
+            return self.revision
         r = re.compile(r"gecko_revision ([0-9a-f]{12}\+?)")
         output = self._query_make_ident_output()
         for line in output.splitlines():
@@ -377,7 +377,7 @@ class MobileSingleLocale(LocalesMixin, SigningMixin, MercurialScript):
             "explanation": "Not signed!"
         }]
         locales = self.query_locales()
-        env = self.query_repack_env(partial_env=c.get("env"))
+        env = self.query_repack_env()
         for platform in c['platforms']:
             for locale in locales:
                 signed_path = '%s/%s/%s' % (platform, locale,

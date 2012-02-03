@@ -60,7 +60,7 @@ from mozharness.base.log import OutputParser, DEBUG, INFO, WARNING, ERROR, \
      CRITICAL, FATAL, IGNORE
 from mozharness.base.signing import SigningMixin
 from mozharness.base.vcs.vcsbase import MercurialScript
-from mozharness.l10n.locales import LocalesMixin
+from mozharness.mozilla.l10n.locales import LocalesMixin
 
 # So far this only references the ftp platform name.
 SUPPORTED_PLATFORMS = ["android", "android-xul"]
