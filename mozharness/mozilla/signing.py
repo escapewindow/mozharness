@@ -117,7 +117,7 @@ class SigningMixin(BaseSigningMixin):
             fh.close()
         except:
             self.log("Unable to write complete snippet to %s!" % snippet_path,
-                     level=level)
+                     level=error_level)
             return False
         else:
             return True
