@@ -111,6 +111,27 @@ MakefileErrorList = BaseErrorList + [
  {'substr': r'''Warning: ''', 'level': WARNING},
 ]
 
+JarsignerErrorList = [{
+    'substr': r'''command not found''',
+    'level': FATAL
+},{
+    'substr': r'''jarsigner error: java.lang.RuntimeException: keystore load: Keystore was tampered with, or password was incorrect''',
+    'level': FATAL,
+    'explanation': r'''The store passphrase is probably incorrect!''',
+},{
+    'regex': re.compile(r'''jarsigner: key associated with .* not a private key'''),
+    'level': FATAL,
+    'explanation': r'''The key passphrase is probably incorrect!''',
+},{
+    'regex': re.compile(r'''jarsigner error: java.lang.RuntimeException: keystore load: .* .No such file or directory'''),
+    'level': FATAL,
+    'explanation': r'''The keystore doesn't exist!''',
+},{
+    'substr': r'''jarsigner: unable to open jar file:''',
+    'level': FATAL,
+    'explanation': r'''The apk is missing!''',
+}]
+
 
 
 # __main__ {{{1

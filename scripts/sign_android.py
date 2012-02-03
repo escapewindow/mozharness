@@ -55,7 +55,7 @@ import re
 import subprocess
 
 from mozharness.base.config import parse_config_file
-from mozharness.base.errors import BaseErrorList, SSHErrorList
+from mozharness.base.errors import BaseErrorList, JarsignerErrorList, SSHErrorList
 from mozharness.base.log import OutputParser, DEBUG, INFO, WARNING, ERROR, \
      CRITICAL, FATAL, IGNORE
 from mozharness.mozilla.signing import MobileSigningMixin
@@ -64,30 +64,10 @@ from mozharness.mozilla.l10n.locales import LocalesMixin
 
 # So far this only references the ftp platform name.
 SUPPORTED_PLATFORMS = ["android", "android-xul"]
-JARSIGNER_ERROR_LIST = [{
-    "substr": "command not found",
-    "level": FATAL,
-},{
-    "substr": "jarsigner error: java.lang.RuntimeException: keystore load: Keystore was tampered with, or password was incorrect",
-    "level": FATAL,
-    "explanation": "The store passphrase is probably incorrect!",
-},{
-    "regex": re.compile("jarsigner: key associated with .* not a private key"),
-    "level": FATAL,
-    "explanation": "The key passphrase is probably incorrect!",
-},{
-    "regex": re.compile("jarsigner error: java.lang.RuntimeException: keystore load: .* .No such file or directory"),
-    "level": FATAL,
-    "explanation": "The keystore doesn't exist!",
-},{
-    "substr": "jarsigner: unable to open jar file:",
-    "level": FATAL,
-    "explanation": "The apk is missing!",
-}]
 TEST_JARSIGNER_ERROR_LIST = [{
     "substr": "jarsigner: unable to open jar file:",
     "level": IGNORE,
-}] + JARSIGNER_ERROR_LIST
+}] + JarsignerErrorList
 
 
 
@@ -304,7 +284,7 @@ class SignAndroid(LocalesMixin, MobileSigningMixin, MercurialScript):
             # TODO error checking, but allow for no META-INF/ in the zipfile.
             self.run_command([zip_bin, apk, '-d', 'META-INF/*'])
         if error_list is None:
-            error_list = JARSIGNER_ERROR_LIST
+            error_list = JarsignerErrorList
         # This needs to run silently, so no run_command() or
         # get_output_from_command() (though I could add a
         # suppress_command_echo=True or something?)
