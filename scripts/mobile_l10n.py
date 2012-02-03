@@ -35,8 +35,10 @@
 # the terms of any one of the MPL, the GPL or the LGPL.
 #
 # ***** END LICENSE BLOCK *****
-"""sign_android.py
+"""mobile_l10n.py
 
+This currently supports nightly and release single locale repacks for
+Android.  This also creates nightly updates.
 """
 
 import os
@@ -57,33 +59,6 @@ from mozharness.base.log import OutputParser, DEBUG, INFO, WARNING, ERROR, \
 from mozharness.mozilla.signing import MobileSigningMixin
 from mozharness.base.vcs.vcsbase import MercurialScript
 from mozharness.mozilla.l10n.locales import LocalesMixin
-
-# So far this only references the ftp platform name.
-SUPPORTED_PLATFORMS = ["android", "android-xul"]
-JARSIGNER_ERROR_LIST = [{
-    "substr": "command not found",
-    "level": FATAL,
-},{
-    "substr": "jarsigner error: java.lang.RuntimeException: keystore load: Keystore was tampered with, or password was incorrect",
-    "level": FATAL,
-    "explanation": "The store passphrase is probably incorrect!",
-},{
-    "regex": re.compile("jarsigner: key associated with .* not a private key"),
-    "level": FATAL,
-    "explanation": "The key passphrase is probably incorrect!",
-},{
-    "regex": re.compile("jarsigner error: java.lang.RuntimeException: keystore load: .* .No such file or directory"),
-    "level": FATAL,
-    "explanation": "The keystore doesn't exist!",
-},{
-    "substr": "jarsigner: unable to open jar file:",
-    "level": FATAL,
-    "explanation": "The apk is missing!",
-}]
-TEST_JARSIGNER_ERROR_LIST = [{
-    "substr": "jarsigner: unable to open jar file:",
-    "level": IGNORE,
-}] + JARSIGNER_ERROR_LIST
 
 
 
@@ -111,14 +86,6 @@ class MobileSingleLocale(LocalesMixin, MobileSigningMixin, MercurialScript):
       "help": "Override the tags set for all repos"
      }
     ],[
-     ['--platform',],
-     {"action": "store",
-      "dest": "platform",
-      "type": "choice",
-      "choices": SUPPORTED_PLATFORMS,
-      "help": "Specify the platform to sign"
-     }
-    ],[
      ['--user-repo-override',],
      {"action": "store",
       "dest": "user_repo_override",
@@ -131,13 +98,6 @@ class MobileSingleLocale(LocalesMixin, MobileSigningMixin, MercurialScript):
       "dest": "release_config_file",
       "type": "string",
       "help": "Specify the release config file to use"
-     }
-    ],[
-     ['--version',],
-     {"action": "store",
-      "dest": "version",
-      "type": "string",
-      "help": "Specify the current version"
      }
     ],[
      ['--keystore',],
@@ -159,7 +119,7 @@ class MobileSingleLocale(LocalesMixin, MobileSigningMixin, MercurialScript):
                 "setup",
                 "repack",
                 "upload-repacks",
-                "create-snippets",
+                "create-nightly-snippets",
             ],
             require_config_file=require_config_file
         )
@@ -383,11 +343,12 @@ class MobileSingleLocale(LocalesMixin, MobileSigningMixin, MercurialScript):
             level=ERROR
         self.add_summary("Uploaded %d of %d apks successfully." % (successful_uploads, total_uploads), level=level)
 
-    def create_snippets(self):
-        pass
-        # TODO create snippets
+    def create_nightly_snippets(self):
+        c = self.config
+        dirs = self.query_abs_dirs()
+        env = self.query_repack_env()
 
-    def upload_snippets(self):
+    def upload_nightly_snippets(self):
         # TODO upload snippets
         c = self.config
         rc = self.query_release_config()
