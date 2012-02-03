@@ -254,47 +254,6 @@ class MobileSingleLocale(LocalesMixin, SigningMixin, MercurialScript):
     def query_revision(self):
         return self._query_local_revision()
 
-    def query_release_config(self):
-        if self.release_config:
-            return self.release_config
-        c = self.config
-        dirs = self.query_abs_dirs()
-        if c.get("release_config_file"):
-            self.info("Getting release config from %s..." % c["release_config_file"])
-            rc = None
-            try:
-                rc = parse_config_file(
-                    os.path.join(dirs['abs_work_dir'],
-                                 c["release_config_file"]),
-                    config_dict_name="releaseConfig"
-                )
-            except IOError:
-                self.fatal("Release config file %s not found!" % c["release_config_file"])
-            except RuntimeError:
-                self.fatal("Invalid release config file %s!" % c["release_config_file"])
-            self.release_config['version'] = rc['version']
-            self.release_config['buildnum'] = rc['buildNumber']
-            self.release_config['old_version'] = rc['oldVersion']
-            self.release_config['old_buildnum'] = rc['oldBuildNumber']
-            self.release_config['ftp_server'] = rc['ftpServer']
-            self.release_config['ftp_user'] = c.get('ftp_user', rc['hgUsername'])
-            self.release_config['ftp_ssh_key'] = c.get('ftp_ssh_key', rc['hgSshKey'])
-            self.release_config['aus_server'] = rc['stagingServer']
-            self.release_config['aus_user'] = rc['ausUser']
-            self.release_config['aus_ssh_key'] = c.get('aus_ssh_key', '~/.ssh/%s' % rc['ausSshKey'])
-        else:
-            self.info("No release config file; using default config.")
-            for key in ('version', 'buildnum', 'old_version', 'old_buildnum',
-                        'ftp_server', 'ftp_user', 'ftp_ssh_key',
-                        'aus_server', 'aus_user', 'aus_ssh_key',):
-                self.release_config[key] = c[key]
-        self.info("Release config:\n%s" % self.release_config)
-        return self.release_config
-
-    def _sign(self, apk, error_list=None):
-        # TODO rewrite to use mozpass.py
-        pass
-
     # Actions {{{2
     def pull(self):
         c = self.config
