@@ -54,7 +54,7 @@ from mozharness.base.config import parse_config_file
 from mozharness.base.errors import BaseErrorList, MakefileErrorList, SSHErrorList
 from mozharness.base.log import OutputParser, DEBUG, INFO, WARNING, ERROR, \
      CRITICAL, FATAL, IGNORE
-from mozharness.base.signing import SigningMixin
+from mozharness.mozilla.signing import MobileSigningMixin
 from mozharness.base.vcs.vcsbase import MercurialScript
 from mozharness.mozilla.l10n.locales import LocalesMixin
 
@@ -88,7 +88,7 @@ TEST_JARSIGNER_ERROR_LIST = [{
 
 
 # MobileSingleLocale {{{1
-class MobileSingleLocale(LocalesMixin, SigningMixin, MercurialScript):
+class MobileSingleLocale(LocalesMixin, MobileSigningMixin, MercurialScript):
     config_options = [[
      ['--locale',],
      {"action": "extend",
@@ -150,7 +150,7 @@ class MobileSingleLocale(LocalesMixin, SigningMixin, MercurialScript):
 
     def __init__(self, require_config_file=True):
         LocalesMixin.__init__(self)
-        SigningMixin.__init__(self)
+        MobileSigningMixin.__init__(self)
         MercurialScript.__init__(self,
             config_options=self.config_options,
             all_actions=[
@@ -320,7 +320,6 @@ class MobileSingleLocale(LocalesMixin, SigningMixin, MercurialScript):
                 self.add_failure(locale, message="%s failed in make installers-%s!" % (locale, locale))
                 continue
             # TODO verify signature
-            # TODO create a mozharness/mozilla/signing.py ?
             successful_repacks += 1
         level=INFO
         if successful_repacks < total_repacks:

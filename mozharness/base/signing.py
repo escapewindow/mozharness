@@ -43,9 +43,9 @@ import os
 
 from mozharness.base.log import DEBUG, INFO, WARNING, ERROR, CRITICAL, FATAL, IGNORE
 
-# SigningMixin {{{1
+# BaseSigningMixin {{{1
 
-class SigningMixin(object):
+class BaseSigningMixin(object):
     """Generic signing helper methods.
     """
     def query_filesize(self, file_path):

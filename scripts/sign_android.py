@@ -58,7 +58,7 @@ from mozharness.base.config import parse_config_file
 from mozharness.base.errors import BaseErrorList, SSHErrorList
 from mozharness.base.log import OutputParser, DEBUG, INFO, WARNING, ERROR, \
      CRITICAL, FATAL, IGNORE
-from mozharness.base.signing import SigningMixin
+from mozharness.mozilla.signing import MobileSigningMixin
 from mozharness.base.vcs.vcsbase import MercurialScript
 from mozharness.mozilla.l10n.locales import LocalesMixin
 
@@ -92,7 +92,7 @@ TEST_JARSIGNER_ERROR_LIST = [{
 
 
 # SignAndroid {{{1
-class SignAndroid(LocalesMixin, SigningMixin, MercurialScript):
+class SignAndroid(LocalesMixin, MobileSigningMixin, MercurialScript):
     config_options = [[
      ['--locale',],
      {"action": "extend",
@@ -198,7 +198,7 @@ class SignAndroid(LocalesMixin, SigningMixin, MercurialScript):
         self.key_passphrase = os.environ.get('android_keypass')
         self.release_config = {}
         LocalesMixin.__init__(self)
-        SigningMixin.__init__(self)
+        MobileSigningMixin.__init__(self)
         MercurialScript.__init__(self,
             config_options=self.config_options,
             all_actions=[
@@ -465,21 +465,6 @@ class SignAndroid(LocalesMixin, SigningMixin, MercurialScript):
         c = self.config
         rc = self.query_release_config()
         dirs = self.query_abs_dirs()
-        verification_error_list = BaseErrorList + [{
-            "regex": re.compile(r'''^Invalid$'''),
-            "level": FATAL,
-            "explanation": "Signature is invalid!"
-        },{
-            "substr": "filename not matched",
-            "level": ERROR,
-        },{
-            "substr": "ERROR: Could not unzip",
-            "level": ERROR,
-        },{
-            "regex": re.compile(r'''Are you sure this is a (nightly|release) package'''),
-            "level": FATAL,
-            "explanation": "Not signed!"
-        }]
         locales = self.query_locales()
         env = self.query_env(partial_env=c.get("env"))
         for platform in c['platforms']:
@@ -495,14 +480,12 @@ class SignAndroid(LocalesMixin, SigningMixin, MercurialScript):
                     self.add_failure(platform, locale,
                                      message="Can't verify nonexistent %(platform)s:%(locale)s apk!")
                     continue
-                status = self.run_command(
-                    [c['signature_verification_script'],
-                    '--tools-dir=tools/',
-                    '--%s' % c['key_alias'],
-                    '--apk=%s' % signed_path],
-                    cwd=dirs['abs_work_dir'],
+                status = self.verify_android_signature(
+                    signed_path,
+                    script=c['signature_verification_script'],
+                    key_alias=c['key_alias'],
+                    tools_dir="tools/",
                     env=env,
-                    error_list=verification_error_list
                 )
                 if status:
                     self.add_failure(platform, locale,
