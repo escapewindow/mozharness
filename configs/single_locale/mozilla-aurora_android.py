@@ -1,15 +1,17 @@
-MOZILLA_DIR = "mozilla-aurora"
+BRANCH = "mozilla-aurora"
+MOZILLA_DIR = BRANCH
 JAVA_HOME = "/tools/jdk6"
 JARSIGNER = "tools/release/signing/mozpass.py"
 OBJDIR = "obj-l10n"
-EN_US_BINARY_URL = "http://stage.mozilla.org/pub/mozilla.org/mobile/nightly/latest-mozilla-aurora-android"
+EN_US_BINARY_URL = "http://stage.mozilla.org/pub/mozilla.org/mobile/nightly/latest-%s-android" % (BRANCH)
 STAGE_SERVER = "dev-stage01.build.sjc1.mozilla.com"
 STAGE_USER = "ffxbld"
 STAGE_SSH_KEY = "~/.ssh/ffxbld_dsa"
 AUS_SERVER = "dev-stage01.build.sjc1.mozilla.com"
 AUS_USER = "ffxbld"
 AUS_SSH_KEY = "~/.ssh/ffxbld_dsa"
-AUS_UPLOAD_BASE_DIR = "/opt/aus2/incoming/2/Fennec/%(branch)s/%(build_target)s/%(buildid)s/%(locale)s"
+AUS_UPLOAD_BASE_DIR = "/opt/aus2/incoming/2/Fennec"
+AUS_BASE_DIR = BRANCH + "/%(build_target)s/%(buildid)s/%(locale)s"
 
 config = {
     "log_name": "single_locale",
@@ -33,7 +35,7 @@ config = {
         "repo": "http://hg.mozilla.org/build/compare-locales",
         "revision": "RELEASE_AUTOMATION"
     }],
-    "hg_l10n_base": "http://hg.mozilla.org/releases/l10n/mozilla-aurora",
+    "hg_l10n_base": "http://hg.mozilla.org/releases/l10n/%s" % BRANCH,
     "hg_l10n_tag": "default",
     "l10n_dir": MOZILLA_DIR,
     "repack_env": {
@@ -57,7 +59,7 @@ config = {
     "make_dirs": ['config'],
     "mozilla_dir": MOZILLA_DIR,
     # TODO change to MOZILLA_DIR/mobile/android/config/mozconfigs/android/l10n-mozconfig when that lands.
-    "mozconfig": "buildbot-configs/mozilla2/android/mozilla-aurora/nightly/l10n-mozconfig",
+    "mozconfig": "buildbot-configs/mozilla2/android/%s/nightly/l10n-mozconfig" % BRANCH,
     "jarsigner": JARSIGNER,
     "signature_verification_script": "tools/release/signing/verify-android-signature.sh",
 
@@ -67,6 +69,7 @@ config = {
     "aus_user": AUS_USER,
     "aus_ssh_key": AUS_SSH_KEY,
     "aus_upload_base_dir": AUS_UPLOAD_BASE_DIR,
+    "aus_base_dir": AUS_BASE_DIR,
 
     # TODO deleteme
     "locales": ['de', 'es-ES'],

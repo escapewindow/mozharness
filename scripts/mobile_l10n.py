@@ -123,12 +123,13 @@ class MobileSingleLocale(LocalesMixin, MobileSigningMixin, MercurialScript):
             ],
             require_config_file=require_config_file
         )
-        self.repack_env = None
-        self.upload_env = None
-        self.buildid = None
-        self.revision = None
-        self.make_ident_output = None
         self.base_package_name = None
+        self.buildid = None
+        self.make_ident_output = None
+        self.repack_env = None
+        self.revision = None
+        self.upload_env = None
+        self.version = None
 
     # Helper methods {{{2
     def query_repack_env(self):
@@ -192,22 +193,41 @@ class MobileSingleLocale(LocalesMixin, MobileSigningMixin, MercurialScript):
                 self.revision = m.groups()[0]
         return self.revision
 
+    def _query_make_variable(self, variable, make_args=None):
+        make = self.query_exe('make')
+        env = self.query_repack_env()
+        dirs = self.query_abs_dirs()
+        if make_args is None:
+            make_args = []
+        # TODO error checking
+        return self.get_output_from_command(
+            [make, "echo-variable-%s" % variable] + make_args,
+            cwd=dirs['abs_locales_dir'],
+            env=env
+        )
+
     def query_base_package_name(self):
         """Get the package name from the objdir.
         Only valid after setup is run.
         """
         if self.base_package_name:
             return self.base_package_name
-        make = self.query_exe('make')
-        env = self.query_repack_env()
-        dirs = self.query_abs_dirs()
-        self.base_package_name = self.get_output_from_command(
-            [make, "echo-variable-PACKAGE", 'AB_CD=%(locale)s'],
-            cwd=dirs['abs_locales_dir'],
-            env=env
+        self.base_package_name = self._query_make_variable(
+            "PACKAGE",
+            make_args=['AB_CD=%(locale)s']
         )
-        # TODO error checking
         return self.base_package_name
+
+    def query_version(self):
+        """Get the package name from the objdir.
+        Only valid after setup is run.
+        """
+        if self.version:
+            return self.version
+        self.version = self._query_make_variable(
+            "MOZ_APP_VERSION",
+        )
+        return self.version
 
     # Actions {{{2
     def pull(self):
@@ -347,6 +367,29 @@ class MobileSingleLocale(LocalesMixin, MobileSigningMixin, MercurialScript):
         c = self.config
         dirs = self.query_abs_dirs()
         env = self.query_repack_env()
+        locales = self.query_locales()
+        base_package_name = self.query_base_package_name()
+        buildid = self.query_buildid()
+        version = self.query_version()
+        binary_dir = os.path.join(dirs['abs_objdir'], 'dist')
+        successful_count = total_count = 0
+        replace_dict = {
+            'buildid': buildid,
+            'build_target': c['build_target'],
+        }
+        for locale in locales:
+            total_count += 1
+            replace_dict['locale'] = locale
+            aus_base_dir = c['aus_base_dir'] % replace_dict
+            aus_abs_dir = os.path.join(dirs['abs_work_dir'], 'update',
+                                       aus_base_dir)
+            binary_path = os.path.join(binary_dir,
+                                       base_package_name % {'locale': locale})
+            if not self.create_complete_snippet(binary_path, version, aus_abs_dir):
+                self.add_failure(locale, message="Errors creating snippet for %s!" % locale)
+                continue
+            self.run_command("touch", os.path.join(aus_abs_dir, "partial.txt"))
+            successful_count += 1
 
     def upload_nightly_snippets(self):
         # TODO upload snippets
