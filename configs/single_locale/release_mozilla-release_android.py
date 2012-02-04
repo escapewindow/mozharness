@@ -1,4 +1,4 @@
-BRANCH = "mozilla-beta"
+BRANCH = "mozilla-release"
 MOZILLA_DIR = BRANCH
 JAVA_HOME = "/tools/jdk6"
 JARSIGNER = "tools/release/signing/mozpass.py"
@@ -14,12 +14,12 @@ HG_SHARE_BASE_DIR = "/builds/hg-shared"
 config = {
     "log_name": "single_locale",
     "objdir": OBJDIR,
-    "locales_file": "buildbot-configs/mozilla/l10n-changesets_mobile-beta.json",
+    "locales_file": "buildbot-configs/mozilla/l10n-changesets_mobile-release.json",
     "locales_dir": "mobile/android/locales",
     "locales_platform": "android",
     "ignore_locales": ["en-US"],
     "repos": [{
-        "repo": "http://hg.mozilla.org/releases/mozilla-beta",
+        "repo": "http://hg.mozilla.org/releases/mozilla-release",
         "revision": "default",
         "dest": MOZILLA_DIR,
     },{
@@ -39,7 +39,7 @@ config = {
     'vcs_share_base': HG_SHARE_BASE_DIR,
     "l10n_dir": MOZILLA_DIR,
 
-    "release_config_file": "buildbot-configs/mozilla/release-fennec-mozilla-beta.py",
+    "release_config_file": "buildbot-configs/mozilla/release-fennec-mozilla-release.py",
     "repack_env": {
         "JAVA_HOME": JAVA_HOME,
         "PATH": JAVA_HOME + "/bin:%(PATH)s",
