@@ -38,7 +38,7 @@ config = {
     'vcs_share_base': HG_SHARE_BASE_DIR,
     "l10n_dir": MOZILLA_DIR,
 
-    "release_config_file": "buildbot-configs/mozilla/release-fennec-mozilla-release.py",
+    "release_config_file": "buildbot-configs/mozilla/release-fennec-mozilla-beta.py",
     "repack_env": {
         "JAVA_HOME": JAVA_HOME,
         "PATH": JAVA_HOME + "/bin:%(PATH)s",
