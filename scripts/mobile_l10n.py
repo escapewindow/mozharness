@@ -356,7 +356,7 @@ class MobileSingleLocale(LocalesMixin, MobileSigningMixin, MercurialScript):
                                 halt_on_failure=False):
                 self.add_failure(locale, message="%s failed in make upload!" % (locale))
                 continue
-            successful_count += 1
+            success_count += 1
         self.summarize_success_count(success_count, total_count,
                                      message="Uploaded %d of %d binaries successfully.")
 
