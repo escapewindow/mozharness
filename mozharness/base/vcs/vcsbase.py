@@ -76,6 +76,8 @@ class VCSMixin(object):
         # need a better way to do this.
         if 'dest' not in kwargs:
             kwargs['dest'] = os.path.basename(kwargs['repo'])
+        if 'vcs_share_base' not in kwargs:
+            kwargs['vcs_share_base'] = c.get('vcs_share_base')
         vcs_obj = vcs_class(
          log_obj=self.log_obj,
          config=self.config,

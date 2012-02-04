@@ -457,7 +457,7 @@ class MercurialVCS(ShellMixin, OSMixin, LogMixin, object):
         repo = c['repo']
         revision = c.get('revision')
         branch = c.get('branch')
-        share_base = c.get('share_base',
+        share_base = c.get('vcs_share_base',
                            os.environ.get("HG_SHARE_BASE_DIR", None))
         msg = "Setting %s to %s" % (dest, repo)
         if branch:

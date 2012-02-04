@@ -38,7 +38,7 @@ config = {
     }],
     "hg_l10n_base": "http://hg.mozilla.org/releases/l10n/%s" % BRANCH,
     "hg_l10n_tag": "default",
-    'share_base': HG_SHARE_BASE_DIR,
+    'vcs_share_base': HG_SHARE_BASE_DIR,
 
     "l10n_dir": MOZILLA_DIR,
     "repack_env": {
