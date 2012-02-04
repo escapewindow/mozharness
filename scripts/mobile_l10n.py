@@ -120,6 +120,7 @@ class MobileSingleLocale(LocalesMixin, MobileSigningMixin, MercurialScript):
                 "repack",
                 "upload-repacks",
                 "create-nightly-snippets",
+                "upload-nightly-snippets",
             ],
             require_config_file=require_config_file
         )
@@ -308,7 +309,7 @@ class MobileSingleLocale(LocalesMixin, MobileSigningMixin, MercurialScript):
         repack_env = self.query_repack_env()
         base_package_name = self.query_base_package_name()
         base_package_dir = os.path.join(dirs['abs_objdir'], 'dist')
-        successful_count = total_count = 0
+        success_count = total_count = 0
         for locale in locales:
             total_count += 1
             if self.run_compare_locales(locale):
