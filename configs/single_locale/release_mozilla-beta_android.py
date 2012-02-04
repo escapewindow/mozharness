@@ -3,7 +3,6 @@ MOZILLA_DIR = BRANCH
 JAVA_HOME = "/tools/jdk6"
 JARSIGNER = "tools/release/signing/mozpass.py"
 OBJDIR = "obj-l10n"
-# TODO this needs to be built.
 EN_US_BINARY_URL = "http://ftp.mozilla.org/pub/mozilla.org/mobile/candidates/%(version)s-candidates/build%(buildnum)d/unsigned/android/en-US"
 #STAGE_SERVER = "dev-stage01.build.sjc1.mozilla.com"
 STAGE_SERVER = "stage.mozilla.org"
