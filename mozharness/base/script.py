@@ -718,6 +718,14 @@ class BaseScript(ShellMixin, OSMixin, LogMixin, object):
     def query_failure(self, key):
         return key in self.failures
 
+    def summarize_success_count(self, success_count, total_count,
+                                message="%d of %d successful."):
+        level = INFO
+        if success_count < total_count:
+            level = ERROR
+        self.add_summary(message % (success_count, total_count),
+                         level=level)
+
     def copy_to_upload_dir(self, target, dest=None, short_desc="unknown",
                            long_desc="unknown", log_level=DEBUG,
                            error_level=ERROR, rotate=False,

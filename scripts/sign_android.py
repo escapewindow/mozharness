@@ -371,8 +371,7 @@ class SignAndroid(LocalesMixin, MobileSigningMixin, MercurialScript):
             'buildnum': rc['buildnum'],
             'version': rc['version'],
         }
-        successful_count = 0
-        total_count = 0
+        success_count = total_count = 0
         for platform in c['platforms']:
             replace_dict['platform'] = platform
             for locale in locales:
@@ -387,12 +386,9 @@ class SignAndroid(LocalesMixin, MobileSigningMixin, MercurialScript):
                     self.add_failure(platform, locale,
                                      message="Unable to download %(platform)s:%(locale)s unsigned apk!")
                 else:
-                    successful_count += 1
-        level = INFO
-        if successful_count < total_count:
-            level = ERROR
-        self.add_summary("Downloaded %d of %d unsigned apks successfully." % \
-                         (successful_count, total_count), level=level)
+                    success_count += 1
+        self.summarize_success_count(success_count, total_count,
+                                     message="Downloaded %d of %d unsigned apks successfully.")
 
     def preflight_sign(self):
         if 'passphrase' not in self.actions:
@@ -404,8 +400,7 @@ class SignAndroid(LocalesMixin, MobileSigningMixin, MercurialScript):
         rc = self.query_release_config()
         dirs = self.query_abs_dirs()
         locales = self.query_locales()
-        successful_count = 0
-        total_count = 0
+        success_count = total_count = 0
         zipalign = self.query_exe("zipalign")
         for platform in c['platforms']:
             for locale in locales:
@@ -434,12 +429,9 @@ class SignAndroid(LocalesMixin, MobileSigningMixin, MercurialScript):
                                          message="Unable to align %(platform)s:%(locale)s apk!")
                         self.rmtree(signed_dir)
                     else:
-                        successful_count += 1
-        level = INFO
-        if successful_count < total_count:
-            level = ERROR
-        self.add_summary("Signed %d of %d apks successfully." % \
-                         (successful_count, total_count), level=level)
+                        success_count += 1
+        self.summarize_success_count(success_count, total_count,
+                                     message="Signed %d of %d apks successfully.")
 
     def verify_signatures(self):
         c = self.config
@@ -508,7 +500,7 @@ class SignAndroid(LocalesMixin, MobileSigningMixin, MercurialScript):
             'buildnum': rc['buildnum'],
         }
         total_count = {'snippets': 0, 'links': 0}
-        successful_count = {'snippets': 0, 'links': 0}
+        success_count = {'snippets': 0, 'links': 0}
         for platform in c['update_platforms']:
             buildid = self.query_buildid(platform, c['buildid_base_url'])
             old_buildid = self.query_buildid(platform, c['old_buildid_base_url'],
@@ -549,7 +541,7 @@ class SignAndroid(LocalesMixin, MobileSigningMixin, MercurialScript):
                         url, snippet_dir, snippet_file,
                         size, sha512_hash
                     ):
-                        successful_count['snippets'] += 1
+                        success_count['snippets'] += 1
                     else:
                         self.add_failure(platform, locale,
                                          message="Errors creating snippet for %(platform)s:%(locale)s!")
@@ -570,14 +562,10 @@ class SignAndroid(LocalesMixin, MobileSigningMixin, MercurialScript):
                         cwd=previous_dir, error_list=BaseErrorList
                     )
                     if not status:
-                        successful_count['links'] += 1
-        level = INFO
-        for k in successful_count.keys():
-            if successful_count[k] < total_count[k]:
-                level = ERROR
-            self.add_summary("Created %d of %d %s successfully." % \
-                             (successful_count[k], total_count[k], k),
-                             level=level)
+                        success_count['links'] += 1
+        for k in success_count.keys():
+            self.summarize_success_count(success_count[k], total_count[k],
+                                         "Created %d of %d " + k + " successfully.")
 
     def upload_snippets(self):
         c = self.config
