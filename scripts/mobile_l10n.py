@@ -329,12 +329,12 @@ class MobileSingleLocale(LocalesMixin, MobileSigningMixin, MercurialScript):
                 env=repack_env
             )
             if status:
-                self.add_failure(locale, message="Errors verifying %s apk!" % locale)
+                self.add_failure(locale, message="Errors verifying %s binary!" % locale)
                 # No need to rm because upload is per-locale
                 continue
             success_count += 1
         self.summarize_success_count(success_count, total_count,
-                                     message="Repacked %d of %d apks successfully.")
+                                     message="Repacked %d of %d binaries successfully.")
 
     def upload_repacks(self):
         c = self.config
@@ -357,7 +357,7 @@ class MobileSingleLocale(LocalesMixin, MobileSigningMixin, MercurialScript):
                 continue
             successful_count += 1
         self.summarize_success_count(success_count, total_count,
-                                     message="Uploaded %d of %d apks successfully.")
+                                     message="Uploaded %d of %d binaries successfully.")
 
     def create_nightly_snippets(self):
         c = self.config
