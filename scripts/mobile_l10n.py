@@ -106,6 +106,20 @@ class MobileSingleLocale(LocalesMixin, MobileSigningMixin, MercurialScript):
       "type": "string",
       "help": "Specify the location of the signing keystore"
      }
+    ],[
+     ['--this-chunk',],
+     {"action": "store",
+      "dest": "this_locale_chunk",
+      "type": "int",
+      "help": "Specify which chunk of locales to run"
+     }
+    ],[
+     ['--total-chunks',],
+     {"action": "store",
+      "dest": "total_locale_chunks",
+      "type": "int",
+      "help": "Specify the total number of chunks of locales"
+     }
     ]]
 
     def __init__(self, require_config_file=True):
@@ -116,6 +130,7 @@ class MobileSingleLocale(LocalesMixin, MobileSigningMixin, MercurialScript):
             all_actions=[
                 "clobber",
                 "pull",
+                "list-locales",
                 "setup",
                 "repack",
                 "upload-repacks",

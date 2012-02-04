@@ -70,8 +70,4 @@ config = {
     "aus_ssh_key": AUS_SSH_KEY,
     "aus_upload_base_dir": AUS_UPLOAD_BASE_DIR,
     "aus_base_dir": AUS_BASE_DIR,
-
-    # TODO deleteme
-    "locales": ['de', 'es-ES'],
-    "no_actions": ['clobber',],
 }

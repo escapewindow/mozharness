@@ -45,10 +45,11 @@ sys.path.insert(1, os.path.dirname(sys.path[0]))
 
 from mozharness.base.config import parse_config_file
 from mozharness.base.errors import PythonErrorList
+from mozharness.base.parallel import ParallelizationMixin
 
 # LocalesMixin {{{1
 
-class LocalesMixin(object):
+class LocalesMixin(ParallelizationMixin):
     def __init__(self, **kwargs):
         """ Mixins generally don't have an __init__.
         This breaks super().__init__() for children.
@@ -82,10 +83,22 @@ class LocalesMixin(object):
             if locale not in locales:
                 self.debug("Adding locale %s." % locale)
                 locales.append(locale)
-        if locales is not None:
-            self.locales = locales
-
+        if locales is None:
+            return
+        if 'total_locale_chunks' and 'this_locale_chunk' in c:
+            self.debug("Pre-chunking locale list: %s" % str(locales))
+            locales = self.query_chunked_list(locales,
+                                              c['this_locale_chunk'],
+                                              c['total_locale_chunks'],
+                                              sort=True)
+            self.debug("Post-chunking locale list: %s" % locales)
+        self.locales = locales
         return self.locales
+
+    def list_locales(self):
+        """ Stub action method.
+        """
+        self.info("Locale list: %s" % str(self.query_locales()))
 
     def parse_locales_file(self, locales_file):
         locales = []
