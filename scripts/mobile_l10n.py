@@ -280,6 +280,8 @@ class MobileSingleLocale(LocalesMixin, MobileSigningMixin, MercurialScript):
                                 tag_override=c.get('tag_override'))
         self.pull_locale_source()
 
+    # list_locales() is defined in LocalesMixin.
+
     def preflight_setup(self):
         if 'clobber' not in self.actions:
             c = self.config
