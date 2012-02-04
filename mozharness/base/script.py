@@ -346,7 +346,7 @@ class ShellMixin(object):
         env = os.environ.copy()
         default_replace_dict = self.query_abs_dirs()
         default_replace_dict['PATH'] = os.environ['PATH']
-        if replace_dict is None:
+        if not replace_dict:
             replace_dict = default_replace_dict
         else:
             for key in default_replace_dict:

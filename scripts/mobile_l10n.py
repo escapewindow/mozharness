@@ -56,6 +56,7 @@ from mozharness.base.config import parse_config_file
 from mozharness.base.errors import BaseErrorList, MakefileErrorList, SSHErrorList
 from mozharness.base.log import OutputParser, DEBUG, INFO, WARNING, ERROR, \
      CRITICAL, FATAL, IGNORE
+from mozharness.mozilla.release import ReleaseMixin
 from mozharness.mozilla.signing import MobileSigningMixin
 from mozharness.base.vcs.vcsbase import MercurialScript
 from mozharness.mozilla.l10n.locales import LocalesMixin
@@ -63,7 +64,8 @@ from mozharness.mozilla.l10n.locales import LocalesMixin
 
 
 # MobileSingleLocale {{{1
-class MobileSingleLocale(LocalesMixin, MobileSigningMixin, MercurialScript):
+class MobileSingleLocale(LocalesMixin, ReleaseMixin, MobileSigningMixin,
+                         MercurialScript):
     config_options = [[
      ['--locale',],
      {"action": "extend",
@@ -124,7 +126,6 @@ class MobileSingleLocale(LocalesMixin, MobileSigningMixin, MercurialScript):
 
     def __init__(self, require_config_file=True):
         LocalesMixin.__init__(self)
-        MobileSigningMixin.__init__(self)
         MercurialScript.__init__(self,
             config_options=self.config_options,
             all_actions=[
@@ -147,14 +148,24 @@ class MobileSingleLocale(LocalesMixin, MobileSigningMixin, MercurialScript):
         self.upload_env = None
         self.version = None
         self.upload_urls = {}
-        self.release_config = {}
 
     # Helper methods {{{2
     def query_repack_env(self):
         if self.repack_env:
             return self.repack_env
         c = self.config
-        repack_env = self.query_env(partial_env=c.get("repack_env"))
+        replace_dict = {}
+        if c.get('release_config_file'):
+            rc = self.query_release_config()
+            replace_dict = {
+                'version': rc['version'],
+                'buildnum': rc['buildnum']
+            }
+        repack_env = self.query_env(partial_env=c.get("repack_env"),
+                                    replace_dict=replace_dict)
+        if c.get('base_en_us_binary_url') and c.get('release_config_file'):
+            rc = self.query_release_config()
+            repack_env['EN_US_BINARY_URL'] = c['base_en_us_binary_url'] % replace_dict
         self.repack_env = repack_env
         return self.repack_env
 
@@ -389,7 +400,7 @@ class MobileSingleLocale(LocalesMixin, MobileSigningMixin, MercurialScript):
                 self.warning("Skipping previously failed locale %s." % locale)
                 continue
             total_count += 1
-            if c.get(base_post_upload_cmd):
+            if c.get('base_post_upload_cmd'):
                 upload_env['POST_UPLOAD_CMD'] = c['base_post_upload_cmd'] % {'buildid': buildid, 'locale': locale}
             output = self.get_output_from_command(
                 # Ugly hack to avoid |make upload| stderr from showing up
