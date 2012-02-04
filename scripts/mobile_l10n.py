@@ -239,8 +239,13 @@ class MobileSingleLocale(LocalesMixin, MobileSigningMixin, MercurialScript):
         )
         return self.version
 
-    def query_upload_url(self):
-        pass
+    def query_upload_url(self, locale):
+        if locale in self.upload_urls:
+            return self.upload_urls[locale]
+        if 'snippet_base_url' in self.config:
+            return self.config['snippet_base_url'] % {'locale': locale}
+        self.error("Can't determine the upload url for %s!" % locale)
+        self.error("You either need to run --upload-repacks before --create-nightly-snippets, or specify the 'snippet_base_url' in self.config!")
 
     # Actions {{{2
     def pull(self):
@@ -414,8 +419,10 @@ class MobileSingleLocale(LocalesMixin, MobileSigningMixin, MercurialScript):
                                        aus_base_dir)
             binary_path = os.path.join(binary_dir,
                                        base_package_name % {'locale': locale})
-            # TODO an alternate way, and skip if we can't
-            url = self.upload_urls[locale]
+            url = self.query_upload_url(locale)
+            if not url:
+                self.add_failure(locale, "Can't create a snippet for %s without an upload url." % locale)
+                continue
             if not self.create_complete_snippet(binary_path, version, buildid, url, aus_abs_dir):
                 self.add_failure(locale, message="Errors creating snippet for %s!  Removing snippet directory." % locale)
                 self.rmtree(aus_abs_dir)
