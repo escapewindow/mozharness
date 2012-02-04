@@ -131,6 +131,7 @@ class MobileSingleLocale(LocalesMixin, MobileSigningMixin, MercurialScript):
         self.revision = None
         self.upload_env = None
         self.version = None
+        self.upload_urls = {}
 
     # Helper methods {{{2
     def query_repack_env(self):
@@ -162,7 +163,11 @@ class MobileSingleLocale(LocalesMixin, MobileSigningMixin, MercurialScript):
         output = self.get_output_from_command(["make", "ident"],
                                               cwd=dirs['abs_locales_dir'],
                                               env=env,
+                                              silent=True,
                                               halt_on_failure=True)
+        parser = OutputParser(config=self.config, log_obj=self.log_obj,
+                              error_list=MakefileErrorList)
+        parser.add_lines(output)
         self.make_ident_output = output
         return output
 
@@ -201,11 +206,15 @@ class MobileSingleLocale(LocalesMixin, MobileSigningMixin, MercurialScript):
         if make_args is None:
             make_args = []
         # TODO error checking
-        return self.get_output_from_command(
+        output = self.get_output_from_command(
             [make, "echo-variable-%s" % variable] + make_args,
-            cwd=dirs['abs_locales_dir'],
+            cwd=dirs['abs_locales_dir'], silent=True,
             env=env
         )
+        parser = OutputParser(config=self.config, log_obj=self.log_obj,
+                              error_list=MakefileErrorList)
+        parser.add_lines(output)
+        return output.strip()
 
     def query_base_package_name(self):
         """Get the package name from the objdir.
@@ -229,6 +238,9 @@ class MobileSingleLocale(LocalesMixin, MobileSigningMixin, MercurialScript):
             "MOZ_APP_VERSION",
         )
         return self.version
+
+    def query_upload_url(self):
+        pass
 
     # Actions {{{2
     def pull(self):
@@ -342,6 +354,7 @@ class MobileSingleLocale(LocalesMixin, MobileSigningMixin, MercurialScript):
         dirs = self.query_abs_dirs()
         locales = self.query_locales()
         make = self.query_exe("make")
+        base_package_name = self.query_base_package_name()
         upload_env = self.query_upload_env()
         success_count = total_count = 0
         for locale in locales:
@@ -349,12 +362,31 @@ class MobileSingleLocale(LocalesMixin, MobileSigningMixin, MercurialScript):
                 self.warning("Skipping previously failed locale %s." % locale)
                 continue
             total_count += 1
-            if self.run_command([make, "upload", "AB_CD=%s" % locale],
-                                cwd=dirs['abs_locales_dir'],
-                                env=upload_env,
-                                error_list=MakefileErrorList,
-                                halt_on_failure=False):
+            output = self.get_output_from_command(
+                # Ugly hack to avoid |make upload| stderr from showing up
+                # as get_output_from_command errors
+                "%s upload AB_CD=%s 2>&1" % (make, locale),
+                cwd=dirs['abs_locales_dir'],
+                env=upload_env,
+                silent=True
+            )
+            parser = OutputParser(config=self.config, log_obj=self.log_obj,
+                                  error_list=MakefileErrorList)
+            parser.add_lines(output)
+            if parser.num_errors:
                 self.add_failure(locale, message="%s failed in make upload!" % (locale))
+                continue
+            package_name = base_package_name % {'locale': locale}
+            r = re.compile("(http.*%s)" % package_name)
+            success = False
+            for line in output.splitlines():
+                m = r.match(line)
+                if m:
+                    self.upload_urls[locale] = m.groups()[0]
+                    success = True
+            if not success:
+                self.add_failure(locale, message="Failed to detect %s url in make upload!" % (locale))
+                print output
                 continue
             success_count += 1
         self.summarize_success_count(success_count, total_count,
@@ -382,18 +414,19 @@ class MobileSingleLocale(LocalesMixin, MobileSigningMixin, MercurialScript):
                                        aus_base_dir)
             binary_path = os.path.join(binary_dir,
                                        base_package_name % {'locale': locale})
-            if not self.create_complete_snippet(binary_path, version, aus_abs_dir):
+            # TODO an alternate way, and skip if we can't
+            url = self.upload_urls[locale]
+            if not self.create_complete_snippet(binary_path, version, buildid, url, aus_abs_dir):
                 self.add_failure(locale, message="Errors creating snippet for %s!  Removing snippet directory." % locale)
                 self.rmtree(aus_abs_dir)
                 continue
-            self.run_command("touch", os.path.join(aus_abs_dir, "partial.txt"))
+            self.run_command(["touch", os.path.join(aus_abs_dir, "partial.txt")])
             success_count += 1
         self.summarize_success_count(success_count, total_count,
                                      message="Created %d of %d snippets successfully.")
 
     def upload_nightly_snippets(self):
         c = self.config
-        rc = self.query_release_config()
         dirs = self.query_abs_dirs()
         update_dir = os.path.join(dirs['abs_work_dir'], 'update',)
         if not os.path.exists(update_dir):
@@ -402,14 +435,14 @@ class MobileSingleLocale(LocalesMixin, MobileSigningMixin, MercurialScript):
         rsync = self.query_exe("rsync")
         ssh = self.query_exe("ssh")
         aus_upload_dir = c['aus_upload_base_dir']
-        cmd = [ssh, '-oIdentityFile=%s' % rc['aus_ssh_key'],
-               '%s@%s' % (rc['aus_user'], rc['aus_server']),
+        cmd = [ssh, '-oIdentityFile=%s' % c['aus_ssh_key'],
+               '%s@%s' % (c['aus_user'], c['aus_server']),
                'mkdir', '-p', aus_upload_dir]
         self.run_command(cmd, cwd=dirs['abs_work_dir'],
                          error_list=SSHErrorList)
         cmd = [rsync, '-e']
-        cmd += ['%s -oIdentityFile=%s' % (ssh, rc['aus_ssh_key']), '-azv', './']
-        cmd += ["%s@%s:%s/" % (rc['aus_user'], rc['aus_server'], aus_upload_dir)]
+        cmd += ['%s -oIdentityFile=%s' % (ssh, c['aus_ssh_key']), '-azv', './']
+        cmd += ["%s@%s:%s/" % (c['aus_user'], c['aus_server'], aus_upload_dir)]
         self.run_command(cmd, cwd=update_dir, error_list=SSHErrorList)
 
 
