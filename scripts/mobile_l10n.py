@@ -174,8 +174,10 @@ class MobileSingleLocale(LocalesMixin, ReleaseMixin, MobileSigningMixin,
             return self.upload_env
         c = self.config
         buildid = self.query_buildid()
+        version = self.query_version()
         upload_env = self.query_env(partial_env=c.get("upload_env"),
-                                    replace_dict={'buildid': buildid})
+                                    replace_dict={'buildid': buildid,
+                                                  'version': version})
         self.upload_env = upload_env
         return self.upload_env
 
@@ -416,19 +418,19 @@ class MobileSingleLocale(LocalesMixin, ReleaseMixin, MobileSigningMixin,
             if parser.num_errors:
                 self.add_failure(locale, message="%s failed in make upload!" % (locale))
                 continue
-            if 'create-nightly-snippets' in self.actions:
-                package_name = base_package_name % {'locale': locale}
-                r = re.compile("(http.*%s)" % package_name)
-                success = False
-                for line in output.splitlines():
-                    m = r.match(line)
-                    if m:
-                        self.upload_urls[locale] = m.groups()[0]
-                        success = True
-                if not success:
-                    self.add_failure(locale, message="Failed to detect %s url in make upload!" % (locale))
-                    print output
-                    continue
+            package_name = base_package_name % {'locale': locale}
+            r = re.compile("(http.*%s)" % package_name)
+            success = False
+            for line in output.splitlines():
+                m = r.match(line)
+                if m:
+                    self.upload_urls[locale] = m.groups()[0]
+                    self.info("Found upload url %s" % self.upload_urls[locale])
+                    success = True
+            if not success:
+                self.add_failure(locale, message="Failed to detect %s url in make upload!" % (locale))
+                print output
+                continue
             success_count += 1
         self.summarize_success_count(success_count, total_count,
                                      message="Uploaded %d of %d binaries successfully.")

@@ -55,6 +55,7 @@ config = {
         "UPLOAD_SSH_KEY": STAGE_SSH_KEY,
         "UPLOAD_HOST": STAGE_SERVER,
         "UPLOAD_TO_TEMP": "1",
+        "MOZ_PKG_VERSION": "%(version)s",
     },
     "base_post_upload_cmd": "post_upload.py -p mobile -n 1 -v %(version)s --builddir android/%(locale)s --release-to-mobile-candidates-dir --nightly-dir=candidates",
     "merge_locales": True,
