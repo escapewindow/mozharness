@@ -30,8 +30,8 @@ config = {
         "revision": "default",
         "dest": "tools"
     },{
-        "repo": "http://hg.mozilla.org/build/compare-locales",
-        "revision": "RELEASE_AUTOMATION"
+        "repo": "http://hg.mozilla.org/l10n/compare-locales",
+        "revision": "RELEASE_0_9_4"
     }],
     "hg_l10n_base": "http://hg.mozilla.org/releases/l10n/%s" % BRANCH,
     "hg_l10n_tag": "default",
