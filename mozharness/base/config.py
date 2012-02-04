@@ -342,11 +342,6 @@ class BaseConfig(object):
         if not args:
             args = sys.argv[1:]
         (options, args) = self.config_parser.parse_args(args)
-        if options.list_actions:
-            print "Actions available: " + ', '.join(self.all_actions)
-            if self.default_actions != self.all_actions:
-                print "Default actions: " + ', '.join(self.default_actions)
-            raise SystemExit(0)
 
         defaults = self.config_parser.defaults.copy()
 
@@ -394,6 +389,11 @@ class BaseConfig(object):
         if self._config.get('default_actions'):
             default_actions = self.verify_actions(self._config['default_actions'])
             self.default_actions = default_actions
+        if options.list_actions:
+            print "Actions available: " + ', '.join(self.all_actions)
+            if self.default_actions != self.all_actions:
+                print "Default actions: " + ', '.join(self.default_actions)
+            raise SystemExit(0)
         self.actions = self.default_actions[:]
         if self.volatile_config['actions']:
             actions = self.verify_actions(self.volatile_config['actions'])
