@@ -12,6 +12,7 @@ AUS_USER = "ffxbld"
 AUS_SSH_KEY = "~/.ssh/ffxbld_dsa"
 AUS_UPLOAD_BASE_DIR = "/opt/aus2/incoming/2/Fennec"
 AUS_BASE_DIR = BRANCH + "/%(build_target)s/%(buildid)s/%(locale)s"
+HG_SHARE_BASE_DIR = "/builds/hg-shared"
 
 config = {
     "log_name": "single_locale",
@@ -37,6 +38,8 @@ config = {
     }],
     "hg_l10n_base": "http://hg.mozilla.org/releases/l10n/%s" % BRANCH,
     "hg_l10n_tag": "default",
+    'share_base': HG_SHARE_BASE_DIR,
+
     "l10n_dir": MOZILLA_DIR,
     "repack_env": {
         "JAVA_HOME": JAVA_HOME,
@@ -58,7 +61,7 @@ config = {
     "merge_locales": True,
     "make_dirs": ['config'],
     "mozilla_dir": MOZILLA_DIR,
-    # TODO change to MOZILLA_DIR/mobile/android/config/mozconfigs/android/l10n-mozconfig when that lands.
+    # TODO change to MOZILLA_DIR/mobile/android/config/mozconfigs/android/l10n-mozconfig when in-tree l10n-mozconfigs land.
     "mozconfig": "buildbot-configs/mozilla2/android/%s/nightly/l10n-mozconfig" % BRANCH,
     "jarsigner": JARSIGNER,
     "signature_verification_script": "tools/release/signing/verify-android-signature.sh",
