@@ -58,6 +58,7 @@ from mozharness.base.config import parse_config_file
 from mozharness.base.errors import BaseErrorList, JarsignerErrorList, SSHErrorList
 from mozharness.base.log import OutputParser, DEBUG, INFO, WARNING, ERROR, \
      CRITICAL, FATAL, IGNORE
+from mozharness.mozilla.release import ReleaseMixin
 from mozharness.mozilla.signing import MobileSigningMixin
 from mozharness.base.vcs.vcsbase import MercurialScript
 from mozharness.mozilla.l10n.locales import LocalesMixin
@@ -72,7 +73,7 @@ TEST_JARSIGNER_ERROR_LIST = [{
 
 
 # SignAndroid {{{1
-class SignAndroid(LocalesMixin, MobileSigningMixin, MercurialScript):
+class SignAndroid(LocalesMixin, ReleaseMixin, MobileSigningMixin, MercurialScript):
     config_options = [[
      ['--locale',],
      {"action": "extend",
@@ -196,63 +197,6 @@ class SignAndroid(LocalesMixin, MobileSigningMixin, MercurialScript):
         )
 
     # Helper methods {{{2
-    def query_release_config(self):
-        if self.release_config:
-            return self.release_config
-        c = self.config
-        dirs = self.query_abs_dirs()
-        if c.get("release_config_file"):
-            self.info("Getting release config from %s..." % c["release_config_file"])
-            rc = None
-            try:
-                rc = parse_config_file(
-                    os.path.join(dirs['abs_work_dir'],
-                                 c["release_config_file"]),
-                    config_dict_name="releaseConfig"
-                )
-            except IOError:
-                self.fatal("Release config file %s not found!" % c["release_config_file"])
-            except RuntimeError:
-                self.fatal("Invalid release config file %s!" % c["release_config_file"])
-            self.release_config['version'] = rc['version']
-            self.release_config['buildnum'] = rc['buildNumber']
-            self.release_config['old_version'] = rc['oldVersion']
-            self.release_config['old_buildnum'] = rc['oldBuildNumber']
-            self.release_config['ftp_server'] = rc['stagingServer']
-            self.release_config['ftp_user'] = c.get('ftp_user', rc['hgUsername'])
-            self.release_config['ftp_ssh_key'] = c.get('ftp_ssh_key', rc['hgSshKey'])
-            self.release_config['aus_server'] = rc['stagingServer']
-            self.release_config['aus_user'] = rc['ausUser']
-            self.release_config['aus_ssh_key'] = c.get('aus_ssh_key', '~/.ssh/%s' % rc['ausSshKey'])
-        else:
-            self.info("No release config file; using default config.")
-            for key in ('version', 'buildnum', 'old_version', 'old_buildnum',
-                        'ftp_server', 'ftp_user', 'ftp_ssh_key',
-                        'aus_server', 'aus_user', 'aus_ssh_key',):
-                self.release_config[key] = c[key]
-        self.info("Release config:\n%s" % self.release_config)
-        return self.release_config
-
-    # TODO query_filesize and query_sha512sum probably belong in
-    # mozharness.base somewhere
-    def query_filesize(self, file_path):
-        self.info("Determining filesize for %s" % file_path)
-        length = os.path.getsize(file_path)
-        self.info(" %s" % str(length))
-        return length
-
-    # TODO this should be parallelized with the to-be-written BaseHelper!
-    def query_sha512sum(self, file_path):
-        self.info("Determining sha512sum for %s" % file_path)
-        m = hashlib.sha512()
-        fh = open(file_path)
-        contents = fh.read()
-        fh.close()
-        m.update(contents)
-        sha512 = m.hexdigest()
-        self.info(" %s" % sha512)
-        return sha512
-
     def query_buildid(self, platform, base_url, buildnum=None, version=None):
         rc = self.query_release_config()
         replace_dict = {

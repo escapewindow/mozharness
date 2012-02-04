@@ -42,9 +42,9 @@ import os
 
 from mozharness.base.log import DEBUG, INFO, WARNING, ERROR, CRITICAL, FATAL, IGNORE
 
-# ParallelizationMixin {{{1
+# ChunkingMixin {{{1
 
-class ParallelizationMixin(object):
+class ChunkingMixin(object):
     """Generic signing helper methods.
     """
     def query_chunked_list(self, possible_list, this_chunk, total_chunks,

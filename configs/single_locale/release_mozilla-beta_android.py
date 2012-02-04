@@ -4,7 +4,7 @@ JAVA_HOME = "/tools/jdk6"
 JARSIGNER = "tools/release/signing/mozpass.py"
 OBJDIR = "obj-l10n"
 # TODO this needs to be built.
-EN_US_BINARY_URL = "http://ftp.mozilla.org/pub/mozilla.org/mobile/candidates/11.0b1-candidates/build1/unsigned/android/en-US"
+EN_US_BINARY_URL = "http://ftp.mozilla.org/pub/mozilla.org/mobile/candidates/%(version)s-candidates/build%(buildnum)d/unsigned/android/en-US"
 STAGE_SERVER = "dev-stage01.build.sjc1.mozilla.com"
 STAGE_USER = "ffxbld"
 STAGE_SSH_KEY = "~/.ssh/ffxbld_dsa"
@@ -36,16 +36,18 @@ config = {
     "hg_l10n_base": "http://hg.mozilla.org/releases/l10n/%s" % BRANCH,
     "hg_l10n_tag": "default",
     'vcs_share_base': HG_SHARE_BASE_DIR,
-
     "l10n_dir": MOZILLA_DIR,
+
+    "release_config_file": "buildbot-configs/mozilla/release-fennec-mozilla-release.py",
     "repack_env": {
         "JAVA_HOME": JAVA_HOME,
         "PATH": JAVA_HOME + "/bin:%(PATH)s",
+        "MOZ_PKG_VERSION": "%(version)s",
         "MOZ_OBJDIR": OBJDIR,
-        "EN_US_BINARY_URL": EN_US_BINARY_URL,
         "JARSIGNER": "%(abs_work_dir)s/" + JARSIGNER,
         "LOCALE_MERGEDIR": "%(abs_merge_dir)s/",
     },
+    "base_en_us_binary_url": EN_US_BINARY_URL,
     # TODO ideally we could get this info from a central location.
     # However, the agility of these individual config files might trump that.
     "upload_env": {

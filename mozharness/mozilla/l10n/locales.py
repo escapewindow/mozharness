@@ -45,11 +45,11 @@ sys.path.insert(1, os.path.dirname(sys.path[0]))
 
 from mozharness.base.config import parse_config_file
 from mozharness.base.errors import PythonErrorList
-from mozharness.base.parallel import ParallelizationMixin
+from mozharness.base.parallel import ChunkingMixin
 
 # LocalesMixin {{{1
 
-class LocalesMixin(ParallelizationMixin):
+class LocalesMixin(ChunkingMixin):
     def __init__(self, **kwargs):
         """ Mixins generally don't have an __init__.
         This breaks super().__init__() for children.

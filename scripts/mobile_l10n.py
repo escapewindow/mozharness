@@ -147,6 +147,7 @@ class MobileSingleLocale(LocalesMixin, MobileSigningMixin, MercurialScript):
         self.upload_env = None
         self.version = None
         self.upload_urls = {}
+        self.release_config = {}
 
     # Helper methods {{{2
     def query_repack_env(self):
@@ -249,9 +250,12 @@ class MobileSingleLocale(LocalesMixin, MobileSigningMixin, MercurialScript):
         """
         if self.version:
             return self.version
-        self.version = self._query_make_variable(
-            "MOZ_APP_VERSION",
-        )
+        c = self.config
+        if c.get('release_config_file'):
+            rc = self.query_release_config()
+            self.version = rc['version']
+        else:
+            self.version = self._query_make_variable("MOZ_APP_VERSION")
         return self.version
 
     def query_upload_url(self, locale):
