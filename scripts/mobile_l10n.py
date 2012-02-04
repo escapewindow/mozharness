@@ -352,7 +352,6 @@ class MobileSingleLocale(LocalesMixin, ReleaseMixin, MobileSigningMixin,
 
     def repack(self):
         # TODO per-locale logs and reporting.
-        # TODO query_locales chunking.
         c = self.config
         dirs = self.query_abs_dirs()
         locales = self.query_locales()
