@@ -377,6 +377,7 @@ class MobileSingleLocale(LocalesMixin, MobileSigningMixin, MercurialScript):
         locales = self.query_locales()
         make = self.query_exe("make")
         base_package_name = self.query_base_package_name()
+        buildid = self.query_buildid()
         upload_env = self.query_upload_env()
         success_count = total_count = 0
         for locale in locales:
@@ -384,6 +385,8 @@ class MobileSingleLocale(LocalesMixin, MobileSigningMixin, MercurialScript):
                 self.warning("Skipping previously failed locale %s." % locale)
                 continue
             total_count += 1
+            if c.get(base_post_upload_cmd):
+                upload_env['POST_UPLOAD_CMD'] = c['base_post_upload_cmd'] % {'buildid': buildid, 'locale': locale}
             output = self.get_output_from_command(
                 # Ugly hack to avoid |make upload| stderr from showing up
                 # as get_output_from_command errors
