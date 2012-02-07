@@ -107,6 +107,7 @@ class PepTest(VirtualenvMixin, BuildbotMixin, BaseScript):
                                      'mozprocess',
                                      'mozrunner'],})
         # these are necessary since self.config is read only
+        c = self.config
         dirs = self.query_abs_dirs()
         self.appname = c.get('appname')
         self.symbols = c.get('symbols_path')
@@ -167,7 +168,6 @@ class PepTest(VirtualenvMixin, BuildbotMixin, BaseScript):
         Downloads and installs the application
         Returns the binary path
         """
-        c = self.config
         dirs = self.query_abs_dirs()
 
         # download the application

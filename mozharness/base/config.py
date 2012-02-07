@@ -333,6 +333,12 @@ class BaseConfig(object):
                 raise SystemExit(-1)
         return action_list
 
+    def list_actions(self):
+        print "Actions available: " + ', '.join(self.all_actions)
+        if self.default_actions != self.all_actions:
+            print "Default actions: " + ', '.join(self.default_actions)
+        raise SystemExit(0)
+
     def parse_args(self, args=None):
         """Parse command line arguments in a generic way.
         Return the parser object after adding the basic options, so
@@ -347,6 +353,8 @@ class BaseConfig(object):
 
         if not options.config_file:
             if self.require_config_file:
+                if options.list_actions:
+                    self.list_actions()
                 print("Required config file not set! (use --config-file option)")
                 raise SystemExit(-1)
         else:
@@ -390,10 +398,7 @@ class BaseConfig(object):
             default_actions = self.verify_actions(self._config['default_actions'])
             self.default_actions = default_actions
         if options.list_actions:
-            print "Actions available: " + ', '.join(self.all_actions)
-            if self.default_actions != self.all_actions:
-                print "Default actions: " + ', '.join(self.default_actions)
-            raise SystemExit(0)
+            self.list_actions()
         self.actions = self.default_actions[:]
         if self.volatile_config['actions']:
             actions = self.verify_actions(self.volatile_config['actions'])
