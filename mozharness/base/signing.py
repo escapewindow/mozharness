@@ -56,7 +56,7 @@ class BaseSigningMixin(object):
     def query_sha512sum(self, file_path):
         self.info("Determining sha512sum for %s" % file_path)
         m = hashlib.sha512()
-        fh = open(file_path)
+        fh = open(file_path, 'rb')
         contents = fh.read()
         fh.close()
         m.update(contents)
