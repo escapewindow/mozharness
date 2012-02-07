@@ -5,6 +5,7 @@
 #  easy_install coverage
 #  easy_install nose
 #  easy_install pylint
+#  easy_install pyflakes
 #
 # test_base_vcs_mercurial.py requires hg >= 1.6.0 with mq, rebase, share
 # extensions to fully test.
