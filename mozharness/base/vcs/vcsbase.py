@@ -40,16 +40,12 @@
 
 from copy import deepcopy
 import os
-import re
-import subprocess
-from urlparse import urlsplit
 
 import sys
 sys.path.insert(1, os.path.dirname(os.path.dirname(os.path.dirname(sys.path[0]))))
 
-from mozharness.base.errors import HgErrorList, VCSException
-from mozharness.base.log import LogMixin
-from mozharness.base.script import BaseScript, ShellMixin, OSMixin
+from mozharness.base.errors import VCSException
+from mozharness.base.script import BaseScript
 from mozharness.base.vcs.mercurial import MercurialVCS
 
 # Update this with supported VCS name : VCS object

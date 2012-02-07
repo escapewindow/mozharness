@@ -45,8 +45,8 @@ import sys
 
 sys.path.insert(1, os.path.dirname(os.path.dirname(sys.path[0])))
 
-from mozharness.base.errors import SSHErrorList, PythonErrorList, MakefileErrorList
-from mozharness.base.log import DEBUG, INFO, WARNING, ERROR, CRITICAL, FATAL, IGNORE
+from mozharness.base.errors import MakefileErrorList
+from mozharness.base.log import FATAL
 from mozharness.base.vcs.vcsbase import MercurialScript
 from mozharness.mozilla.l10n.locales import LocalesMixin
 
@@ -142,7 +142,6 @@ class MultiLocaleBuild(LocalesMixin, MercurialScript):
 
     def pull_build_source(self):
         c = self.config
-        dirs = self.query_abs_dirs()
         repos = []
         replace_dict = {}
         # Replace %(user_repo_override)s with c['user_repo_override']

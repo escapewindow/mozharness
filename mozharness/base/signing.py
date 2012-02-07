@@ -41,8 +41,6 @@
 import hashlib
 import os
 
-from mozharness.base.log import DEBUG, INFO, WARNING, ERROR, CRITICAL, FATAL, IGNORE
-
 # BaseSigningMixin {{{1
 
 class BaseSigningMixin(object):

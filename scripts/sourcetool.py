@@ -48,7 +48,6 @@ Maybe I need to rethink work_dir?
 """
 
 import os
-import pprint
 import sys
 
 sys.path.insert(1, os.path.dirname(sys.path[0]))

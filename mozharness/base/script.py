@@ -232,7 +232,7 @@ class OSMixin(object):
                 self.warning("Unsupported file type: %s" % path)
             bundle.close()
         except (zipfile.BadZipfile, zipfile.LargeZipFile,
-                tarfile.ReadError, tarfile.CompressionError), e:
+                tarfile.ReadError, tarfile.CompressionError):
             cla = sys.exc_info()[0]
             self.log("%s, Error extracting: %s" % (cla.__name__,
                                                    os.path.abspath(path)),
@@ -465,8 +465,6 @@ class ShellMixin(object):
         if self.config.get('noop'):
             self.info("(Dry run; skipping)")
             return
-        pv = platform.python_version_tuple()
-        python_26 = False
         tmp_stdout = None
         tmp_stderr = None
         tmp_stdout_filename = '%s_stdout' % tmpfile_base_path

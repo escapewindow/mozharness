@@ -42,7 +42,7 @@ import os
 import re
 
 from mozharness.base.errors import BaseErrorList
-from mozharness.base.log import DEBUG, INFO, WARNING, ERROR, CRITICAL, FATAL, IGNORE
+from mozharness.base.log import ERROR, FATAL
 from mozharness.base.signing import BaseSigningMixin
 
 AndroidSignatureVerificationErrorList = BaseErrorList + [{

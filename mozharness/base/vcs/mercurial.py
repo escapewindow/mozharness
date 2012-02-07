@@ -53,7 +53,7 @@ sys.path.insert(1, os.path.dirname(os.path.dirname(os.path.dirname(sys.path[0]))
 
 from mozharness.base.errors import HgErrorList, VCSException
 from mozharness.base.log import LogMixin
-from mozharness.base.script import BaseScript, ShellMixin, OSMixin
+from mozharness.base.script import ShellMixin, OSMixin
 
 HG_OPTIONS = ['--config', 'ui.merge=internal:merge']
 

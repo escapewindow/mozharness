@@ -41,6 +41,7 @@ This currently supports nightly and release single locale repacks for
 Android.  This also creates nightly updates.
 """
 
+from copy import deepcopy
 import os
 import re
 import sys
@@ -48,14 +49,8 @@ import sys
 # load modules from parent dir
 sys.path.insert(1, os.path.dirname(sys.path[0]))
 
-from copy import deepcopy
-import re
-import subprocess
-
-from mozharness.base.config import parse_config_file
 from mozharness.base.errors import BaseErrorList, MakefileErrorList, SSHErrorList
-from mozharness.base.log import OutputParser, DEBUG, INFO, WARNING, ERROR, \
-     CRITICAL, FATAL, IGNORE
+from mozharness.base.log import OutputParser
 from mozharness.mozilla.release import ReleaseMixin
 from mozharness.mozilla.signing import MobileSigningMixin
 from mozharness.base.vcs.vcsbase import MercurialScript
@@ -437,7 +432,6 @@ class MobileSingleLocale(LocalesMixin, ReleaseMixin, MobileSigningMixin,
     def create_nightly_snippets(self):
         c = self.config
         dirs = self.query_abs_dirs()
-        env = self.query_repack_env()
         locales = self.query_locales()
         base_package_name = self.query_base_package_name()
         buildid = self.query_buildid()

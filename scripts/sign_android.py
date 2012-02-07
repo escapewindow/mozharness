@@ -42,22 +42,17 @@
 # TODO split out signing and transfers to helper objects so we can do
 #      the downloads/signing/uploads in parallel, speeding that up
 
-import hashlib
+from copy import deepcopy
+import getpass
 import os
+import subprocess
 import sys
 
 # load modules from parent dir
 sys.path.insert(1, os.path.dirname(sys.path[0]))
 
-from copy import deepcopy
-import getpass
-import re
-import subprocess
-
-from mozharness.base.config import parse_config_file
 from mozharness.base.errors import BaseErrorList, JarsignerErrorList, SSHErrorList
-from mozharness.base.log import OutputParser, DEBUG, INFO, WARNING, ERROR, \
-     CRITICAL, FATAL, IGNORE
+from mozharness.base.log import OutputParser, ERROR, FATAL, IGNORE
 from mozharness.mozilla.release import ReleaseMixin
 from mozharness.mozilla.signing import MobileSigningMixin
 from mozharness.base.vcs.vcsbase import MercurialScript

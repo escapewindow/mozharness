@@ -128,7 +128,7 @@ class Talos(VirtualenvMixin, BaseScript):
         # run talos tests
         # assumes a webserver is appropriately running
         python = self.query_python_path()
-        code = self.run_command([python, 'run_tests.py', '--noisy', self.talos_conf], cwd=self.talos_dir)
+        self.return_code = self.run_command([python, 'run_tests.py', '--noisy', self.talos_conf], cwd=self.talos_dir)
 
 
 if __name__ == '__main__':
