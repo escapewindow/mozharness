@@ -50,10 +50,6 @@ Maybe I need to rethink work_dir?
 import os
 import pprint
 import sys
-try:
-    import simplejson as json
-except ImportError:
-    import json
 
 sys.path.insert(1, os.path.dirname(sys.path[0]))
 

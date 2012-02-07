@@ -64,7 +64,7 @@ try:
 except ImportError:
     import json
 
-from mozharness.base.log import DEBUG, INFO, WARNING, ERROR, CRITICAL, FATAL, IGNORE
+from mozharness.base.log import DEBUG, INFO, WARNING, ERROR, CRITICAL, FATAL
 
 
 

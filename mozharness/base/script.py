@@ -65,9 +65,7 @@ except ImportError:
 
 from mozharness.base.config import BaseConfig
 from mozharness.base.log import SimpleFileLogger, MultiFileLogger, \
-     LogMixin, OutputParser, DEBUG, INFO, WARNING, ERROR, CRITICAL, FATAL, \
-     IGNORE
-from mozharness.base.errors import HgErrorList
+     LogMixin, OutputParser, DEBUG, INFO, ERROR, FATAL
 
 # OSMixin {{{1
 class OSMixin(object):
@@ -143,7 +141,7 @@ class OSMixin(object):
         if parsed.path != '':
             return parsed.path.rsplit('/', 1)[-1]
         else:
-            file_name = parsed.netloc
+            return parsed.netloc
 
     # http://www.techniqal.com/blog/2008/07/31/python-file-read-write-with-urllib2/
     # TODO thinking about creating a transfer object.

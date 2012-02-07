@@ -52,7 +52,7 @@ warning; etc.) or platform or language or whatever.
 
 import re
 
-from mozharness.base.log import DEBUG, INFO, WARNING, ERROR, CRITICAL, FATAL, IGNORE
+from mozharness.base.log import WARNING, ERROR, CRITICAL, FATAL
 
 # Exceptions
 class VCSException(Exception):

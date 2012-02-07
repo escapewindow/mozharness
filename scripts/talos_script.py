@@ -5,11 +5,7 @@ run talos test suites in a virtualenv
 """
 
 import os
-import subprocess
-import sys
-import urllib2
 
-from mozharness.base.log import DEBUG, INFO, WARNING, ERROR, CRITICAL, FATAL, IGNORE
 from mozharness.base.python import virtualenv_config_options, VirtualenvMixin
 from mozharness.base.script import BaseScript
 
