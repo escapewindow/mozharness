@@ -38,8 +38,6 @@
 """Generic ways to parallelize jobs.
 """
 
-import os
-
 from mozharness.base.log import DEBUG, INFO, WARNING, ERROR, CRITICAL, FATAL, IGNORE
 
 # ChunkingMixin {{{1

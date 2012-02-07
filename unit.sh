@@ -51,6 +51,9 @@ else
 fi
 export PYTHONPATH=`env pwd`:$PYTHONPATH
 
+echo "### Running pyflakes"
+pyflakes $MOZHARNESS_PY_FILES $SCRIPTS_PY_FILES
+
 echo "### Running pylint"
 pylint -E -e F -f parseable $MOZHARNESS_PY_FILES $SCRIPTS_PY_FILES 2>&1 | egrep -v '(No config file found, using default configuration|Instance of .* has no .* member)'
 
