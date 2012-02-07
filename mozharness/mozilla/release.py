@@ -74,7 +74,7 @@ class ReleaseMixin():
             self.release_config['ftp_server'] = rc['stagingServer']
             self.release_config['ftp_user'] = c.get('ftp_user', rc['hgUsername'])
             self.release_config['ftp_ssh_key'] = c.get('ftp_ssh_key', rc['hgSshKey'])
-            self.release_config['aus_server'] = rc['stagingServer']
+            self.release_config['aus_server'] = rc['ausHost']
             self.release_config['aus_user'] = rc['ausUser']
             self.release_config['aus_ssh_key'] = c.get('aus_ssh_key', '~/.ssh/%s' % rc['ausSshKey'])
         else:
