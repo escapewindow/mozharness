@@ -41,7 +41,7 @@
 import os
 
 from mozharness.base.errors import PythonErrorList
-from mozharness.base.log import DEBUG, INFO, WARNING, ERROR, CRITICAL, FATAL, IGNORE
+from mozharness.base.log import WARNING, FATAL
 
 # Virtualenv {{{1
 virtualenv_config_options = [[
@@ -78,7 +78,7 @@ class VirtualenvMixin(object):
             return dirs['abs_virtualenv_dir']
         if os.path.isabs(c['virtualenv_path']):
             return c['virtualenv_path']
-        return os.path.join(dirs['abs_base_dir'], c['virtualenv_path'])
+        return os.path.join(c['base_work_dir'], c['virtualenv_path'])
 
     def query_python_path(self, binary="python"):
         """Return the path of a binary inside the virtualenv, if

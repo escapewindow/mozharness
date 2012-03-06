@@ -1,22 +1,20 @@
 #!/usr/bin/env python
 
-ADDITIONAL_LOCALES = ["en-US", "multi"]
+import os
+
+LOCALES = ["en-US", "multi"]
 TAG = "default"
-#AUS_SERVER = "dev-stage01.build.mozilla.org"
-AUS_SERVER = "aus2-staging.mozilla.org"
-#FTP_SERVER = "dev-stage01.build.mozilla.org"
-FTP_SERVER = "stage.mozilla.org"
+AUS_SERVER = "dev-stage01.build.mozilla.org"
+FTP_SERVER = "dev-stage01.build.mozilla.org"
 AUS_UPLOAD_BASE_DIR = "/opt/aus2/snippets/staging"
 AUS_DIR_BASE_NAME = "Fennec-%(version)s-build%(buildnum)d"
 FTP_UPLOAD_BASE_DIR = "/pub/mozilla.org/mobile/candidates/%(version)s-candidates/build%(buildnum)d"
-#DOWNLOAD_BASE_URL = "http://%s%s" % (FTP_SERVER, FTP_UPLOAD_BASE_DIR)
-DOWNLOAD_BASE_URL = "http://ftp.mozilla.org/pub/mozilla.org/mobile/candidates/%(version)s-candidates/build%(buildnum)d"
+DOWNLOAD_BASE_URL = "http://%s%s" % (FTP_SERVER, FTP_UPLOAD_BASE_DIR)
+#DOWNLOAD_BASE_URL = "http://ftp.mozilla.org/pub/mozilla.org/mobile/candidates/%(version)s-candidates/build%(buildnum)d"
 APK_BASE_NAME = "fennec-%(version)s.%(locale)s.android-arm.apk"
 BUILDID_BASE_URL = DOWNLOAD_BASE_URL + "/%(platform)s_info.txt"
 FFXBLD_SSH_KEY = '~/.ssh/ffxbld_dsa'
-#FFXBLD_SSH_KEY = '~/staging_ssh/ffxbld_dsa'
-CLTBLD_SSH_KEY = '~/.ssh/cltbld_dsa'
-#CLTBLD_SSH_KEY = '~/staging_ssh/id_rsa'
+CLTBLD_SSH_KEY = '~/.ssh/id_rsa'
 
 RELEASE_UPDATE_URL = "http://download.mozilla.org/?product=fennec-%(version)s-complete&os=%(platform)s&lang=%(locale)s"
 BETATEST_UPDATE_URL = "http://stage.mozilla.org/pub/mozilla.org/mobile/candidates/%(version)s-candidates/build%(buildnum)d/%(apk_name)s"
@@ -31,21 +29,21 @@ appv=%(version)s
 extv=%(version)s
 """
 
-KEYSTORE = "/home/cltsign/.android/android-release.keystore"
+KEYSTORE = "%s/.android/android.keystore" % os.environ['HOME']
 
-JAVA_HOME = "/tools/jdk-1.6.0_17"
+JAVA_HOME = "/tools/jdk6"
 JARSIGNER = "%s/bin/jarsigner" % JAVA_HOME
-KEY_ALIAS = "release"
+KEY_ALIAS = "nightly"
 
 config = {
-    "log_name": "sign_android_beta",
-    "work_dir": "beta",
+    "log_name": "sign_android_staging_esr10",
+    "work_dir": "staging_esr10",
 
-    "additional_locales": ADDITIONAL_LOCALES,
-    "locales_file": "buildbot-configs/mozilla/l10n-changesets_mobile-beta.json",
-    "release_config_file": "buildbot-configs/mozilla/release-fennec-mozilla-beta.py",
+    "locales": LOCALES,
+    "locales_file": "buildbot-configs/mozilla/l10n-changesets_mobile-esr10.json",
+    "release_config_file": "buildbot-configs/mozilla/staging_release-fennec-mozilla-esr10.py",
 
-    "platforms": ['android-xul'],
+    "platforms": ['android',],
     "update_platforms": [],
     "update_platform_map": {
         'android': 'Android_arm-eabi-gcc3',
@@ -83,15 +81,6 @@ config = {
     "download_signed_base_subdir": "%(platform)s/%(locale)s",
     "buildid_base_url": BUILDID_BASE_URL,
     "old_buildid_base_url": BUILDID_BASE_URL,
-    "actions": [
-                "passphrase",
-                "clobber",
-                "pull",
-                "download-unsigned-bits",
-                "sign",
-                "verify-signatures",
-                "upload-signed-bits",
-               ],
 
     "keystore": KEYSTORE,
     "key_alias": KEY_ALIAS,
@@ -100,11 +89,11 @@ config = {
     },
     "exes": {
         "jarsigner": JARSIGNER,
-        "zipalign": "/tools/android-sdk-r8/tools/zipalign",
+        "zipalign": "/tools/android-sdk-r13/tools/zipalign",
     },
     "signature_verification_script": "tools/release/signing/verify-android-signature.sh",
 
-    "user_repo_override": "build",
+    "user_repo_override": "users/stage-ffxbld",
     "tag_override": TAG,
     "repos": [{
         "repo": "http://hg.mozilla.org/%(user_repo_override)s/tools",

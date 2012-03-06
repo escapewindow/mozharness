@@ -45,14 +45,11 @@ sys.path.insert(1, os.path.dirname(sys.path[0]))
 from mozharness.base.errors import PythonErrorList
 from mozharness.base.log import DEBUG, INFO, WARNING, ERROR, FATAL
 from mozharness.base.python import virtualenv_config_options, VirtualenvMixin
-from mozharness.base.script import BaseScript
-from mozharness.buildbot import BuildbotMixin, TBPL_SUCCESS, TBPL_WARNING, TBPL_FAILURE, TBPL_RETRY
+from mozharness.base.vcs.vcsbase import MercurialScript
+from mozharness.mozilla.buildbot import BuildbotMixin, TBPL_SUCCESS, TBPL_WARNING, TBPL_FAILURE
 import urlparse
-import tarfile
-import zipfile
-import platform
 
-class PepTest(VirtualenvMixin, BuildbotMixin, BaseScript):
+class PepTest(VirtualenvMixin, BuildbotMixin, MercurialScript):
     config_options = [
         [["--appname"],
         {"action": "store",
@@ -71,6 +68,17 @@ class PepTest(VirtualenvMixin, BuildbotMixin, BaseScript):
          "dest": "peptest_url",
          "default": "https://github.com/mozilla/peptest/zipball/master",
          "help": "URL to peptest zip file",
+        }],
+        [["--use-proxy"],
+        {"action": "store_true",
+         "dest": "peptest_use_proxy",
+         "default": True,
+         "help": "Use a local proxy for peptest runs",
+        }],
+        [["--no-use-proxy"],
+        {"action": "store_false",
+         "dest": "peptest_use_proxy",
+         "help": "Don't use a local proxy for peptest runs",
         }],
         [["--test-url"],
         {"action":"store",
@@ -97,7 +105,7 @@ class PepTest(VirtualenvMixin, BuildbotMixin, BaseScript):
                          'run-peptest'],
             default_actions=['clobber',
                              'create-virtualenv',
-                             'read-buildbot-config',
+                             'get-latest-tinderbox',
                              'create-deps',
                              'run-peptest'],
             require_config_file=require_config_file,
@@ -171,7 +179,6 @@ class PepTest(VirtualenvMixin, BuildbotMixin, BaseScript):
         Downloads and installs the application
         Returns the binary path
         """
-        c = self.config
         dirs = self.query_abs_dirs()
 
         # download the application
@@ -238,7 +245,6 @@ class PepTest(VirtualenvMixin, BuildbotMixin, BaseScript):
         """
         Create virtualenv and install dependencies
         """
-        c = self.config
         dirs = self.query_abs_dirs()
         if self.test_url:
             bundle = self.download_file(self.test_url,
@@ -251,6 +257,9 @@ class PepTest(VirtualenvMixin, BuildbotMixin, BaseScript):
                              cwd=dirs['abs_test_install_dir'])
         self._install_deps()
         self._install_peptest()
+        if self.config.get('repos'):
+            self.vcs_checkout_repos(self.config['repos'],
+                                    parent_dir=dirs['abs_work_dir'])
 
 
     def get_latest_tinderbox(self):
@@ -330,6 +339,15 @@ class PepTest(VirtualenvMixin, BuildbotMixin, BaseScript):
         cmd.extend(self._build_arg('--tracer-interval',
                    self.config.get('tracer_interval')))
         cmd.extend(self._build_arg('--symbols-path', self.symbols))
+        if self.config.get('peptest_use_proxy'):
+            # TODO should these be options? config file settings?
+            cmd.extend(['--proxy',
+                        os.path.join(dirs['abs_peptest_dir'],
+                                     'tests/firefox/server-locations.txt')])
+            cmd.append('--proxy-host-dirs')
+            cmd.extend(['--server-path',
+                        os.path.join(dirs['abs_peptest_dir'],
+                                     'tests/firefox/server')])
         if (self.config.get('log_level') in
                            ['debug', 'info', 'warning', 'error']):
             cmd.extend(['--log-level', self.config['log_level'].upper()])

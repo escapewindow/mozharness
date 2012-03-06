@@ -1,6 +1,6 @@
 #!/usr/bin/env python
 
-ADDITIONAL_LOCALES = ["en-US", "multi"]
+LOCALES = ["en-US", "multi"]
 TAG = "default"
 #AUS_SERVER = "dev-stage01.build.mozilla.org"
 AUS_SERVER = "aus2-staging.mozilla.org"
@@ -38,14 +38,14 @@ JARSIGNER = "%s/bin/jarsigner" % JAVA_HOME
 KEY_ALIAS = "release"
 
 config = {
-    "log_name": "sign_android_beta",
-    "work_dir": "beta",
+    "log_name": "sign_android_esr10",
+    "work_dir": "esr10",
 
-    "additional_locales": ADDITIONAL_LOCALES,
-    "locales_file": "buildbot-configs/mozilla/l10n-changesets_mobile-beta.json",
-    "release_config_file": "buildbot-configs/mozilla/release-fennec-mozilla-beta.py",
+    "locales": LOCALES,
+    "locales_file": "buildbot-configs/mozilla/l10n-changesets_mobile-esr10.json",
+    "release_config_file": "buildbot-configs/mozilla/release-fennec-mozilla-esr10.py",
 
-    "platforms": ['android-xul'],
+    "platforms": ['android',],
     "update_platforms": [],
     "update_platform_map": {
         'android': 'Android_arm-eabi-gcc3',
