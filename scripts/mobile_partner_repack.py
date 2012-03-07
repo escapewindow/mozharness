@@ -15,8 +15,7 @@ import sys
 # load modules from parent dir
 sys.path.insert(1, os.path.dirname(sys.path[0]))
 
-from mozharness.base.errors import BaseErrorList, SSHErrorList
-from mozharness.base.log import OutputParser, ERROR, FATAL, IGNORE
+from mozharness.base.errors import SSHErrorList
 from mozharness.mozilla.release import ReleaseMixin
 from mozharness.base.vcs.vcsbase import MercurialScript
 from mozharness.mozilla.l10n.locales import LocalesMixin
@@ -152,31 +151,33 @@ class MobilePartnerRepack(LocalesMixin, ReleaseMixin, MercurialScript):
         rc = self.query_release_config()
         dirs = self.query_abs_dirs()
         locales = self.query_locales()
-        base_url = c['download_base_url'] + '/' + \
-                   c['download_unsigned_base_subdir'] + '/' + \
-                   c.get('unsigned_apk_base_name', 'gecko-unsigned-unaligned.apk')
         replace_dict = {
             'buildnum': rc['buildnum'],
             'version': rc['version'],
         }
         success_count = total_count = 0
         for platform in c['platforms']:
+            base_installer_name = c['installer_base_names'][platform]
+            base_url = c['download_base_url'] + '/' + \
+                       c['download_unsigned_base_subdir'] + '/' + \
+                       base_installer_name
             replace_dict['platform'] = platform
             for locale in locales:
                 replace_dict['locale'] = locale
                 url = base_url % replace_dict
-                parent_dir = '%s/unsigned/%s/%s' % (dirs['abs_work_dir'],
+                installer_name = base_installer_name % replace_dict
+                parent_dir = '%s/original/%s/%s' % (dirs['abs_work_dir'],
                                            platform, locale)
-                file_path = '%s/gecko.ap_' % parent_dir
+                file_path = '%s/%s' % (parent_dir, installer_name)
                 self.mkdir_p(parent_dir)
                 total_count += 1
                 if not self.download_file(url, file_path):
                     self.add_failure(platform, locale,
-                                     message="Unable to download %(platform)s:%(locale)s unsigned apk!")
+                                     message="Unable to download %(platform)s:%(locale)s installer!")
                 else:
                     success_count += 1
         self.summarize_success_count(success_count, total_count,
-                                     message="Downloaded %d of %d unsigned apks successfully.")
+                                     message="Downloaded %d of %d installers successfully.")
 
     def upload(self):
         c = self.config
