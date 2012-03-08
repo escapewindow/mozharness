@@ -24,6 +24,9 @@ config = {
     "installer_base_names": {
         "android": APK_BASE_NAME,
     },
+    "partner_config": {
+        "android-market": {},
+    },
     "download_unsigned_base_subdir": "unsigned/%(platform)s/%(locale)s",
     "download_base_url": DOWNLOAD_BASE_URL,
 

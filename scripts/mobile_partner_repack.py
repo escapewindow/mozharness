@@ -20,7 +20,6 @@ from mozharness.mozilla.release import ReleaseMixin
 from mozharness.base.vcs.vcsbase import MercurialScript
 from mozharness.mozilla.l10n.locales import LocalesMixin
 
-# So far this only references the ftp platform name.
 SUPPORTED_PLATFORMS = ["android"]
 
 
@@ -111,7 +110,7 @@ class MobilePartnerRepack(LocalesMixin, ReleaseMixin, MercurialScript):
                 "clobber",
                 "pull",
                 "download",
-#                "repack",
+                "repack",
 #                "upload",
             ],
             require_config_file=require_config_file
@@ -179,7 +178,42 @@ class MobilePartnerRepack(LocalesMixin, ReleaseMixin, MercurialScript):
         self.summarize_success_count(success_count, total_count,
                                      message="Downloaded %d of %d installers successfully.")
 
+    def _repack_apk(self, partner, orig_path, repack_path):
+        c = self.config
+        dirs = self.query_abs_dirs()
+        zip_exe = self.query_exe("zip")
+        unzip_exe = self.query_exe("unzip")
+        file_name = os.path.basename(orig_path)
+        tmp_file = os.path.join(dirs['abs_work_dir'], 'tmp', file_name)
+        # TODO error checking
+        self.rmtree(os.path.join(dirs['abs_work_dir'], 'tmp'))
+        self.mkdir_p(os.path.join(dirs['abs_work_dir'], 'tmp', 'defaults', 'pref'))
+        self.copyfile(orig_path, tmp_file)
+
+
+    def repack(self):
+        c = self.config
+        rc = self.query_release_config()
+        dirs = self.query_abs_dirs()
+        locales = self.query_locales()
+        success_count = total_count = 0
+        for platform in c['platforms']:
+            for locale in locales:
+                installer_name = c['installer_base_names'][platform] % {'version': rc['version'], 'locale': locale}
+                if self.query_failure(platform, locale):
+                    self.warning("%s:%s had previous issues; skipping!" % (platform, locale))
+                    continue
+                original_path = '%s/original/%s/%s/%s' % (dirs['abs_work_dir'], platform, locale, installer_name)
+                repack_path = '%s/partner-repacks/%s/%s/%s/%s' % (dirs['abs_work_dir'], partner, platform, locale, installer_name)
+                for partner in c['partner_config'].keys():
+                    total_count += 1
+                    if self._repack_apk(partner, original_path, repack_path):
+                        success_count = 1
+
     def upload(self):
+        # TODO verify/rewrite
+        return
+
         c = self.config
         if not c['platforms']:
             self.info("No platforms to rsync! Skipping...")
