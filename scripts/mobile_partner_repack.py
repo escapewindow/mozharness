@@ -15,7 +15,7 @@ import sys
 # load modules from parent dir
 sys.path.insert(1, os.path.dirname(sys.path[0]))
 
-from mozharness.base.errors import SSHErrorList
+from mozharness.base.errors import SSHErrorList, ZipErrorList
 from mozharness.mozilla.release import ReleaseMixin
 from mozharness.base.vcs.vcsbase import MercurialScript
 from mozharness.mozilla.l10n.locales import LocalesMixin
@@ -181,14 +181,34 @@ class MobilePartnerRepack(LocalesMixin, ReleaseMixin, MercurialScript):
     def _repack_apk(self, partner, orig_path, repack_path):
         c = self.config
         dirs = self.query_abs_dirs()
-        zip_exe = self.query_exe("zip")
-        unzip_exe = self.query_exe("unzip")
+        zip_bin = self.query_exe("zip")
+        unzip_bin = self.query_exe("unzip")
         file_name = os.path.basename(orig_path)
-        tmp_file = os.path.join(dirs['abs_work_dir'], 'tmp', file_name)
-        # TODO error checking
-        self.rmtree(os.path.join(dirs['abs_work_dir'], 'tmp'))
-        self.mkdir_p(os.path.join(dirs['abs_work_dir'], 'tmp', 'defaults', 'pref'))
+        tmp_dir = os.path.join(dirs['abs_work_dir'], 'tmp')
+        tmp_file = os.path.join(tmp_dir, file_name)
+        tmp_prefs_dir = os.path.join(tmp_dir, 'defaults', 'pref')
+        # TODO error checking for each step
+        self.rmtree(tmp_dir)
+        self.mkdir_p(tmp_prefs_dir)
         self.copyfile(orig_path, tmp_file)
+        fh = open(os.path.join(tmp_prefs_dir, 'partner.js'), 'w')
+        fh.write('pref("app.partner.%s", "%s"' % (partner, partner))
+        fh.close()
+        self.run_command([unzip_bin, file_name, 'omni.ja'],
+                         error_list=ZipErrorList,
+                         cwd=tmp_dir)
+        self.run_command([zip_bin, '-9r', 'omni.ja', 'defaults/pref/partner.js'],
+                         error_list=ZipErrorList,
+                         cwd=tmp_dir)
+        self.run_command([zip_bin, '-9r', file_name, 'omni.ja'],
+                         error_list=ZipErrorList,
+                         cwd=tmp_dir)
+        self.run_command([zip_bin, file_name, '-d', "'META-INF/*'"],
+                         error_list=ZipErrorList,
+                         cwd=tmp_dir)
+        repack_dir = os.path.dirname(repack_path)
+        self.mkdir_p(repack_dir)
+        return self.copyfile(tmp_file, repack_path)
 
 
     def repack(self):
@@ -204,8 +224,8 @@ class MobilePartnerRepack(LocalesMixin, ReleaseMixin, MercurialScript):
                     self.warning("%s:%s had previous issues; skipping!" % (platform, locale))
                     continue
                 original_path = '%s/original/%s/%s/%s' % (dirs['abs_work_dir'], platform, locale, installer_name)
-                repack_path = '%s/partner-repacks/%s/%s/%s/%s' % (dirs['abs_work_dir'], partner, platform, locale, installer_name)
                 for partner in c['partner_config'].keys():
+                    repack_path = '%s/partner-repacks/%s/%s/%s/%s' % (dirs['abs_work_dir'], partner, platform, locale, installer_name)
                     total_count += 1
                     if self._repack_apk(partner, original_path, repack_path):
                         success_count = 1

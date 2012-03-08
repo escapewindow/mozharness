@@ -101,6 +101,17 @@ JarsignerErrorList = [{
     'explanation': r'''The apk is missing!''',
 }]
 
+ZipErrorList = BaseErrorList + [{
+    'substr': r'''zip warning:''',
+    'level': WARNING,
+},{
+    'substr': r'''zip error:''',
+    'level': ERROR,
+},{
+    'substr': r'''Cannot open file: it does not appear to be a valid archive''',
+    'level': ERROR,
+}]
+
 
 
 # __main__ {{{1
