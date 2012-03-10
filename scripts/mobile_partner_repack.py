@@ -16,16 +16,18 @@ import sys
 sys.path.insert(1, os.path.dirname(sys.path[0]))
 
 from mozharness.base.errors import SSHErrorList, ZipErrorList
-from mozharness.mozilla.release import ReleaseMixin
 from mozharness.base.vcs.vcsbase import MercurialScript
 from mozharness.mozilla.l10n.locales import LocalesMixin
+from mozharness.mozilla.release import ReleaseMixin
+from mozharness.mozilla.signing import MobileSigningMixin
 
 SUPPORTED_PLATFORMS = ["android"]
 
 
 
 # MobilePartnerRepack {{{1
-class MobilePartnerRepack(LocalesMixin, ReleaseMixin, MercurialScript):
+class MobilePartnerRepack(LocalesMixin, ReleaseMixin, MobileSigningMixin,
+                          MercurialScript):
     config_options = [[
      ['--locale',],
      {"action": "extend",
@@ -179,7 +181,10 @@ class MobilePartnerRepack(LocalesMixin, ReleaseMixin, MercurialScript):
                                      message="Downloaded %d of %d installers successfully.")
 
     def _repack_apk(self, partner, orig_path, repack_path):
-        c = self.config
+        """ Repack the apk with a partner update channel.
+        Returns True for success, None for failure
+        """
+        status = True
         dirs = self.query_abs_dirs()
         zip_bin = self.query_exe("zip")
         unzip_bin = self.query_exe("unzip")
@@ -203,12 +208,13 @@ class MobilePartnerRepack(LocalesMixin, ReleaseMixin, MercurialScript):
         self.run_command([zip_bin, '-9r', file_name, 'omni.ja'],
                          error_list=ZipErrorList,
                          cwd=tmp_dir)
-        self.run_command([zip_bin, file_name, '-d', "'META-INF/*'"],
-                         error_list=ZipErrorList,
-                         cwd=tmp_dir)
+        if self.unsign_apk(tmp_file):
+            return
         repack_dir = os.path.dirname(repack_path)
         self.mkdir_p(repack_dir)
-        return self.copyfile(tmp_file, repack_path)
+        # TODO copyfile status
+        self.copyfile(tmp_file, repack_path)
+        return True
 
 
     def repack(self):
@@ -228,7 +234,12 @@ class MobilePartnerRepack(LocalesMixin, ReleaseMixin, MercurialScript):
                     repack_path = '%s/partner-repacks/%s/%s/%s/%s' % (dirs['abs_work_dir'], partner, platform, locale, installer_name)
                     total_count += 1
                     if self._repack_apk(partner, original_path, repack_path):
-                        success_count = 1
+                        success_count += 1
+                    else:
+                        self.add_failure(platform, locale,
+                                         message="Unable to repack %(platform)s:%(locale)s installer!")
+        self.summarize_success_count(success_count, total_count,
+                                     message="Repacked %d of %d installers successfully.")
 
     def upload(self):
         # TODO verify/rewrite

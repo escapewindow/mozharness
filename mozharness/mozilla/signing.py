@@ -12,7 +12,7 @@ import re
 
 from mozharness.base.errors import BaseErrorList
 from mozharness.base.log import ERROR, FATAL
-from mozharness.base.signing import BaseSigningMixin
+from mozharness.base.signing import AndroidSigningMixin, BaseSigningMixin
 
 AndroidSignatureVerificationErrorList = BaseErrorList + [{
     "regex": re.compile(r'''^Invalid$'''),
@@ -94,7 +94,7 @@ class SigningMixin(BaseSigningMixin):
 
 
 # MobileSigningMixin {{{1
-class MobileSigningMixin(SigningMixin):
+class MobileSigningMixin(AndroidSigningMixin, SigningMixin):
     def verify_android_signature(self, apk, script=None, key_alias="nightly",
                                  tools_dir="tools/", env=None):
         """Runs mjessome's android signature verification script.

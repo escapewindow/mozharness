@@ -10,8 +10,21 @@
 import hashlib
 import os
 
-# BaseSigningMixin {{{1
+from mozharness.base.errors import ZipErrorList
+from mozharness.base.log import IGNORE
 
+UnsignApkErrorList = [{
+    'substr': r'''zip warning: name not matched: 'META-INF/*''',
+    'level': IGNORE,
+    'explanation': 'apk is already unsigned.'
+},{
+    'substr': r'''zip error: Nothing to do!''',
+    'level': IGNORE,
+}] + ZipErrorList
+
+
+
+# BaseSigningMixin {{{1
 class BaseSigningMixin(object):
     """Generic signing helper methods.
     """
@@ -32,3 +45,16 @@ class BaseSigningMixin(object):
         sha512 = m.hexdigest()
         self.info(" %s" % sha512)
         return sha512
+
+
+
+# AndroidSigningMixin {{{1
+class AndroidSigningMixin(object):
+    def sign_apk(self, apk):
+        pass
+
+    def unsign_apk(self, apk):
+        zip_bin = self.query_exe("zip")
+        return self.run_command([zip_bin, apk, '-d', 'META-INF/*'],
+                                error_list=UnsignApkErrorList,
+                                success_codes=[0, 12])
