@@ -181,7 +181,9 @@ class SignAndroid(LocalesMixin, ReleaseMixin, MobileSigningMixin, MercurialScrip
                 return output.replace("buildID=", "")
             else:
                 self.warning("Can't get buildID from %s (try %d)" % (url, count))
-        self.critical("Can't get buildID from %s!" % url)
+        # This will break create-snippets if it isn't set.
+        # Might as well fatal().
+        self.fatal("Can't get buildID from %s!" % url)
 
     def add_failure(self, platform, locale, **kwargs):
         s = "%s:%s" % (platform, locale)
