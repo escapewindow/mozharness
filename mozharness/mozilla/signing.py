@@ -80,11 +80,7 @@ class SigningMixin(BaseSigningMixin):
         contents = SNIPPET_TEMPLATE % replace_dict
         self.mkdir_p(snippet_dir)
         snippet_path = os.path.join(snippet_dir, snippet_file)
-        try:
-            fh = open(snippet_path, 'w')
-            fh.write(contents)
-            fh.close()
-        except:
+        if self.write_to_file(snippet_path, contents, verbose=False) is None:
             self.log("Unable to write complete snippet to %s!" % snippet_path,
                      level=error_level)
             return False

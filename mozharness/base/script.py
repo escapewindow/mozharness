@@ -191,9 +191,6 @@ class OSMixin(object):
 
         Returns absolute file_path if successful, None if not.
         """
-        if not os.path.isabs(file_path):
-            dirs = self.query_abs_dirs()
-            file_path = os.path.join(dirs['abs_work_dir'], file_path)
         self.info("Writing to file %s" % file_path)
         if verbose:
             self.info("Contents:\n%s" % contents)
@@ -216,9 +213,6 @@ class OSMixin(object):
 
         Returns contents if successful, None if not.
         """
-        if not os.path.isabs(file_path):
-            dirs = self.query_abs_dirs()
-            file_path = os.path.join(dirs['abs_work_dir'], file_path)
         self.info("Reading from file %s" % file_path)
         if not os.path.exists(file_path):
             self.log("%s doesn't exist!" % file_path, level=error_level)
@@ -457,8 +451,8 @@ class ShellMixin(object):
         return_level = DEBUG
         output = None
         if os.path.exists(tmp_stdout_filename) and os.path.getsize(tmp_stdout_filename):
-            fh = open(tmp_stdout_filename)
-            output = fh.read()
+            output = self.read_from_file(tmp_stdout_filename,
+                                         verbose=False)
             if not silent:
                 self.info("Output received:")
                 output_lines = output.rstrip().splitlines()
@@ -468,18 +462,16 @@ class ShellMixin(object):
                     line = line.decode("utf-8")
                     self.info(' %s' % line)
                 output = '\n'.join(output_lines)
-            fh.close()
         if os.path.exists(tmp_stderr_filename) and os.path.getsize(tmp_stderr_filename):
             return_level = ERROR
             self.error("Errors received:")
-            fh = open(tmp_stderr_filename)
-            errors = fh.read()
+            errors = self.read_from_file(tmp_stderr_filename,
+                                         verbose=False)
             for line in errors.rstrip().splitlines():
                 if not line or line.isspace():
                     continue
                 line = line.decode("utf-8")
                 self.error(' %s' % line)
-            fh.close()
         elif p.returncode:
             return_level = ERROR
         # Clean up.
