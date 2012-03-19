@@ -21,7 +21,7 @@ import sys
 sys.path.insert(1, os.path.dirname(sys.path[0]))
 
 from mozharness.base.errors import BaseErrorList, JarsignerErrorList, SSHErrorList
-from mozharness.base.log import OutputParser, ERROR, FATAL, IGNORE
+from mozharness.base.log import ERROR, FATAL, IGNORE
 from mozharness.mozilla.release import ReleaseMixin
 from mozharness.mozilla.signing import MobileSigningMixin
 from mozharness.base.vcs.vcsbase import MercurialScript
@@ -202,7 +202,11 @@ class SignAndroid(LocalesMixin, ReleaseMixin, MobileSigningMixin, MercurialScrip
 
     def verify_passphrases(self):
         self.info("Verifying passphrases...")
-        status = self.sign_apk("NOTAREALAPK", remove_signature=False,
+        c = self.config
+        status = self.sign_apk("NOTAREALAPK",
+                               c['keystore'], self.store_passphrase,
+                               self.key_passphrase, c['key_alias'],
+                               remove_signature=False,
                                error_list=TEST_JARSIGNER_ERROR_LIST)
         if status == 0:
             self.info("Passphrases are good.")
@@ -288,7 +292,9 @@ class SignAndroid(LocalesMixin, ReleaseMixin, MobileSigningMixin, MercurialScrip
                 if not os.path.exists(unsigned_path):
                     self.error("Missing apk %s!" % unsigned_path)
                     continue
-                if self.sign_apk(unsigned_path) != 0:
+                if self.sign_apk(unsigned_path, c['keystore'],
+                                 self.store_passphrase, self.key_passphrase,
+                                 c['key_alias']) != 0:
                     self.add_summary("Unable to sign %s:%s apk!",
                                      level=FATAL)
                 else:

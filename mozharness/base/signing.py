@@ -9,9 +9,10 @@
 
 import hashlib
 import os
+import subprocess
 
 from mozharness.base.errors import JarsignerErrorList, ZipErrorList
-from mozharness.base.log import IGNORE
+from mozharness.base.log import OutputParser, IGNORE
 
 UnsignApkErrorList = [{
     'substr': r'''zip warning: name not matched: 'META-INF/*''',
@@ -50,9 +51,8 @@ class BaseSigningMixin(object):
 
 # AndroidSigningMixin {{{1
 class AndroidSigningMixin(object):
-    def sign_apk(self, apk, remove_signature=True, keystore=None,
-                 storepass=None, keypass=None, key_alias=None,
-                 error_list=None):
+    def sign_apk(self, apk, keystore, storepass, keypass, key_alias,
+                 remove_signature=True, error_list=None):
         c = self.config
         jarsigner = self.query_exe('jarsigner')
         if remove_signature:
