@@ -56,7 +56,10 @@ class AndroidSigningMixin(object):
         c = self.config
         jarsigner = self.query_exe('jarsigner')
         if remove_signature:
-            self.unsign_apk(apk)
+            status = self.unsign_apk(apk)
+            if status:
+                self.error("Can't remove signature in %s!" % apk)
+                return -1
         if error_list is None:
             error_list = JarsignerErrorList[:]
         # XXX Not sure if these are the best defaults... Worth revisiting.
@@ -80,10 +83,10 @@ class AndroidSigningMixin(object):
                                  stderr=subprocess.STDOUT)
         except OSError:
             self.dump_exception("Error while signing %s (missing %s?):" % (apk, jarsigner))
-            return -1
+            return -2
         except ValueError:
             self.dump_exception("Popen called with invalid arguments during signing?")
-            return -2
+            return -3
         parser = OutputParser(config=self.config, log_obj=self.log_obj,
                               error_list=error_list)
         loop = True
@@ -99,4 +102,5 @@ class AndroidSigningMixin(object):
         zip_bin = self.query_exe("zip")
         return self.run_command([zip_bin, apk, '-d', 'META-INF/*'],
                                 error_list=UnsignApkErrorList,
-                                success_codes=[0, 12], **kwargs)
+                                success_codes=[0, 12],
+                                return_type='num_errors', **kwargs)

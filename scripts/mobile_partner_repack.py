@@ -207,9 +207,7 @@ class MobilePartnerRepack(LocalesMixin, ReleaseMixin, MobileSigningMixin,
         self.run_command([zip_bin, '-9r', file_name, 'omni.ja'],
                          error_list=ZipErrorList,
                          cwd=tmp_dir)
-        # unsign_apk can return 12 if there was no signature to remove.
-        status = self.unsign_apk(tmp_file)
-        if status != 0 and status != 12:
+        if self.unsign_apk(tmp_file)
             return
         repack_dir = os.path.dirname(repack_path)
         self.mkdir_p(repack_dir)
