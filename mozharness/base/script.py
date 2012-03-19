@@ -21,10 +21,8 @@ import re
 import shutil
 import subprocess
 import sys
-import tarfile
 import urllib2
 import urlparse
-import zipfile
 
 try:
     import simplejson as json

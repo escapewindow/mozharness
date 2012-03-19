@@ -14,7 +14,6 @@
 from copy import deepcopy
 import getpass
 import os
-import subprocess
 import sys
 
 # load modules from parent dir

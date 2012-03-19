@@ -184,7 +184,6 @@ class MobilePartnerRepack(LocalesMixin, ReleaseMixin, MobileSigningMixin,
         """ Repack the apk with a partner update channel.
         Returns True for success, None for failure
         """
-        status = True
         dirs = self.query_abs_dirs()
         zip_bin = self.query_exe("zip")
         unzip_bin = self.query_exe("unzip")
@@ -208,7 +207,9 @@ class MobilePartnerRepack(LocalesMixin, ReleaseMixin, MobileSigningMixin,
         self.run_command([zip_bin, '-9r', file_name, 'omni.ja'],
                          error_list=ZipErrorList,
                          cwd=tmp_dir)
-        if self.unsign_apk(tmp_file):
+        # unsign_apk can return 12 if there was no signature to remove.
+        status = self.unsign_apk(tmp_file)
+        if status != 0 and status != 12:
             return
         repack_dir = os.path.dirname(repack_path)
         self.mkdir_p(repack_dir)
