@@ -195,9 +195,10 @@ class MobilePartnerRepack(LocalesMixin, ReleaseMixin, MobileSigningMixin,
         self.rmtree(tmp_dir)
         self.mkdir_p(tmp_prefs_dir)
         self.copyfile(orig_path, tmp_file)
-        fh = open(os.path.join(tmp_prefs_dir, 'partner.js'), 'w')
-        fh.write('pref("app.partner.%s", "%s"' % (partner, partner))
-        fh.close()
+        if self.write_to_file(os.path.join(tmp_prefs_dir, 'partner.js'),
+                              'pref("app.partner.%s", "%s"' % (partner, partner)
+                             ) is None:
+            return
         self.run_command([unzip_bin, file_name, 'omni.ja'],
                          error_list=ZipErrorList,
                          cwd=tmp_dir)
@@ -207,7 +208,7 @@ class MobilePartnerRepack(LocalesMixin, ReleaseMixin, MobileSigningMixin,
         self.run_command([zip_bin, '-9r', file_name, 'omni.ja'],
                          error_list=ZipErrorList,
                          cwd=tmp_dir)
-        if self.unsign_apk(tmp_file)
+        if self.unsign_apk(tmp_file):
             return
         repack_dir = os.path.dirname(repack_path)
         self.mkdir_p(repack_dir)

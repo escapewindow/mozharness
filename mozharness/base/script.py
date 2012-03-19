@@ -39,11 +39,16 @@ class OSMixin(object):
 
     Depends on LogMixin, ShellMixin, and a self.config of some sort.
     """
-    def mkdir_p(self, path):
+    def mkdir_p(self, path, error_level=ERROR):
         if not os.path.exists(path):
             self.info("mkdir: %s" % path)
             if not self.config.get('noop'):
-                os.makedirs(path)
+                try:
+                    os.makedirs(path)
+                    return path
+                except OSError:
+                    self.log("Can't create directory %s!" % path,
+                             level=error_level)
         else:
             self.debug("mkdir_p: %s Already exists." % path)
 
@@ -137,7 +142,7 @@ class OSMixin(object):
             self.info("Downloading %s%s" % (url, message))
             f = urllib2.urlopen(req)
             if create_parent_dir and parent_dir:
-                self.mkdir_p(parent_dir)
+                self.mkdir_p(parent_dir, error_level=error_level)
             local_file = open(file_name, 'wb')
             local_file.write(f.read())
             local_file.close()
@@ -177,6 +182,57 @@ class OSMixin(object):
             except (IOError, shutil.Error):
                 self.dump_exception("Can't copy %s to %s!" % (src, dest),
                                     level=error_level)
+
+    def write_to_file(self, file_path, contents, verbose=True,
+                      open_mode='w', create_parent_dir=False,
+                      error_level=ERROR):
+        """
+        Write contents to file_path.
+
+        Returns absolute file_path if successful, None if not.
+        """
+        if not os.path.isabs(file_path):
+            dirs = self.query_abs_dirs()
+            file_path = os.path.join(dirs['abs_work_dir'], file_path)
+        self.info("Writing to file %s" % file_path)
+        if verbose:
+            self.info("Contents:\n%s" % contents)
+        if create_parent_dir:
+            parent_dir = os.path.dirname(file_path)
+            self.mkdir_p(parent_dir, error_level=error_level)
+        try:
+            fh = open(file_path, open_mode)
+            fh.write(contents)
+            fh.close()
+            return file_path
+        except IOError:
+            self.log("%s can't be opened for writing!" % file_path,
+                     level=error_level)
+
+    def read_from_file(self, file_path, verbose=True, open_mode='r',
+                       error_level=ERROR):
+        """
+        Reads from file_path.
+
+        Returns contents if successful, None if not.
+        """
+        if not os.path.isabs(file_path):
+            dirs = self.query_abs_dirs()
+            file_path = os.path.join(dirs['abs_work_dir'], file_path)
+        self.info("Reading from file %s" % file_path)
+        if not os.path.exists(file_path):
+            self.log("%s doesn't exist!" % file_path, level=error_level)
+            return
+        try:
+            fh = open(file_path, open_mode)
+            contents = fh.read()
+            fh.close()
+            if verbose:
+                self.info("Contents:\n%s" % contents)
+            return contents
+        except IOError:
+            self.log("%s can't be opened for reading!" % file_path,
+                     level=error_level)
 
     def chdir(self, dir_name, ignore_if_noop=False):
         self.log("Changing directory to %s." % dir_name)
