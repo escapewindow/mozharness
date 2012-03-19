@@ -10,7 +10,7 @@
 import hashlib
 import os
 
-from mozharness.base.errors import ZipErrorList
+from mozharness.base.errors import JarsignerErrorList, ZipErrorList
 from mozharness.base.log import IGNORE
 
 UnsignApkErrorList = [{
@@ -50,11 +50,53 @@ class BaseSigningMixin(object):
 
 # AndroidSigningMixin {{{1
 class AndroidSigningMixin(object):
-    def sign_apk(self, apk):
-        pass
+    def sign_apk(self, apk, remove_signature=True, keystore=None,
+                 storepass=None, keypass=None, key_alias=None,
+                 error_list=None):
+        c = self.config
+        jarsigner = self.query_exe('jarsigner')
+        if remove_signature:
+            self.unsign_apk(apk)
+        if error_list is None:
+            error_list = JarsignerErrorList[:]
+        # XXX Not sure if these are the best defaults... Worth revisiting.
+        if keystore is None:
+            keystore = c['keystore']
+        if storepass is None:
+            storepass = self.store_passphrase
+        if keypass is None:
+            keypass = self.key_passphrase
+        if key_alias is None:
+            keystore = c['key_alias']
+        # This needs to run silently, so no run_command() or
+        # get_output_from_command() (though I could add a
+        # suppress_command_echo=True or something?)
+        try:
+            p = subprocess.Popen([jarsigner, "-keystore", keystore,
+                                 "-storepass", storepass,
+                                 "-keypass", keypass,
+                                 apk, key_alias],
+                                 stdout=subprocess.PIPE,
+                                 stderr=subprocess.STDOUT)
+        except OSError:
+            self.dump_exception("Error while signing %s (missing %s?):" % (apk, jarsigner))
+            return -1
+        except ValueError:
+            self.dump_exception("Popen called with invalid arguments during signing?")
+            return -2
+        parser = OutputParser(config=self.config, log_obj=self.log_obj,
+                              error_list=error_list)
+        loop = True
+        while loop:
+            if p.poll() is not None:
+                """Avoid losing the final lines of the log?"""
+                loop = False
+            for line in p.stdout:
+                parser.add_lines(line)
+        return parser.num_errors
 
-    def unsign_apk(self, apk):
+    def unsign_apk(self, apk, **kwargs):
         zip_bin = self.query_exe("zip")
         return self.run_command([zip_bin, apk, '-d', 'META-INF/*'],
                                 error_list=UnsignApkErrorList,
-                                success_codes=[0, 12])
+                                success_codes=[0, 12], **kwargs)

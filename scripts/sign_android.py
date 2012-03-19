@@ -183,43 +183,6 @@ class SignAndroid(LocalesMixin, ReleaseMixin, MobileSigningMixin, MercurialScrip
                 self.warning("Can't get buildID from %s (try %d)" % (url, count))
         self.critical("Can't get buildID from %s!" % url)
 
-    def _sign(self, apk, remove_signature=True, error_list=None):
-        c = self.config
-        jarsigner = self.query_exe("jarsigner")
-        zip_bin = self.query_exe("zip")
-        if remove_signature:
-            # Get rid of previous signature.
-            # TODO error checking, but allow for no META-INF/ in the zipfile.
-            self.run_command([zip_bin, apk, '-d', 'META-INF/*'])
-        if error_list is None:
-            error_list = JarsignerErrorList
-        # This needs to run silently, so no run_command() or
-        # get_output_from_command() (though I could add a
-        # suppress_command_echo=True or something?)
-        try:
-            p = subprocess.Popen([jarsigner, "-keystore", c['keystore'],
-                                 "-storepass", self.store_passphrase,
-                                 "-keypass", self.key_passphrase,
-                                 apk, c['key_alias']],
-                                 stdout=subprocess.PIPE,
-                                 stderr=subprocess.STDOUT)
-        except OSError:
-            self.dump_exception("Error while signing %s (missing %s?):" % (apk, jarsigner))
-            return -1
-        except ValueError:
-            self.dump_exception("Popen called with invalid arguments during signing?")
-            return -2
-        parser = OutputParser(config=self.config, log_obj=self.log_obj,
-                              error_list=error_list)
-        loop = True
-        while loop:
-            if p.poll() is not None:
-                """Avoid losing the final lines of the log?"""
-                loop = False
-            for line in p.stdout:
-                parser.add_lines(line)
-        return parser.num_errors
-
     def add_failure(self, platform, locale, **kwargs):
         s = "%s:%s" % (platform, locale)
         if 'message' in kwargs:
@@ -239,8 +202,8 @@ class SignAndroid(LocalesMixin, ReleaseMixin, MobileSigningMixin, MercurialScrip
 
     def verify_passphrases(self):
         self.info("Verifying passphrases...")
-        status = self._sign("NOTAREALAPK", remove_signature=False,
-                            error_list=TEST_JARSIGNER_ERROR_LIST)
+        status = self.sign_apk("NOTAREALAPK", remove_signature=False,
+                               error_list=TEST_JARSIGNER_ERROR_LIST)
         if status == 0:
             self.info("Passphrases are good.")
         elif status < 0:
@@ -325,7 +288,7 @@ class SignAndroid(LocalesMixin, ReleaseMixin, MobileSigningMixin, MercurialScrip
                 if not os.path.exists(unsigned_path):
                     self.error("Missing apk %s!" % unsigned_path)
                     continue
-                if self._sign(unsigned_path) != 0:
+                if self.sign_apk(unsigned_path) != 0:
                     self.add_summary("Unable to sign %s:%s apk!",
                                      level=FATAL)
                 else:
