@@ -195,7 +195,11 @@ class OSMixin(object):
         """
         Write contents to file_path.
 
-        Returns absolute file_path if successful, None if not.
+        This doesn't currently create the parent_dir or translate into
+        abs_path; that needs to be done beforehand, since OSMixin doesn't
+        necessarily have access to query_abs_dirs().
+
+        Returns file_path if successful, None if not.
         """
         self.info("Writing to file %s" % file_path)
         if verbose:
