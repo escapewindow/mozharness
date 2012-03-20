@@ -7,6 +7,8 @@
 """Generic ways to upload + download files.
 """
 
+import os
+
 from mozharness.base.errors import SSHErrorList
 from mozharness.base.log import ERROR
 
@@ -29,7 +31,6 @@ class TransferMixin(object):
 
         Return None on success, not None on failure.
         """
-        c = self.config
         dirs = self.query_abs_dirs()
         self.info("Uploading the contents of %s to %s:%s." % (local_path, remote_host, remote_path))
         rsync = self.query_exe("rsync")
@@ -47,8 +48,7 @@ class TransferMixin(object):
                                 cwd=dirs['abs_work_dir'],
                                 return_type='num_errors',
                                 error_list=SSHErrorList):
-                self.log("Unable to create remote directory %s@%s:%s!" % (remote_host, remote_path),
-                         level=error_level)
+                self.log("Unable to create remote directory %s:%s!" % (remote_host, remote_path), level=error_level)
                 return -2
         if self.run_command([rsync, '-e',
                              '%s -oIdentityFile=%s' % (ssh, ssh_key)
@@ -57,6 +57,5 @@ class TransferMixin(object):
                             cwd=local_path,
                             return_type='num_errors',
                             error_list=SSHErrorList):
-            self.log("Unable to rsync %s to %s:%s!" % (local_path, remote_host, remote_path),
-                     level=error_level)
+            self.log("Unable to rsync %s to %s:%s!" % (local_path, remote_host, remote_path), level=error_level)
             return -3
