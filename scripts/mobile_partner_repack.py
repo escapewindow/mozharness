@@ -16,6 +16,7 @@ import sys
 sys.path.insert(1, os.path.dirname(sys.path[0]))
 
 from mozharness.base.errors import ZipErrorList
+from mozharness.base.transfer import TransferMixin
 from mozharness.base.vcs.vcsbase import MercurialScript
 from mozharness.mozilla.l10n.locales import LocalesMixin
 from mozharness.mozilla.release import ReleaseMixin
@@ -27,7 +28,7 @@ SUPPORTED_PLATFORMS = ["android"]
 
 # MobilePartnerRepack {{{1
 class MobilePartnerRepack(LocalesMixin, ReleaseMixin, MobileSigningMixin,
-                          MercurialScript):
+                          TransferMixin, MercurialScript):
     config_options = [[
      ['--locale',],
      {"action": "extend",

@@ -61,15 +61,6 @@ class AndroidSigningMixin(object):
                 return -1
         if error_list is None:
             error_list = JarsignerErrorList[:]
-        # XXX Not sure if these are the best defaults... Worth revisiting.
-        if keystore is None:
-            keystore = c['keystore']
-        if storepass is None:
-            storepass = self.store_passphrase
-        if keypass is None:
-            keypass = self.key_passphrase
-        if key_alias is None:
-            keystore = c['key_alias']
         # This needs to run silently, so no run_command() or
         # get_output_from_command() (though I could add a
         # suppress_command_echo=True or something?)
