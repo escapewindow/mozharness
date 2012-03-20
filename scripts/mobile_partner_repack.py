@@ -201,7 +201,7 @@ class MobilePartnerRepack(LocalesMixin, ReleaseMixin, MobileSigningMixin,
         if self.copyfile(orig_path, tmp_file):
             return
         if self.write_to_file(os.path.join(tmp_prefs_dir, 'partner.js'),
-                              'pref("app.partner.%s", "%s")' % (partner, partner)
+                              'pref("app.partner.%s", "%s");' % (partner, partner)
                              ) is None:
             return
         if self.run_command([unzip_bin, file_name, 'omni.ja'],
