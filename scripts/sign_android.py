@@ -19,8 +19,9 @@ import sys
 # load modules from parent dir
 sys.path.insert(1, os.path.dirname(sys.path[0]))
 
-from mozharness.base.errors import BaseErrorList, JarsignerErrorList, SSHErrorList
+from mozharness.base.errors import BaseErrorList, JarsignerErrorList
 from mozharness.base.log import ERROR, FATAL, IGNORE
+from mozharness.base.transfer import TransferMixin
 from mozharness.mozilla.release import ReleaseMixin
 from mozharness.mozilla.signing import MobileSigningMixin
 from mozharness.base.vcs.vcsbase import MercurialScript
@@ -36,7 +37,8 @@ TEST_JARSIGNER_ERROR_LIST = [{
 
 
 # SignAndroid {{{1
-class SignAndroid(LocalesMixin, ReleaseMixin, MobileSigningMixin, MercurialScript):
+class SignAndroid(LocalesMixin, ReleaseMixin, MobileSigningMixin,
+                  TransferMixin, MercurialScript):
     config_options = [[
      ['--locale',],
      {"action": "extend",
@@ -284,7 +286,7 @@ class SignAndroid(LocalesMixin, ReleaseMixin, MobileSigningMixin, MercurialScrip
                     self.warning("%s:%s had previous issues; skipping!" % (platform, locale))
                     continue
                 unsigned_path = '%s/unsigned/%s/%s/gecko.ap_' % (dirs['abs_work_dir'], platform, locale)
-                signed_dir = '%s/%s/%s' % (dirs['abs_work_dir'], platform, locale)
+                signed_dir = '%s/signed/%s/%s' % (dirs['abs_work_dir'], platform, locale)
                 signed_file_name = c['apk_base_name'] % {'version': rc['version'],
                                                          'locale': locale}
                 signed_path = "%s/%s" % (signed_dir, signed_file_name)
@@ -322,7 +324,7 @@ class SignAndroid(LocalesMixin, ReleaseMixin, MobileSigningMixin, MercurialScrip
                 if self.query_failure(platform, locale):
                     self.warning("%s:%s had previous issues; skipping!" % (platform, locale))
                     continue
-                signed_path = '%s/%s/%s' % (platform, locale,
+                signed_path = 'signed/%s/%s/%s' % (platform, locale,
                     c['apk_base_name'] % {'version': rc['version'],
                                           'locale': locale})
                 if not os.path.exists(os.path.join(dirs['abs_work_dir'],
@@ -349,24 +351,14 @@ class SignAndroid(LocalesMixin, ReleaseMixin, MobileSigningMixin, MercurialScrip
             self.info("No platforms to rsync! Skipping...")
             return
         rc = self.query_release_config()
-        dirs = self.query_abs_dirs()
-        rsync = self.query_exe("rsync")
-        ssh = self.query_exe("ssh")
         ftp_upload_dir = c['ftp_upload_base_dir'] % {
             'version': rc['version'],
             'buildnum': rc['buildnum'],
         }
-        cmd = [ssh, '-oIdentityFile=%s' % rc['ftp_ssh_key'],
-               '%s@%s' % (rc['ftp_user'], rc['ftp_server']),
-               'mkdir', '-p', ftp_upload_dir]
-        self.run_command(cmd, cwd=dirs['abs_work_dir'],
-                         error_list=SSHErrorList)
-        cmd = [rsync, '-e']
-        cmd += ['%s -oIdentityFile=%s' % (ssh, rc['ftp_ssh_key']), '-azv']
-        cmd += c['platforms']
-        cmd += ["%s@%s:%s/" % (rc['ftp_user'], rc['ftp_server'], ftp_upload_dir)]
-        self.run_command(cmd, cwd=dirs['abs_work_dir'],
-                         error_list=SSHErrorList)
+        if self.rsync_upload_directory('signed', ftp_upload_dir,
+                                       rc['ftp_ssh_key'], rc['ftp_user'],
+                                       rc['ftp_server']):
+            self.return_code += 1
 
     def create_snippets(self):
         c = self.config
@@ -453,21 +445,14 @@ class SignAndroid(LocalesMixin, ReleaseMixin, MobileSigningMixin, MercurialScrip
         if not os.path.exists(update_dir):
             self.error("No such directory %s! Skipping..." % update_dir)
             return
-        rsync = self.query_exe("rsync")
-        ssh = self.query_exe("ssh")
         aus_upload_dir = c['aus_upload_base_dir'] % {
             'version': rc['version'],
             'buildnum': rc['buildnum'],
         }
-        cmd = [ssh, '-oIdentityFile=%s' % rc['aus_ssh_key'],
-               '%s@%s' % (rc['aus_user'], rc['aus_server']),
-               'mkdir', '-p', aus_upload_dir]
-        self.run_command(cmd, cwd=dirs['abs_work_dir'],
-                         error_list=SSHErrorList)
-        cmd = [rsync, '-e']
-        cmd += ['%s -oIdentityFile=%s' % (ssh, rc['aus_ssh_key']), '-azv', './']
-        cmd += ["%s@%s:%s/" % (rc['aus_user'], rc['aus_server'], aus_upload_dir)]
-        self.run_command(cmd, cwd=update_dir, error_list=SSHErrorList)
+        if self.rsync_upload_directory(update_dir, rc['aus_ssh_key'],
+                                       rc['aus_user'], rc['aus_server'],
+                                       aus_upload_dir):
+            self.return_code += 1
 
 
 

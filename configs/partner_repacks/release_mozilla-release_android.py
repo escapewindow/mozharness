@@ -23,6 +23,7 @@ config = {
     "ftp_upload_base_dir": FTP_UPLOAD_BASE_DIR,
     "ftp_ssh_key": FTP_SSH_KEY,
     "ftp_user": FTP_USER,
+    "ftp_server": FTP_SERVER,
     "installer_base_names": {
         "android": APK_BASE_NAME,
     },

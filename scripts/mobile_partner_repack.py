@@ -15,7 +15,7 @@ import sys
 # load modules from parent dir
 sys.path.insert(1, os.path.dirname(sys.path[0]))
 
-from mozharness.base.errors import SSHErrorList, ZipErrorList
+from mozharness.base.errors import ZipErrorList
 from mozharness.base.vcs.vcsbase import MercurialScript
 from mozharness.mozilla.l10n.locales import LocalesMixin
 from mozharness.mozilla.release import ReleaseMixin
@@ -255,32 +255,20 @@ class MobilePartnerRepack(LocalesMixin, ReleaseMixin, MobileSigningMixin,
                                      message="Repacked %d of %d installers successfully.")
 
     def upload(self):
-        # TODO verify/rewrite
-        return
-
         c = self.config
-        if not c['platforms']:
-            self.info("No platforms to rsync! Skipping...")
-            return
-        rc = self.query_release_config()
         dirs = self.query_abs_dirs()
-        rsync = self.query_exe("rsync")
-        ssh = self.query_exe("ssh")
-        ftp_upload_dir = c['ftp_upload_base_dir'] % {
-            'version': rc['version'],
+        local_path = os.path.join(dirs['abs_work_dir'], "partner-repacks")
+        rc = self.query_release_config()
+        replace_dict = {
             'buildnum': rc['buildnum'],
+            'version': rc['version'],
         }
-        cmd = [ssh, '-oIdentityFile=%s' % rc['ftp_ssh_key'],
-               '%s@%s' % (rc['ftp_user'], rc['ftp_server']),
-               'mkdir', '-p', ftp_upload_dir]
-        self.run_command(cmd, cwd=dirs['abs_work_dir'],
-                         error_list=SSHErrorList)
-        cmd = [rsync, '-e']
-        cmd += ['%s -oIdentityFile=%s' % (ssh, rc['ftp_ssh_key']), '-azv']
-        cmd += c['platforms']
-        cmd += ["%s@%s:%s/" % (rc['ftp_user'], rc['ftp_server'], ftp_upload_dir)]
-        self.run_command(cmd, cwd=dirs['abs_work_dir'],
-                         error_list=SSHErrorList)
+        remote_path = '%s/unsigned/partner-repacks' % (c['ftp_upload_base_dir'] % replace_dict)
+        if self.rsync_upload_directory(local_path, c['ftp_ssh_key'],
+                                       c['ftp_user'], c['ftp_server'],
+                                       remote_path
+                                      ):
+            self.return_code +=1
 
 
 

@@ -19,12 +19,12 @@ class TransferMixin(object):
 
     Dependent on BaseScript.
     """
-    def upload_directory(self, local_path, remote_path,
-                         ssh_key, ssh_user, remote_host,
-                         rsync_options=None,
-                         error_level=ERROR,
-                         create_remote_directory=True,
-                        ):
+    def rsync_upload_directory(self, local_path, ssh_key, ssh_user,
+                               remote_host, remote_path,
+                               rsync_options=None,
+                               error_level=ERROR,
+                               create_remote_directory=True,
+                              ):
         """
         Create a remote directory and upload the contents of
         a local directory to it via rsync+ssh.
