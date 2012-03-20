@@ -52,7 +52,6 @@ class BaseSigningMixin(object):
 class AndroidSigningMixin(object):
     def sign_apk(self, apk, keystore, storepass, keypass, key_alias,
                  remove_signature=True, error_list=None):
-        c = self.config
         jarsigner = self.query_exe('jarsigner')
         if remove_signature:
             status = self.unsign_apk(apk)
