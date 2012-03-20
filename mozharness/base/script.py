@@ -203,7 +203,9 @@ class OSMixin(object):
         """
         self.info("Writing to file %s" % file_path)
         if verbose:
-            self.info("Contents:\n%s" % contents)
+            self.info("Contents:")
+            for line in contents.splitlines():
+                self.info(" %s" % line)
         if create_parent_dir:
             parent_dir = os.path.dirname(file_path)
             self.mkdir_p(parent_dir, error_level=error_level)
@@ -232,7 +234,9 @@ class OSMixin(object):
             contents = fh.read()
             fh.close()
             if verbose:
-                self.info("Contents:\n%s" % contents)
+                self.info("Contents:")
+                for line in contents.splitlines():
+                    self.info(" %s" % line)
             return contents
         except IOError:
             self.log("%s can't be opened for reading!" % file_path,
