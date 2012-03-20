@@ -260,7 +260,6 @@ class SignAndroid(LocalesMixin, ReleaseMixin, MobileSigningMixin,
         dirs = self.query_abs_dirs()
         locales = self.query_locales()
         success_count = total_count = 0
-        zipalign = self.query_exe("zipalign")
         for platform in c['platforms']:
             for locale in locales:
                 if self.query_failure(platform, locale):
@@ -283,9 +282,7 @@ class SignAndroid(LocalesMixin, ReleaseMixin, MobileSigningMixin,
                                      level=FATAL)
                 else:
                     self.mkdir_p(signed_dir)
-                    if self.run_command([zipalign, '-f', '4',
-                                        unsigned_path, signed_path],
-                                        error_list=BaseErrorList):
+                    if self.align_apk(unsigned_path, signed_path):
                         self.add_failure(platform, locale,
                                          message="Unable to align %(platform)s:%(locale)s apk!")
                         self.rmtree(signed_dir)

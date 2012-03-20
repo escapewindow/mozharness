@@ -12,8 +12,8 @@ import hashlib
 import os
 import subprocess
 
-from mozharness.base.errors import JarsignerErrorList, ZipErrorList
-from mozharness.base.log import OutputParser, IGNORE, FATAL
+from mozharness.base.errors import JarsignerErrorList, ZipErrorList, ZipalignErrorList
+from mozharness.base.log import OutputParser, IGNORE, ERROR, FATAL
 
 UnsignApkErrorList = [{
     'substr': r'''zip warning: name not matched: 'META-INF/*''',
@@ -133,3 +133,18 @@ class AndroidSigningMixin(object):
                                 error_list=UnsignApkErrorList,
                                 success_codes=[0, 12],
                                 return_type='num_errors', **kwargs)
+
+    def align_apk(self, unaligned_apk, aligned_apk, error_level=ERROR):
+        """
+        Zipalign apk.
+        Returns None on success, not None on failure.
+        """
+        dirs = self.query_abs_dirs()
+        zipalign = self.query_exe("zipalign")
+        if self.run_command([zipalign, '-f', '4',
+                             unaligned_apk, aligned_apk],
+                            return_type='num_errors',
+                            cwd=dirs['abs_work_dir'],
+                            error_list=ZipalignErrorList):
+            self.log("Unable to zipalign %s to %s!" % (unaligned_apk, aligned_apk), level=error_level)
+            return -1

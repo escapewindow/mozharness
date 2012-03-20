@@ -112,6 +112,17 @@ ZipErrorList = BaseErrorList + [{
     'level': ERROR,
 }]
 
+ZipalignErrorList = BaseErrorList + [{
+    'regex': re.compile(r'''Unable to open .* as a zip archive'''),
+    'level': ERROR,
+},{
+    'regex': re.compile(r'''Output file .* exists'''),
+    'level': ERROR,
+},{
+    'substr': r'''Input and output can't be the same file''',
+    'level': ERROR,
+}]
+
 
 
 # __main__ {{{1
