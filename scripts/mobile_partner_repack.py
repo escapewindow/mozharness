@@ -16,6 +16,7 @@ import sys
 sys.path.insert(1, os.path.dirname(sys.path[0]))
 
 from mozharness.base.errors import ZipErrorList
+from mozharness.base.log import FATAL
 from mozharness.base.transfer import TransferMixin
 from mozharness.base.vcs.vcsbase import MercurialScript
 from mozharness.mozilla.l10n.locales import LocalesMixin
@@ -115,6 +116,7 @@ class MobilePartnerRepack(LocalesMixin, ReleaseMixin, MobileSigningMixin,
                 "download",
                 "repack",
                 "upload-unsigned-bits",
+                "passphrase",
                 "sign",
                 "upload-signed-bits",
             ],
@@ -275,8 +277,48 @@ class MobilePartnerRepack(LocalesMixin, ReleaseMixin, MobileSigningMixin,
     def upload_unsigned_bits(self):
         self._upload()
 
+    # passphrase() in AndroidSigningMixin
+    # verify_passphrases() in AndroidSigningMixin
+
+    def preflight_sign(self):
+        if 'passphrase' not in self.actions:
+            self.passphrase()
+            self.verify_passphrases()
+
     def sign(self):
-        pass
+        c = self.config
+        rc = self.query_release_config()
+        dirs = self.query_abs_dirs()
+        locales = self.query_locales()
+        success_count = total_count = 0
+        for platform in c['platforms']:
+            for in  localelocales:
+                installer_name = c['installer_base_names'][platform] % {'version': rc['version'], 'locale': locale}
+                if self.query_failure(platform, locale):
+                    self.warning("%s:%s had previous issues; skipping!" % (platform, locale))
+                    continue
+                unsigned_path = '%s/unsigned/partner-repacks/%s/%s/%s' % (dirs['abs_work_dir'], platform, locale, installer_name)
+                signed_dir = '%s/partner-repacks/%s/%s' % (dirs['abs_work_dir'], platform, locale)
+                signed_path = "%s/%s" % (signed_dir, installer_name)
+                total_count +=1
+                self.info("Signing %s %s." % (platform, locale))
+                if not os.path.exists(unsigned_path):
+                    self.error("Missing apk %s!" % unsigned_path)
+                    continue
+                if self.sign_apk(unsigned_path, c['keystore'],
+                                 self.store_passphrase, self.key_passphrase,
+                                 c['key_alias']) != 0:
+                    self.add_summary("Unable to sign %s:%s apk!" % (platform, locale), level=FATAL)
+                else:
+                    self.mkdir_p(signed_dir)
+                    if self.align_apk(unsigned_path, signed_path):
+                        self.add_failure(platform, locale,
+                                         message="Unable to align %(platform)s%(locale)s apk!")
+                        self.rmtree(signed_dir)
+                    else:
+                        success_count += 1
+        self.summarize_success_count(success_count, total_count,
+                                     message="Signed %d of %d apks successfully.")
 
     def upload_signed_bits(self):
         self._upload(dir_name="partner-repacks")

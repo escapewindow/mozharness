@@ -63,7 +63,8 @@ class AndroidSigningMixin(object):
     """
     # TODO port build/tools/release/signing/verify-android-signature.sh here
 
-    store_passphrase = key_passphrase = None
+    key_passphrase = os.environ.get('android_keypass')
+    store_passphrase = os.environ.get('android_storepass')
 
     def passphrase(self):
         if not self.store_passphrase:
@@ -86,6 +87,13 @@ class AndroidSigningMixin(object):
             self.log("Unable to verify passphrases!",
                      level=error_level)
         return status
+
+    def verify_passphrases(self):
+        c = self.config
+        self._verify_passphrases(c['keystore'], c['key_alias'])
+
+    def postflight_passphrase(self):
+        self.verify_passphrases()
 
     def sign_apk(self, apk, keystore, storepass, keypass, key_alias,
                  remove_signature=True, error_list=None):

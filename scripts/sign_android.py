@@ -135,8 +135,6 @@ class SignAndroid(LocalesMixin, ReleaseMixin, MobileSigningMixin,
     ]]
 
     def __init__(self, require_config_file=True):
-        self.store_passphrase = os.environ.get('android_storepass')
-        self.key_passphrase = os.environ.get('android_keypass')
         self.release_config = {}
         LocalesMixin.__init__(self)
         MobileSigningMixin.__init__(self)
@@ -194,13 +192,8 @@ class SignAndroid(LocalesMixin, ReleaseMixin, MobileSigningMixin,
     # Actions {{{2
 
     # passphrase() is in AndroidSigningMixin
-
-    def verify_passphrases(self):
-        c = self.config
-        self._verify_passphrases(c['keystore'], c['key_alias'])
-
-    def postflight_passphrase(self):
-        self.verify_passphrases()
+    # verify_passphrases() is in AndroidSigningMixin
+    # postflight_passphrase() is in AndroidSigningMixin
 
     def pull(self):
         c = self.config
@@ -278,7 +271,7 @@ class SignAndroid(LocalesMixin, ReleaseMixin, MobileSigningMixin,
                 if self.sign_apk(unsigned_path, c['keystore'],
                                  self.store_passphrase, self.key_passphrase,
                                  c['key_alias']) != 0:
-                    self.add_summary("Unable to sign %s:%s apk!",
+                    self.add_summary("Unable to sign %s:%s apk!" % (platform, locale),
                                      level=FATAL)
                 else:
                     self.mkdir_p(signed_dir)
