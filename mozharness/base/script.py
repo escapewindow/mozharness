@@ -40,19 +40,25 @@ class OSMixin(object):
     Depends on LogMixin, ShellMixin, and a self.config of some sort.
     """
     def mkdir_p(self, path, error_level=ERROR):
+        """
+        Returns None for success, not None for failure
+        """
         if not os.path.exists(path):
             self.info("mkdir: %s" % path)
             if not self.config.get('noop'):
                 try:
                     os.makedirs(path)
-                    return path
                 except OSError:
                     self.log("Can't create directory %s!" % path,
                              level=error_level)
+                    return -1
         else:
             self.debug("mkdir_p: %s Already exists." % path)
 
     def rmtree(self, path, log_level=INFO, error_level=ERROR, exit_code=-1):
+        """
+        Returns None for success, not None for failure
+        """
         self.log("rmtree: %s" % path, level=log_level)
         if os.path.exists(path):
             if not self.config.get('noop'):
@@ -69,7 +75,6 @@ class OSMixin(object):
                     return -1
         else:
             self.debug("%s doesn't exist." % path)
-        return 0
 
     def _is_windows(self):
         system = platform.system()
@@ -182,6 +187,7 @@ class OSMixin(object):
             except (IOError, shutil.Error):
                 self.dump_exception("Can't copy %s to %s!" % (src, dest),
                                     level=error_level)
+                return -1
 
     def write_to_file(self, file_path, contents, verbose=True,
                       open_mode='w', create_parent_dir=False,

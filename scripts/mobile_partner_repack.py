@@ -191,31 +191,44 @@ class MobilePartnerRepack(LocalesMixin, ReleaseMixin, MobileSigningMixin,
         tmp_dir = os.path.join(dirs['abs_work_dir'], 'tmp')
         tmp_file = os.path.join(tmp_dir, file_name)
         tmp_prefs_dir = os.path.join(tmp_dir, 'defaults', 'pref')
-        # TODO error checking for each step
-        self.rmtree(tmp_dir)
+        # Error checking for each step.
+        # Ignoring the mkdir_p()s since the subsequent copyfile()s will
+        # error out if unsuccessful.
+        if self.rmtree(tmp_dir):
+            return
         self.mkdir_p(tmp_prefs_dir)
-        self.copyfile(orig_path, tmp_file)
+        if self.copyfile(orig_path, tmp_file):
+            return
         if self.write_to_file(os.path.join(tmp_prefs_dir, 'partner.js'),
                               'pref("app.partner.%s", "%s"' % (partner, partner)
                              ) is None:
             return
-        self.run_command([unzip_bin, file_name, 'omni.ja'],
-                         error_list=ZipErrorList,
-                         cwd=tmp_dir)
-        self.run_command([zip_bin, '-9r', 'omni.ja', 'defaults/pref/partner.js'],
-                         error_list=ZipErrorList,
-                         cwd=tmp_dir)
-        self.run_command([zip_bin, '-9r', file_name, 'omni.ja'],
-                         error_list=ZipErrorList,
-                         cwd=tmp_dir)
+        if self.run_command([unzip_bin, file_name, 'omni.ja'],
+                            error_list=ZipErrorList,
+                            return_type='num_errors',
+                            cwd=tmp_dir):
+            self.error("Can't extract omni.ja from %s!" % file_name)
+            return
+        if self.run_command([zip_bin, '-9r', 'omni.ja',
+                             'defaults/pref/partner.js'],
+                            error_list=ZipErrorList,
+                            return_type='num_errors',
+                            cwd=tmp_dir):
+            self.error("Can't add partner.js to omni.ja!")
+            return
+        if self.run_command([zip_bin, '-9r', file_name, 'omni.ja'],
+                            error_list=ZipErrorList,
+                            return_type='num_errors',
+                            cwd=tmp_dir):
+            self.error("Can't re-add omni.ja to %s!" % file_name)
+            return
         if self.unsign_apk(tmp_file):
             return
         repack_dir = os.path.dirname(repack_path)
         self.mkdir_p(repack_dir)
-        # TODO copyfile status
-        self.copyfile(tmp_file, repack_path)
+        if self.copyfile(tmp_file, repack_path):
+            return
         return True
-
 
     def repack(self):
         c = self.config
