@@ -301,8 +301,8 @@ class SignAndroid(LocalesMixin, ReleaseMixin, MobileSigningMixin, MercurialScrip
                 else:
                     self.mkdir_p(signed_dir)
                     if self.run_command([zipalign, '-f', '4',
-                                       unsigned_path, signed_path],
-                                      error_list=BaseErrorList):
+                                        unsigned_path, signed_path],
+                                        error_list=BaseErrorList):
                         self.add_failure(platform, locale,
                                          message="Unable to align %(platform)s:%(locale)s apk!")
                         self.rmtree(signed_dir)

@@ -113,7 +113,7 @@ class MobilePartnerRepack(LocalesMixin, ReleaseMixin, MobileSigningMixin,
                 "pull",
                 "download",
                 "repack",
-#                "upload",
+                "upload",
             ],
             require_config_file=require_config_file
         )
