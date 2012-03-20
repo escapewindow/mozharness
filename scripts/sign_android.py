@@ -347,17 +347,19 @@ class SignAndroid(LocalesMixin, ReleaseMixin, MobileSigningMixin,
 
     def upload_signed_bits(self):
         c = self.config
+        dirs = self.query_abs_dirs()
         if not c['platforms']:
             self.info("No platforms to rsync! Skipping...")
             return
         rc = self.query_release_config()
+        signed_dir = os.path.join(dirs['abs_work_dir'], 'signed')
         ftp_upload_dir = c['ftp_upload_base_dir'] % {
             'version': rc['version'],
             'buildnum': rc['buildnum'],
         }
-        if self.rsync_upload_directory('signed', ftp_upload_dir,
-                                       rc['ftp_ssh_key'], rc['ftp_user'],
-                                       rc['ftp_server']):
+        if self.rsync_upload_directory(signed_dir, rc['ftp_ssh_key'],
+                                       rc['ftp_user'], rc['ftp_server'],
+                                       ftp_upload_dir,):
             self.return_code += 1
 
     def create_snippets(self):
@@ -441,7 +443,7 @@ class SignAndroid(LocalesMixin, ReleaseMixin, MobileSigningMixin,
         c = self.config
         rc = self.query_release_config()
         dirs = self.query_abs_dirs()
-        update_dir = os.path.join(dirs['abs_work_dir'], 'update',)
+        update_dir = os.path.join(dirs['abs_work_dir'], 'update')
         if not os.path.exists(update_dir):
             self.error("No such directory %s! Skipping..." % update_dir)
             return

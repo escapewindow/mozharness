@@ -436,7 +436,7 @@ class MobileSingleLocale(LocalesMixin, ReleaseMixin, MobileSigningMixin,
     def upload_nightly_snippets(self):
         c = self.config
         dirs = self.query_abs_dirs()
-        update_dir = os.path.join(dirs['abs_work_dir'], 'update',)
+        update_dir = os.path.join(dirs['abs_work_dir'], 'update')
         if not os.path.exists(update_dir):
             self.error("No such directory %s! Skipping..." % update_dir)
             return

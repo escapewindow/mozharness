@@ -266,8 +266,7 @@ class MobilePartnerRepack(LocalesMixin, ReleaseMixin, MobileSigningMixin,
         remote_path = '%s/unsigned/partner-repacks' % (c['ftp_upload_base_dir'] % replace_dict)
         if self.rsync_upload_directory(local_path, c['ftp_ssh_key'],
                                        c['ftp_user'], c['ftp_server'],
-                                       remote_path
-                                      ):
+                                       remote_path):
             self.return_code +=1
 
 

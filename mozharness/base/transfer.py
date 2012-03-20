@@ -32,7 +32,7 @@ class TransferMixin(object):
         Return None on success, not None on failure.
         """
         dirs = self.query_abs_dirs()
-        self.info("Uploading the contents of %s to %s:%s." % (local_path, remote_host, remote_path))
+        self.info("Uploading the contents of %s to %s:%s" % (local_path, remote_host, remote_path))
         rsync = self.query_exe("rsync")
         ssh = self.query_exe("ssh")
         if rsync_options is None:
