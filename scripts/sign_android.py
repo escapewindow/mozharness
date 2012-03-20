@@ -12,15 +12,14 @@
 #      the downloads/signing/uploads in parallel, speeding that up
 
 from copy import deepcopy
-import getpass
 import os
 import sys
 
 # load modules from parent dir
 sys.path.insert(1, os.path.dirname(sys.path[0]))
 
-from mozharness.base.errors import BaseErrorList, JarsignerErrorList
-from mozharness.base.log import ERROR, FATAL, IGNORE
+from mozharness.base.errors import BaseErrorList
+from mozharness.base.log import ERROR, FATAL
 from mozharness.base.transfer import TransferMixin
 from mozharness.mozilla.release import ReleaseMixin
 from mozharness.mozilla.signing import MobileSigningMixin
@@ -29,10 +28,6 @@ from mozharness.mozilla.l10n.locales import LocalesMixin
 
 # So far this only references the ftp platform name.
 SUPPORTED_PLATFORMS = ["android", "android-xul"]
-TEST_JARSIGNER_ERROR_LIST = [{
-    "substr": "jarsigner: unable to open jar file:",
-    "level": IGNORE,
-}] + JarsignerErrorList
 
 
 
@@ -197,26 +192,12 @@ class SignAndroid(LocalesMixin, ReleaseMixin, MobileSigningMixin,
         return super(SignAndroid, self).query_failure(s)
 
     # Actions {{{2
-    def passphrase(self):
-        if not self.store_passphrase:
-            self.store_passphrase = getpass.getpass("Store passphrase: ")
-        if not self.key_passphrase:
-            self.key_passphrase = getpass.getpass("Key passphrase: ")
+
+    # passphrase() is in AndroidSigningMixin
 
     def verify_passphrases(self):
-        self.info("Verifying passphrases...")
         c = self.config
-        status = self.sign_apk("NOTAREALAPK",
-                               c['keystore'], self.store_passphrase,
-                               self.key_passphrase, c['key_alias'],
-                               remove_signature=False,
-                               error_list=TEST_JARSIGNER_ERROR_LIST)
-        if status == 0:
-            self.info("Passphrases are good.")
-        elif status < 0:
-            self.fatal("Encountered errors while trying to sign!")
-        else:
-            self.fatal("Unable to verify passphrases!")
+        self._verify_passphrases(c['keystore'], c['key_alias'])
 
     def postflight_passphrase(self):
         self.verify_passphrases()

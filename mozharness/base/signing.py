@@ -7,12 +7,13 @@
 """Generic signing methods.
 """
 
+import getpass
 import hashlib
 import os
 import subprocess
 
 from mozharness.base.errors import JarsignerErrorList, ZipErrorList
-from mozharness.base.log import OutputParser, IGNORE
+from mozharness.base.log import OutputParser, IGNORE, FATAL
 
 UnsignApkErrorList = [{
     'substr': r'''zip warning: name not matched: 'META-INF/*''',
@@ -22,6 +23,11 @@ UnsignApkErrorList = [{
     'substr': r'''zip error: Nothing to do!''',
     'level': IGNORE,
 }] + ZipErrorList
+
+TestJarsignerErrorList = [{
+    "substr": "jarsigner: unable to open jar file:",
+    "level": IGNORE,
+}] + JarsignerErrorList
 
 
 
@@ -50,8 +56,42 @@ class BaseSigningMixin(object):
 
 # AndroidSigningMixin {{{1
 class AndroidSigningMixin(object):
+    """
+    Generic Android apk signing methods.
+
+    Dependent on BaseScript.
+    """
+    # TODO port build/tools/release/signing/verify-android-signature.sh here
+
+    store_passphrase = key_passphrase = None
+
+    def passphrase(self):
+        if not self.store_passphrase:
+            self.store_passphrase = getpass.getpass("Store passphrase: ")
+        if not self.key_passphrase:
+            self.key_passphrase = getpass.getpass("Key passphrase: ")
+
+    def _verify_passphrases(self, keystore, key_alias, error_level=FATAL):
+        self.info("Verifying passphrases...")
+        status = self.sign_apk("NOTAREALAPK", keystore,
+                               self.store_passphrase, self.key_passphrase,
+                               key_alias, remove_signature=False,
+                               error_list=TestJarsignerErrorList)
+        if status == 0:
+            self.info("Passphrases are good.")
+        elif status < 0:
+            self.log("Encountered errors while trying to sign!",
+                     level=error_level)
+        else:
+            self.log("Unable to verify passphrases!",
+                     level=error_level)
+        return status
+
     def sign_apk(self, apk, keystore, storepass, keypass, key_alias,
                  remove_signature=True, error_list=None):
+        """
+        Signs an apk with jarsigner.
+        """
         jarsigner = self.query_exe('jarsigner')
         if remove_signature:
             status = self.unsign_apk(apk)

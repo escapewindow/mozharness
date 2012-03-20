@@ -114,7 +114,9 @@ class MobilePartnerRepack(LocalesMixin, ReleaseMixin, MobileSigningMixin,
                 "pull",
                 "download",
                 "repack",
-                "upload",
+                "upload-unsigned-bits",
+                "sign",
+                "upload-signed-bits",
             ],
             require_config_file=require_config_file
         )
@@ -245,7 +247,7 @@ class MobilePartnerRepack(LocalesMixin, ReleaseMixin, MobileSigningMixin,
                     continue
                 original_path = '%s/original/%s/%s/%s' % (dirs['abs_work_dir'], platform, locale, installer_name)
                 for partner in c['partner_config'].keys():
-                    repack_path = '%s/partner-repacks/%s/%s/%s/%s' % (dirs['abs_work_dir'], partner, platform, locale, installer_name)
+                    repack_path = '%s/unsigned/partner-repacks/%s/%s/%s/%s' % (dirs['abs_work_dir'], partner, platform, locale, installer_name)
                     total_count += 1
                     if self._repack_apk(partner, original_path, repack_path):
                         success_count += 1
@@ -255,20 +257,29 @@ class MobilePartnerRepack(LocalesMixin, ReleaseMixin, MobileSigningMixin,
         self.summarize_success_count(success_count, total_count,
                                      message="Repacked %d of %d installers successfully.")
 
-    def upload(self):
+    def _upload(self, dir_name="unsigned/partner-repacks"):
         c = self.config
         dirs = self.query_abs_dirs()
-        local_path = os.path.join(dirs['abs_work_dir'], "partner-repacks")
+        local_path = os.path.join(dirs['abs_work_dir'], dir_name)
         rc = self.query_release_config()
         replace_dict = {
             'buildnum': rc['buildnum'],
             'version': rc['version'],
         }
-        remote_path = '%s/unsigned/partner-repacks' % (c['ftp_upload_base_dir'] % replace_dict)
+        remote_path = '%s/%s' % (c['ftp_upload_base_dir'] % replace_dict, dir_name)
         if self.rsync_upload_directory(local_path, c['ftp_ssh_key'],
                                        c['ftp_user'], c['ftp_server'],
                                        remote_path):
             self.return_code +=1
+
+    def upload_unsigned_bits(self):
+        self._upload()
+
+    def sign(self):
+        pass
+
+    def upload_signed_bits(self):
+        self._upload(dir_name="partner-repacks")
 
 
 
