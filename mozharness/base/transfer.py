@@ -39,15 +39,19 @@ class TransferMixin(object):
             rsync_options = ['-azv']
         if not os.path.isdir(local_path):
             self.log("%s isn't a directory!" % local_path,
-                     level=error_level)
+                     level=ERROR)
             return -1
         if create_remote_directory:
+            mkdir_error_list = [{
+                'substr': r'''exists but is not a directory''',
+                'level': ERROR
+            }] + SSHErrorList
             if self.run_command([ssh, '-oIdentityFile=%s' % ssh_key,
                                  '%s@%s' % (ssh_user, remote_host),
                                  'mkdir', '-p', remote_path],
                                 cwd=dirs['abs_work_dir'],
                                 return_type='num_errors',
-                                error_list=SSHErrorList):
+                                error_list=mkdir_error_list):
                 self.log("Unable to create remote directory %s:%s!" % (remote_host, remote_path), level=error_level)
                 return -2
         if self.run_command([rsync, '-e',
@@ -58,4 +62,35 @@ class TransferMixin(object):
                             return_type='num_errors',
                             error_list=SSHErrorList):
             self.log("Unable to rsync %s to %s:%s!" % (local_path, remote_host, remote_path), level=error_level)
+            return -3
+
+    def rsync_download_directory(self, ssh_key, ssh_user, remote_host,
+                                 remote_path, local_path,
+                                 rsync_options=None,
+                                 error_level=ERROR,
+                                ):
+        """
+        Create a remote directory and upload the contents of
+        a local directory to it via rsync+ssh.
+
+        Return None on success, not None on failure.
+        """
+        self.info("Downloading the contents of %s:%s to %s" % (remote_host, remote_path, local_path))
+        rsync = self.query_exe("rsync")
+        ssh = self.query_exe("ssh")
+        if rsync_options is None:
+            rsync_options = ['-azv']
+        if not os.path.isdir(local_path):
+            self.log("%s isn't a directory!" % local_path,
+                     level=error_level)
+            return -1
+        if self.run_command([rsync, '-e',
+                             '%s -oIdentityFile=%s' % (ssh, ssh_key)
+                            ] + rsync_options + [
+                             '%s@%s:%s/' % (ssh_user, remote_host, remote_path),
+                             '.'],
+                            cwd=local_path,
+                            return_type='num_errors',
+                            error_list=SSHErrorList):
+            self.log("Unable to rsync %s:%s to %s!" % (remote_host, remote_path, local_path), level=error_level)
             return -3

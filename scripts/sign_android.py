@@ -7,7 +7,6 @@
 """sign_android.py
 
 """
-# TODO partner repacks downloading/signing
 # TODO split out signing and transfers to helper objects so we can do
 #      the downloads/signing/uploads in parallel, speeding that up
 
@@ -132,6 +131,19 @@ class SignAndroid(LocalesMixin, ReleaseMixin, MobileSigningMixin,
       "type": "string",
       "help": "Specify the location of the signing keystore"
      }
+    ],[
+    # XXX this is a bit of a hack.
+    # Ideally we'd have fully configured partner repack info with their own
+    # actions so they could be handled discretely.
+    # However, the ideal long term solution will involve signing-on-demand;
+    # this, along with signing support in mobile_partner_repack.py,
+    # seems to be an acceptable interim solution.
+     ['--with-partner-repacks',],
+     {"action": "store_true",
+      "dest": "enable_partner_repacks",
+      "default": False,
+      "help": "Download, sign, and verify partner repacks as well."
+     }
     ]]
 
     def __init__(self, require_config_file=True):
@@ -241,6 +253,18 @@ class SignAndroid(LocalesMixin, ReleaseMixin, MobileSigningMixin,
                     success_count += 1
         self.summarize_success_count(success_count, total_count,
                                      message="Downloaded %d of %d unsigned apks successfully.")
+        if c['enable_partner_repacks']:
+            self.info("Downloading partner-repacks")
+            if c.get('platform'):
+                del(c['platform'])
+            remote_dir = c['ftp_upload_base_dir'] + '/unsigned/partner-repacks' % replace_dict
+            local_dir = os.path.join(dirs['abs_work_dir'], 'unsigned', 'partner-repacks')
+            self.mkdir_p(local_dir)
+            if self.rsync_download_directory(rc['ftp_ssh_key'], rc['ftp_user'],
+                                             rc['ftp_server'], remote_dir,
+                                             local_dir):
+                self.add_summary("Unable to download partner repacks!", level=ERROR)
+                self.rmtree(local_dir)
 
     def preflight_sign(self):
         if 'passphrase' not in self.actions:

@@ -50,6 +50,7 @@ config = {
     "update_platform_map": {
         'android': 'Android_arm-eabi-gcc3',
     },
+    "enable_partner_repacks": True,
     "update_channels": {
         'release': {
             'url': RELEASE_UPDATE_URL,
