@@ -321,6 +321,8 @@ class MobilePartnerRepack(LocalesMixin, ReleaseMixin, MobileSigningMixin,
         self.summarize_success_count(success_count, total_count,
                                      message="Signed %d of %d apks successfully.")
 
+    # TODO verify signatures.
+
     def upload_signed_bits(self):
         self._upload(dir_name="partner-repacks")
 
