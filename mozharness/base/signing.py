@@ -14,7 +14,7 @@ import re
 import subprocess
 
 from mozharness.base.errors import JarsignerErrorList, ZipErrorList, ZipalignErrorList
-from mozharness.base.log import OutputParser, IGNORE, INFO, ERROR, FATAL
+from mozharness.base.log import OutputParser, IGNORE, DEBUG, INFO, ERROR, FATAL
 
 UnsignApkErrorList = [{
     'regex': re.compile(r'''zip warning: name not matched: '?META-INF/'''),
@@ -78,6 +78,7 @@ class AndroidSigningMixin(object):
         status = self.sign_apk("NOTAREALAPK", keystore,
                                self.store_passphrase, self.key_passphrase,
                                key_alias, remove_signature=False,
+                               log_level=DEBUG, error_level=DEBUG,
                                error_list=TestJarsignerErrorList)
         if status == 0:
             self.info("Passphrases are good.")
@@ -97,7 +98,8 @@ class AndroidSigningMixin(object):
         self.verify_passphrases()
 
     def sign_apk(self, apk, keystore, storepass, keypass, key_alias,
-                 remove_signature=True, error_list=None):
+                 remove_signature=True, error_list=None,
+                 log_level=INFO, error_level=ERROR):
         """
         Signs an apk with jarsigner.
         """
@@ -112,7 +114,7 @@ class AndroidSigningMixin(object):
         # This needs to run silently, so no run_command() or
         # get_output_from_command() (though I could add a
         # suppress_command_echo=True or something?)
-        self.info("(signing %s)" % apk)
+        self.log("(signing %s)" % apk, level=log_level)
         try:
             p = subprocess.Popen([jarsigner, "-keystore", keystore,
                                  "-storepass", storepass,
@@ -135,6 +137,10 @@ class AndroidSigningMixin(object):
                 loop = False
             for line in p.stdout:
                 parser.add_lines(line)
+        if parser.num_errors:
+            self.log("(failure)", level=error_level)
+        else:
+            self.log("(success)", level=log_level)
         return parser.num_errors
 
     def unsign_apk(self, apk, **kwargs):
