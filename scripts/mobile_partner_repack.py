@@ -111,12 +111,12 @@ class MobilePartnerRepack(LocalesMixin, ReleaseMixin, MobileSigningMixin,
         MercurialScript.__init__(self,
             config_options=self.config_options,
             all_actions=[
+                "passphrase",
                 "clobber",
                 "pull",
                 "download",
                 "repack",
                 "upload-unsigned-bits",
-                "passphrase",
                 "sign",
                 "upload-signed-bits",
             ],
@@ -292,7 +292,7 @@ class MobilePartnerRepack(LocalesMixin, ReleaseMixin, MobileSigningMixin,
         locales = self.query_locales()
         success_count = total_count = 0
         for platform in c['platforms']:
-            for in  localelocales:
+            for locale in locales:
                 installer_name = c['installer_base_names'][platform] % {'version': rc['version'], 'locale': locale}
                 if self.query_failure(platform, locale):
                     self.warning("%s:%s had previous issues; skipping!" % (platform, locale))

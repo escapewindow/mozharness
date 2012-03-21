@@ -9,6 +9,10 @@ DOWNLOAD_BASE_URL = "http://dev-stage01.build.mozilla.org/pub/mozilla.org/mobile
 #APK_BASE_NAME = "fennec-%(version)s.%(locale)s.android-arm.apk"
 APK_BASE_NAME = "fennec-11.0b1.%(locale)s.android-arm.apk"
 HG_SHARE_BASE_DIR = "/builds/hg-shared"
+#KEYSTORE = "/home/cltsign/.android/android-release.keystore"
+KEYSTORE = "/home/cltbld/.android/android.keystore"
+#KEY_ALIAS = "release"
+KEY_ALIAS = "nightly"
 
 config = {
     "log_name": "partner_repack",
@@ -34,4 +38,8 @@ config = {
     "download_base_url": DOWNLOAD_BASE_URL,
 
     "release_config_file": "buildbot-configs/mozilla/release-fennec-mozilla-release.py",
+
+    # signing
+    'keystore': KEYSTORE,
+    'key_alias': KEY_ALIAS,
 }
