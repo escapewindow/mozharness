@@ -297,8 +297,8 @@ class MobilePartnerRepack(LocalesMixin, ReleaseMixin, MobileSigningMixin,
                 if self.query_failure(platform, locale):
                     self.warning("%s:%s had previous issues; skipping!" % (platform, locale))
                     continue
-                unsigned_path = '%s/unsigned/partner-repacks/%s/%s/%s' % (dirs['abs_work_dir'], platform, locale, installer_name)
-                signed_dir = '%s/partner-repacks/%s/%s' % (dirs['abs_work_dir'], platform, locale)
+                unsigned_path = '%s/unsigned/partner-repacks/%s/%s/%s/%s' % (dirs['abs_work_dir'], partner, platform, locale, installer_name)
+                signed_dir = '%s/partner-repacks/%s/%s/%s' % (dirs['abs_work_dir'], partner, platform, locale)
                 signed_path = "%s/%s" % (signed_dir, installer_name)
                 total_count +=1
                 self.info("Signing %s %s." % (platform, locale))
