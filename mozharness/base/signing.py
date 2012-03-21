@@ -10,15 +10,16 @@
 import getpass
 import hashlib
 import os
+import re
 import subprocess
 
 from mozharness.base.errors import JarsignerErrorList, ZipErrorList, ZipalignErrorList
-from mozharness.base.log import OutputParser, IGNORE, ERROR, FATAL
+from mozharness.base.log import OutputParser, IGNORE, INFO, ERROR, FATAL
 
 UnsignApkErrorList = [{
-    'substr': r'''zip warning: name not matched: 'META-INF/*''',
-    'level': IGNORE,
-    'explanation': 'apk is already unsigned.'
+    'regex': re.compile(r'''zip warning: name not matched: '?META-INF/'''),
+    'level': INFO,
+    'explanation': r'''This apk is already unsigned.''',
 },{
     'substr': r'''zip error: Nothing to do!''',
     'level': IGNORE,
@@ -111,6 +112,7 @@ class AndroidSigningMixin(object):
         # This needs to run silently, so no run_command() or
         # get_output_from_command() (though I could add a
         # suppress_command_echo=True or something?)
+        self.info("(signing %s)" % apk)
         try:
             p = subprocess.Popen([jarsigner, "-keystore", keystore,
                                  "-storepass", storepass,
