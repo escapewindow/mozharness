@@ -40,6 +40,10 @@ config = {
     "release_config_file": "buildbot-configs/mozilla/release-fennec-mozilla-release.py",
 
     # signing
-    'keystore': KEYSTORE,
-    'key_alias': KEY_ALIAS,
+    "keystore": KEYSTORE,
+    "key_alias": KEY_ALIAS,
+    "exes": {
+        "jarsigner": "/tools/jdk-1.6.0_17/bin/jarsigner",
+        "zipalign": "/tools/android-sdk-r8/tools/zipalign",
+    },
 }
