@@ -308,14 +308,36 @@ class SignAndroid(LocalesMixin, ReleaseMixin, MobileSigningMixin,
         self.summarize_success_count(success_count, total_count,
                                      message="Signed %d of %d apks successfully.")
         if c['enable_partner_repacks']:
+            total_count = success_count = 0
             self.info("Signing partner repacks.")
-            unsigned_path = '%s/unsigned/partner-repacks' % dirs['abs_work_dir']
-            signed_path = '%s/signed/partner-repacks' % dirs['abs_work_dir']
-            for root, sub_folders, files in os.walk(unsigned_path):
-                for f in files:
-                    if f.endswith('.apk'):
-#aki
-                        self.warning('%s/%s' % (root, f))
+            for partner in c.get("partners", []):
+                for platform in c.get("partner_platforms", []):
+                    for locale in locales:
+                        file_name = c['apk_base_name'] % {'version': rc['version'],
+                                                          'locale': locale}
+                        unsigned_path = '%s/unsigned/partner-repacks/%s/%s/%s/%s' % (dirs['abs_work_dir'], partner, platform, locale, file_name)
+                        signed_dir = '%s/signed/partner-repacks/%s/%s/%s' % (dirs['abs_work_dir'], partner, platform, locale)
+                        signed_path = '%s/%s' % (signed_dir, file_name)
+                        total_count += 1
+                        self.info("Signing %s %s %s." % (partner, platform, locale))
+                        if not os.path.exists(unsigned_path):
+                            self.warning("%s doesn't exist; skipping." % unsigned_path)
+                            continue
+                        if self.sign_apk(unsigned_path, c['keystore'],
+                                         self.store_passphrase, self.key_passphrase,
+                                         c['key_alias']) != 0:
+                            self.add_summary("Unable to sign %s %s:%s apk!" % (partner, platform, locale),
+                                             level=ERROR)
+                            continue
+                        else:
+                            self.mkdir_p(signed_dir)
+                            if self.align_apk(unsigned_path, signed_path):
+                                self.add_summary("Unable to align %s %s:%s apk!" % (partner, platform, locale))
+                                self.rmtree(signed_dir)
+                            else:
+                                success_count += 1
+            self.summarize_success_count(success_count, total_count,
+                                         message="Signed %d of %d partner apks successfully.")
 
     def verify_signatures(self):
         c = self.config
