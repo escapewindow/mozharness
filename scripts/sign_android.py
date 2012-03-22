@@ -255,9 +255,9 @@ class SignAndroid(LocalesMixin, ReleaseMixin, MobileSigningMixin,
                                      message="Downloaded %d of %d unsigned apks successfully.")
         if c['enable_partner_repacks']:
             self.info("Downloading partner-repacks")
-            if c.get('platform'):
-                del(c['platform'])
-            remote_dir = c['ftp_upload_base_dir'] + '/unsigned/partner-repacks' % replace_dict
+            if replace_dict.get('platform'):
+                del(replace_dict['platform'])
+            remote_dir = c['ftp_upload_base_dir'] % replace_dict + '/unsigned/partner-repacks'
             local_dir = os.path.join(dirs['abs_work_dir'], 'unsigned', 'partner-repacks')
             self.mkdir_p(local_dir)
             if self.rsync_download_directory(rc['ftp_ssh_key'], rc['ftp_user'],
@@ -307,6 +307,15 @@ class SignAndroid(LocalesMixin, ReleaseMixin, MobileSigningMixin,
                         success_count += 1
         self.summarize_success_count(success_count, total_count,
                                      message="Signed %d of %d apks successfully.")
+        if c['enable_partner_repacks']:
+            self.info("Signing partner repacks.")
+            unsigned_path = '%s/unsigned/partner-repacks' % dirs['abs_work_dir']
+            signed_path = '%s/signed/partner-repacks' % dirs['abs_work_dir']
+            for root, sub_folders, files in os.walk(unsigned_path):
+                for f in files:
+                    if f.endswith('.apk'):
+#aki
+                        self.warning('%s/%s' % (root, f))
 
     def verify_signatures(self):
         c = self.config
