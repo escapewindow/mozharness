@@ -9,6 +9,7 @@
 """
 # TODO split out signing and transfers to helper objects so we can do
 #      the downloads/signing/uploads in parallel, speeding that up
+# TODO retire this script when Android signing-on-demand lands.
 
 from copy import deepcopy
 import os
