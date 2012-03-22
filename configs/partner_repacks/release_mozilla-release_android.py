@@ -35,7 +35,7 @@ config = {
 
     "default_actions": ["clobber", "pull", "download", "repack", "upload-unsigned-bits"],
 
-    # signing
+    # signing (optional)
     "keystore": KEYSTORE,
     "key_alias": KEY_ALIAS,
     "exes": {
