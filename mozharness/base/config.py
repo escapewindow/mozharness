@@ -1,39 +1,8 @@
 #!/usr/bin/env python
 # ***** BEGIN LICENSE BLOCK *****
-# Version: MPL 1.1/GPL 2.0/LGPL 2.1
-#
-# The contents of this file are subject to the Mozilla Public License Version
-# 1.1 (the "License"); you may not use this file except in compliance with
-# the License. You may obtain a copy of the License at
-# http://www.mozilla.org/MPL/
-#
-# Software distributed under the License is distributed on an "AS IS" basis,
-# WITHOUT WARRANTY OF ANY KIND, either express or implied. See the License
-# for the specific language governing rights and limitations under the
-# License.
-#
-# The Original Code is Mozilla.
-#
-# The Initial Developer of the Original Code is
-# the Mozilla Foundation <http://www.mozilla.org/>.
-# Portions created by the Initial Developer are Copyright (C) 2011
-# the Initial Developer. All Rights Reserved.
-#
-# Contributor(s):
-#   Aki Sasaki <aki@mozilla.com>
-#
-# Alternatively, the contents of this file may be used under the terms of
-# either the GNU General Public License Version 2 or later (the "GPL"), or
-# the GNU Lesser General Public License Version 2.1 or later (the "LGPL"),
-# in which case the provisions of the GPL or the LGPL are applicable instead
-# of those above. If you wish to allow use of your version of this file only
-# under the terms of either the GPL or the LGPL, and not to allow others to
-# use your version of this file under the terms of the MPL, indicate your
-# decision by deleting the provisions above and replace them with the notice
-# and other provisions required by the GPL or the LGPL. If you do not delete
-# the provisions above, a recipient may use your version of this file under
-# the terms of any one of the MPL, the GPL or the LGPL.
-#
+# This Source Code Form is subject to the terms of the Mozilla Public
+# License, v. 2.0. If a copy of the MPL was not distributed with this file,
+# You can obtain one at http://mozilla.org/MPL/2.0/.
 # ***** END LICENSE BLOCK *****
 """Generic config parsing.
 
@@ -60,7 +29,7 @@ try:
 except ImportError:
     import json
 
-from mozharness.base.log import DEBUG, INFO, WARNING, ERROR, CRITICAL, FATAL, IGNORE
+from mozharness.base.log import DEBUG, INFO, WARNING, ERROR, CRITICAL, FATAL
 
 
 
@@ -134,7 +103,8 @@ class ReadOnlyDict(dict):
 
 
 # parse_config_file {{{1
-def parse_config_file(file_name, quiet=False, search_path=None):
+def parse_config_file(file_name, quiet=False, search_path=None,
+                      config_dict_name="config"):
     """Read a config file and return a dictionary.
 
     This probably belongs in a mixin.
@@ -156,7 +126,7 @@ def parse_config_file(file_name, quiet=False, search_path=None):
         global_dict = {}
         local_dict = {}
         execfile(file_path, global_dict, local_dict)
-        config = local_dict['config']
+        config = local_dict[config_dict_name]
     elif file_name.endswith('.json'):
         fh = open(file_path)
         config = {}
@@ -222,7 +192,7 @@ class BaseConfig(object):
                 'no_actions': None,
             }
         else:
-            self.volatile_config = volatile_config.copy()
+            self.volatile_config = deepcopy(volatile_config)
 
         if config:
             self.set_config(config)
@@ -365,6 +335,12 @@ class BaseConfig(object):
                 raise SystemExit(-1)
         return action_list
 
+    def list_actions(self):
+        print "Actions available: " + ', '.join(self.all_actions)
+        if self.default_actions != self.all_actions:
+            print "Default actions: " + ', '.join(self.default_actions)
+        raise SystemExit(0)
+
     def parse_args(self, args=None):
         """Parse command line arguments in a generic way.
         Return the parser object after adding the basic options, so
@@ -393,16 +369,13 @@ class BaseConfig(object):
         if not args:
             args = sys.argv[1:]
         (options, args) = self.config_parser.parse_args(args)
-        if options.list_actions:
-            print "Actions available: " + ', '.join(self.all_actions)
-            if self.default_actions != self.all_actions:
-                print "Default actions: " + ', '.join(self.default_actions)
-            raise SystemExit(0)
 
         defaults = self.config_parser.defaults.copy()
 
         if not options.config_file:
             if self.require_config_file:
+                if options.list_actions:
+                    self.list_actions()
                 print("Required config file not set! (use --config-file option)")
                 raise SystemExit(-1)
         else:
@@ -424,9 +397,29 @@ class BaseConfig(object):
                 self.volatile_config[key] = self._config[key]
                 del(self._config[key])
 
+        """Actions.
+
+        Seems a little complex, but the logic goes:
+
+        First, if default_actions is specified in the config, set our
+        default actions even if the script specifies other default actions.
+
+        Without any other action-specific options, run with default actions.
+
+        If we specify --ACTION or --only-ACTION once or multiple times,
+        we want to override the default_actions list with the one(s) we list.
+
+        Otherwise, if we specify --add-action ACTION, we want to add an
+        action to the list.
+
+        Finally, if we specify --no-ACTION, remove that from the list of
+        actions to perform.
+        """
         if self._config.get('default_actions'):
             default_actions = self.verify_actions(self._config['default_actions'])
             self.default_actions = default_actions
+        if options.list_actions:
+            self.list_actions()
         self.actions = self.default_actions[:]
         if self.volatile_config['actions']:
             actions = self.verify_actions(self.volatile_config['actions'])

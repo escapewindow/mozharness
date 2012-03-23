@@ -1,39 +1,8 @@
 #!/usr/bin/env python
 # ***** BEGIN LICENSE BLOCK *****
-# Version: MPL 1.1/GPL 2.0/LGPL 2.1
-#
-# The contents of this file are subject to the Mozilla Public License Version
-# 1.1 (the "License"); you may not use this file except in compliance with
-# the License. You may obtain a copy of the License at
-# http://www.mozilla.org/MPL/
-#
-# Software distributed under the License is distributed on an "AS IS" basis,
-# WITHOUT WARRANTY OF ANY KIND, either express or implied. See the License
-# for the specific language governing rights and limitations under the
-# License.
-#
-# The Original Code is Mozilla.
-#
-# The Initial Developer of the Original Code is
-# the Mozilla Foundation <http://www.mozilla.org/>.
-# Portions created by the Initial Developer are Copyright (C) 2011
-# the Initial Developer. All Rights Reserved.
-#
-# Contributor(s):
-#   Aki Sasaki <aki@mozilla.com>
-#
-# Alternatively, the contents of this file may be used under the terms of
-# either the GNU General Public License Version 2 or later (the "GPL"), or
-# the GNU Lesser General Public License Version 2.1 or later (the "LGPL"),
-# in which case the provisions of the GPL or the LGPL are applicable instead
-# of those above. If you wish to allow use of your version of this file only
-# under the terms of either the GPL or the LGPL, and not to allow others to
-# use your version of this file under the terms of the MPL, indicate your
-# decision by deleting the provisions above and replace them with the notice
-# and other provisions required by the GPL or the LGPL. If you do not delete
-# the provisions above, a recipient may use your version of this file under
-# the terms of any one of the MPL, the GPL or the LGPL.
-#
+# This Source Code Form is subject to the terms of the Mozilla Public
+# License, v. 2.0. If a copy of the MPL was not distributed with this file,
+# You can obtain one at http://mozilla.org/MPL/2.0/.
 # ***** END LICENSE BLOCK *****
 """Generic logging based off the python logging module.
 
@@ -139,6 +108,83 @@ class LogMixin(object):
 
     def fatal(self, message, exit_code=-1):
         self.log(message, level=FATAL, exit_code=exit_code)
+
+
+
+# OutputParser {{{1
+class OutputParser(LogMixin):
+    """ Helper object to parse command output.
+
+This will buffer output if needed, so we can go back and mark
+[(linenum - 10):linenum+10] as errors if need be, without having to
+get all the output first.
+
+linenum+10 will be easy; we can set self.num_post_context_lines to 10,
+and self.num_post_context_lines-- as we mark each line to at least error
+level X.
+
+linenum-10 will be trickier. We'll not only need to save the line
+itself, but also the level that we've set for that line previously,
+whether by matching on that line, or by a previous line's context.
+We should only log that line if all output has ended (self.finish() ?);
+otherwise store a list of dictionaries in self.context_buffer that is
+buffered up to self.num_pre_context_lines (set to the largest
+pre-context-line setting in error_list.)
+"""
+    def __init__(self, config=None, log_obj=None, error_list=None,
+                 log_output=True):
+        self.config = config
+        self.log_obj = log_obj
+        self.error_list = error_list
+        self.log_output = log_output
+        self.num_errors = 0
+        # TODO context_lines.
+        # Not in use yet, but will be based off error_list.
+        self.context_buffer = []
+        self.num_pre_context_lines = 0
+        self.num_post_context_lines = 0
+        # TODO set self.error_level to the worst error level hit
+        # (WARNING, ERROR, CRITICAL, FATAL)
+        # self.error_level = INFO
+
+    def add_lines(self, output):
+        if str(output) == output:
+            output = [output]
+        for line in output:
+            if not line or line.isspace():
+                continue
+            line = line.decode("utf-8").rstrip()
+            for error_check in self.error_list:
+                # TODO buffer for context_lines.
+                match = False
+                if 'substr' in error_check:
+                    if error_check['substr'] in line:
+                        match = True
+                elif 'regex' in error_check:
+                    if error_check['regex'].search(line):
+                        match = True
+                else:
+                    self.warn("error_list: 'substr' and 'regex' not in %s" % \
+                              error_check)
+                if match:
+                    level = error_check.get('level', INFO)
+                    if self.log_output:
+                        message = ' %s' % line
+                        if error_check.get('explanation'):
+                            message += '\n %s' % error_check['explanation']
+                        if error_check.get('summary'):
+                            self.add_summary(message, level=level)
+                        else:
+                            self.log(message, level=level)
+                    if level in (ERROR, CRITICAL, FATAL):
+                        self.num_errors += 1
+                    # TODO set self.error_status (or something)
+                    # that sets the worst error level hit.
+                    break
+            else:
+                if self.log_output:
+                    self.info(' %s' % line)
+
 
 
 # BaseLogger {{{1
