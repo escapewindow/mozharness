@@ -18,10 +18,8 @@ import re
 import shutil
 import subprocess
 import sys
-import tarfile
 import urllib2
 import urlparse
-import zipfile
 
 try:
     import simplejson as json
@@ -583,7 +581,6 @@ class BaseScript(ShellMixin, OSMixin, LogMixin, object):
         """Dump self.config to localconfig.json, which we'll
         copy_to_upload_dir at the end of the script.
         """
-        c = self.config
         dirs = self.query_abs_dirs()
         if not file_path:
             file_path = os.path.join(dirs['abs_log_dir'], "localconfig.json")

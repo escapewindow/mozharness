@@ -49,8 +49,8 @@ import time
 
 sys.path.insert(1, os.path.dirname(sys.path[0]))
 
-from mozharness.base.errors import PythonErrorList, ADBErrorList
-from mozharness.base.log import DEBUG, INFO, WARNING, ERROR, CRITICAL, FATAL, IGNORE
+from mozharness.base.errors import PythonErrorList
+from mozharness.base.log import DEBUG, ERROR, CRITICAL
 from mozharness.base.python import virtualenv_config_options, VirtualenvMixin
 from mozharness.base.vcs.vcsbase import MercurialScript
 from mozharness.test.device import device_config_options, DeviceMixin
@@ -219,7 +219,7 @@ class DeviceTalosRunner(VirtualenvMixin, DeviceMixin, MercurialScript):
         dirs = self.query_abs_dirs()
         if c.get('talos_zip'):
             self.mkdir_p(dirs['abs_work_dir'])
-            status = self.download_file(
+            self.download_file(
                 c['talos_zip'],
                 file_name=os.path.join(dirs['abs_work_dir'],
                                        "talos.zip")

@@ -45,14 +45,12 @@ http://hg.mozilla.org/build/tools/file/default/sut_tools
 import datetime
 import os
 import re
-import signal
-import socket
 import subprocess
 import sys
 import time
 
-from mozharness.base.errors import PythonErrorList, BaseErrorList, ADBErrorList
-from mozharness.base.log import LogMixin, DEBUG, INFO, WARNING, ERROR, CRITICAL, FATAL, IGNORE
+from mozharness.base.errors import ADBErrorList
+from mozharness.base.log import LogMixin, DEBUG, FATAL
 from mozharness.base.script import ShellMixin, OSMixin
 
 
@@ -155,7 +153,6 @@ class ADBDeviceHandler(BaseDeviceHandler):
     def query_device_id(self, auto_connect=True):
         if self.device_id:
             return self.device_id
-        c = self.config
         device_id = self._query_config_device_id()
         if device_id:
             if auto_connect:
@@ -175,7 +172,6 @@ class ADBDeviceHandler(BaseDeviceHandler):
 
     # maintenance {{{2
     def ping_device(self, auto_connect=False, silent=False):
-        c = self.config
         if auto_connect and not self._query_attached_devices():
             self.connect_device()
         if not silent:
@@ -233,16 +229,18 @@ class ADBDeviceHandler(BaseDeviceHandler):
                 # TODO is this the right behavior?
                 self.disconnect_device()
             cmd.append(device_id)
-        status = self.run_command(cmd, error_list=ADBErrorList)
+        # TODO error check
+        self.run_command(cmd, error_list=ADBErrorList)
 
     def disconnect_device(self):
         self.info("Disconnecting device...")
         device_id = self.query_device_id()
         if device_id:
             adb = self.query_exe('adb')
-            status = self.run_command([adb, "-s", device_id,
-                                       "disconnect"],
-                                      error_list=ADBErrorList)
+            # TODO error check
+            self.run_command([adb, "-s", device_id,
+                              "disconnect"],
+                             error_list=ADBErrorList)
         else:
             self.info("No device found.")
 
@@ -266,6 +264,7 @@ class ADBDeviceHandler(BaseDeviceHandler):
         self.info("Running command (in the background): %s" % cmd)
         # This won't exit until much later, but we don't need to wait.
         # However, some error checking would be good.
+        # TODO are we doing something with p?
         p = subprocess.Popen(cmd, stdout=subprocess.PIPE,
                              stderr=subprocess.STDOUT)
         time.sleep(10)
@@ -334,7 +333,6 @@ class ADBDeviceHandler(BaseDeviceHandler):
         raise DeviceException, "Remote Device Error: waiting for device timed out."
 
     def query_device_time(self):
-        c = self.config
         device_id = self.query_device_id()
         adb = self.query_exe('adb')
         # adb shell 'date' will give a date string
@@ -345,7 +343,6 @@ class ADBDeviceHandler(BaseDeviceHandler):
 
     def set_device_time(self, device_time=None, error_level='error'):
         # adb shell date UNIXTIMESTAMP will set date
-        c = self.config
         device_id = self.query_device_id()
         if device_time is None:
             device_time = time.time()
@@ -416,7 +413,6 @@ class ADBDeviceHandler(BaseDeviceHandler):
         # adb -s device_id shell am display-size 1024x768
         # reboot; adb wait-for-device; sleep
         # (later) adb -s device_id shell am display-size 1680:1050
-        cmd = None
         # TODO error checking
         if not c['enable_automation']:
             # -s to install on sdcard? Needs to be config driven
@@ -495,7 +491,7 @@ class SUTDeviceHandler(BaseDeviceHandler):
         dm_path = c.get("devicemanager_path", dirs['abs_talos_dir'])
         sys.path.append(dm_path)
         try:
-            import devicemanagerSUT
+#            import devicemanagerSUT
             from devicemanagerSUT import DeviceManagerSUT
             from devicemanagerSUT import DMError
             self.devicemanager = DeviceManagerSUT(c['device_ip'])
@@ -512,7 +508,6 @@ class SUTDeviceHandler(BaseDeviceHandler):
         pass
 
     def check_device(self):
-        c = self.config
         dev_root = self.query_device_root(strict=True)
         if not dev_root:
             self.add_device_flag(DEVICE_UNREACHABLE)
@@ -609,6 +604,7 @@ class SUTDeviceHandler(BaseDeviceHandler):
         self.info("Installing %s on device..." % file_path)
         dm.pushFile(file_path, target)
         # TODO screen resolution
+        # TODO do something with status?
         status = dm.installApp(target)
 
     def reboot_device(self):
@@ -634,7 +630,7 @@ class SUTDeviceHandler(BaseDeviceHandler):
             try:
                 dm.sendCMD(['exec mount -o remount,rw -t yaffs2 /dev/block/mtdblock3 /system'])
                 dm.sendCMD(['exec rm %s' % hosts_file])
-            except DMError, e:
+            except DMError:
                 self.add_device_flag(DEVICE_CANT_REMOVE_ETC_HOSTS)
                 self.fatal("Unable to remove %s!" % hosts_file)
             if dm.fileExists(hosts_file):
