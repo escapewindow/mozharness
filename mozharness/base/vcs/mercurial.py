@@ -1,43 +1,8 @@
 #!/usr/bin/env python
 # ***** BEGIN LICENSE BLOCK *****
-# Version: MPL 1.1/GPL 2.0/LGPL 2.1
-#
-# The contents of this file are subject to the Mozilla Public License Version
-# 1.1 (the "License"); you may not use this file except in compliance with
-# the License. You may obtain a copy of the License at
-# http://www.mozilla.org/MPL/
-#
-# Software distributed under the License is distributed on an "AS IS" basis,
-# WITHOUT WARRANTY OF ANY KIND, either express or implied. See the License
-# for the specific language governing rights and limitations under the
-# License.
-#
-# The Original Code is Mozilla.
-#
-# The Initial Developer of the Original Code is
-# the Mozilla Foundation <http://www.mozilla.org/>.
-# Portions created by the Initial Developer are Copyright (C) 2011
-# the Initial Developer. All Rights Reserved.
-#
-# Contributor(s):
-#   Chris Atlee <catlee@mozilla.com>
-#   Syed Albiz <salbiz@mozilla.com>
-#   Ben Hearsum <bhearsum@mozilla.com>
-#   Rail Aliev <rail@mozilla.com>
-#   Aki Sasaki <aki@mozilla.com>
-#
-# Alternatively, the contents of this file may be used under the terms of
-# either the GNU General Public License Version 2 or later (the "GPL"), or
-# the GNU Lesser General Public License Version 2.1 or later (the "LGPL"),
-# in which case the provisions of the GPL or the LGPL are applicable instead
-# of those above. If you wish to allow use of your version of this file only
-# under the terms of either the GPL or the LGPL, and not to allow others to
-# use your version of this file under the terms of the MPL, indicate your
-# decision by deleting the provisions above and replace them with the notice
-# and other provisions required by the GPL or the LGPL. If you do not delete
-# the provisions above, a recipient may use your version of this file under
-# the terms of any one of the MPL, the GPL or the LGPL.
-#
+# This Source Code Form is subject to the terms of the Mozilla Public
+# License, v. 2.0. If a copy of the MPL was not distributed with this file,
+# You can obtain one at http://mozilla.org/MPL/2.0/.
 # ***** END LICENSE BLOCK *****
 """Mercurial VCS support.
 """
@@ -53,9 +18,9 @@ sys.path.insert(1, os.path.dirname(os.path.dirname(os.path.dirname(sys.path[0]))
 
 from mozharness.base.errors import HgErrorList, VCSException
 from mozharness.base.log import LogMixin
-from mozharness.base.script import BaseScript, ShellMixin, OSMixin
+from mozharness.base.script import ShellMixin, OSMixin
 
-HG = ['hg', '--config', 'ui.merge=internal:merge']
+HG_OPTIONS = ['--config', 'ui.merge=internal:merge']
 
 # MercurialVCS {{{1
 # TODO Make the remaining functions more mozharness-friendly.
@@ -92,7 +57,10 @@ class MercurialVCS(ShellMixin, OSMixin, LogMixin, object):
         super(MercurialVCS, self).__init__()
         self.can_share = None
         self.log_obj = log_obj
-        self.config = config
+        if config:
+            self.config = config
+        else:
+            self.config = {}
         # vcs_config = {
         #  hg_host: hg_host,
         #  repo: repository,
@@ -102,6 +70,7 @@ class MercurialVCS(ShellMixin, OSMixin, LogMixin, object):
         #  ssh_key: ssh_key,
         # }
         self.vcs_config = vcs_config
+        self.hg = [self.query_exe('hg')] + HG_OPTIONS
 
     def _make_absolute(self, repo):
         if repo.startswith("file://"):
@@ -125,16 +94,16 @@ class MercurialVCS(ShellMixin, OSMixin, LogMixin, object):
     def get_revision_from_path(self, path):
         """Returns which revision directory `path` currently has checked out."""
         return self.get_output_from_command(
-            HG + ['parent', '--template', '{node|short}'], cwd=path
+            self.hg + ['parent', '--template', '{node|short}'], cwd=path
         )
 
     def get_branch_from_path(self, path):
-        branch = self.get_output_from_command(HG + ['branch'], cwd=path)
+        branch = self.get_output_from_command(self.hg + ['branch'], cwd=path)
         return str(branch).strip()
 
     def get_branches_from_path(self, path):
         branches = []
-        for line in self.get_output_from_command(HG + ['branches', '-c'],
+        for line in self.get_output_from_command(self.hg + ['branches', '-c'],
                                                  cwd=path).splitlines():
             branches.append(line.split()[0])
         return branches
@@ -142,7 +111,7 @@ class MercurialVCS(ShellMixin, OSMixin, LogMixin, object):
     def hg_ver(self):
         """Returns the current version of hg, as a tuple of
         (major, minor, build)"""
-        ver_string = self.get_output_from_command(HG + ['-q', 'version'])
+        ver_string = self.get_output_from_command(self.hg + ['-q', 'version'])
         match = re.search("\(version ([0-9.]+)\)", ver_string)
         if match:
             bits = match.group(1).split(".")
@@ -169,13 +138,13 @@ class MercurialVCS(ShellMixin, OSMixin, LogMixin, object):
             msg += " revision %s" % revision
         self.info("%s." % msg)
         if revision is not None:
-            cmd = HG + ['update', '-C', '-r', revision]
+            cmd = self.hg + ['update', '-C', '-r', revision]
             self.run_command(cmd, cwd=dest, error_list=HgErrorList)
         else:
             # Check & switch branch
             local_branch = self.get_branch_from_path(dest)
 
-            cmd = HG + ['update', '-C']
+            cmd = self.hg + ['update', '-C']
 
             # If this is different, checkout the other branch
             if branch and branch != local_branch:
@@ -207,7 +176,7 @@ class MercurialVCS(ShellMixin, OSMixin, LogMixin, object):
             self.info("Removing %s before clone." % dest)
             self.rmtree(dest)
 
-        cmd = HG + ['clone']
+        cmd = self.hg + ['clone']
         if not update_dest:
             cmd.append('-U')
 
@@ -265,7 +234,7 @@ class MercurialVCS(ShellMixin, OSMixin, LogMixin, object):
             return -1
         # Convert repo to an absolute path if it's a local repository
         repo = self._make_absolute(repo)
-        cmd = HG + ['pull']
+        cmd = self.hg + ['pull']
         cmd.extend(self.common_args(**kwargs))
         cmd.append(repo)
         self.run_command(cmd, cwd=dest, error_list=HgErrorList,
@@ -281,7 +250,7 @@ class MercurialVCS(ShellMixin, OSMixin, LogMixin, object):
     def out(self, src, remote, **kwargs):
         """Check for outgoing changesets present in a repo"""
         self.info("Checking for outgoing changesets from %s to %s." % (src, remote))
-        cmd = HG + ['-q', 'out', '--template', '{node} {branches}\n']
+        cmd = self.hg + ['-q', 'out', '--template', '{node} {branches}\n']
         cmd.extend(self.common_args(**kwargs))
         cmd.append(remote)
         if os.path.exists(src):
@@ -309,7 +278,7 @@ class MercurialVCS(ShellMixin, OSMixin, LogMixin, object):
         # This doesn't appear to work with hg_ver < (1, 6, 0).
         # Error out, or let you try?
         self.info("Pushing new changes from %s to %s." % (src, remote))
-        cmd = HG + ['push']
+        cmd = self.hg + ['push']
         cmd.extend(self.common_args(**kwargs))
         if push_new_branches and self.hg_ver() >= (1, 6, 0):
             cmd.append('--new-branch')
@@ -325,7 +294,7 @@ class MercurialVCS(ShellMixin, OSMixin, LogMixin, object):
         self.can_share = True
         try:
             self.info("Checking if share extension works.")
-            output = self.get_output_from_command(HG + ['help', 'share'],
+            output = self.get_output_from_command(self.hg + ['help', 'share'],
                                                   silent=True,
                                                   throw_exception=True)
             if 'no commands defined' in output:
@@ -432,7 +401,7 @@ class MercurialVCS(ShellMixin, OSMixin, LogMixin, object):
         with "source" using Mercurial's share extension
         """
         self.info("Sharing %s to %s." % (source, dest))
-        self.run_command(HG + ['share', '-U', source, dest],
+        self.run_command(self.hg + ['share', '-U', source, dest],
                          error_list=HgErrorList,
                          throw_exception=True)
         return self.update(dest, branch=branch, revision=revision)
@@ -453,7 +422,7 @@ class MercurialVCS(ShellMixin, OSMixin, LogMixin, object):
         repo = c['repo']
         revision = c.get('revision')
         branch = c.get('branch')
-        share_base = c.get('share_base',
+        share_base = c.get('vcs_share_base',
                            os.environ.get("HG_SHARE_BASE_DIR", None))
         msg = "Setting %s to %s" % (dest, repo)
         if branch:
@@ -513,7 +482,7 @@ class MercurialVCS(ShellMixin, OSMixin, LogMixin, object):
                 if n == max_attempts:
                     self.debug("Tried %d times, giving up" % max_attempts)
                     for r in reversed(new_revs):
-                        self.run_command(HG + ['strip', '-n', r[REVISION]],
+                        self.run_command(self.hg + ['strip', '-n', r[REVISION]],
                                          cwd=localrepo, error_list=HgErrorList)
                     raise VCSException("Failed to push")
                 self.pull(remote, localrepo, update_dest=False,
@@ -521,14 +490,14 @@ class MercurialVCS(ShellMixin, OSMixin, LogMixin, object):
                 # After we successfully rebase or strip away heads the push
                 # is is attempted again at the start of the loop
                 try:
-                    self.run_command(HG + ['rebase'], cwd=localrepo,
+                    self.run_command(self.hg + ['rebase'], cwd=localrepo,
                                      error_list=HgErrorList,
                                      throw_exception=True)
                 except subprocess.CalledProcessError, e:
                     self.debug("Failed to rebase: %s" % str(e))
                     self.update(localrepo, branch=branch)
                     for r in reversed(new_revs):
-                        self.run_command(HG + ['strip', '-n', r[REVISION]],
+                        self.run_command(self.hg + ['strip', '-n', r[REVISION]],
                                          cwd=localrepo, error_list=HgErrorList)
                     changer(localrepo, n+1)
 
@@ -539,7 +508,7 @@ class MercurialVCS(ShellMixin, OSMixin, LogMixin, object):
         outgoingRevs = self.out(src=reponame, remote=remote,
                                 ssh_username=username, ssh_key=sshKey)
         for r in reversed(outgoingRevs):
-            self.run_command(HG + ['strip', '-n', r[REVISION]],
+            self.run_command(self.hg + ['strip', '-n', r[REVISION]],
                              cwd=reponame, error_list=HgErrorList)
 
 

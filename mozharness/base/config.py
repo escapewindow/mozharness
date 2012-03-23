@@ -1,39 +1,8 @@
 #!/usr/bin/env python
 # ***** BEGIN LICENSE BLOCK *****
-# Version: MPL 1.1/GPL 2.0/LGPL 2.1
-#
-# The contents of this file are subject to the Mozilla Public License Version
-# 1.1 (the "License"); you may not use this file except in compliance with
-# the License. You may obtain a copy of the License at
-# http://www.mozilla.org/MPL/
-#
-# Software distributed under the License is distributed on an "AS IS" basis,
-# WITHOUT WARRANTY OF ANY KIND, either express or implied. See the License
-# for the specific language governing rights and limitations under the
-# License.
-#
-# The Original Code is Mozilla.
-#
-# The Initial Developer of the Original Code is
-# the Mozilla Foundation <http://www.mozilla.org/>.
-# Portions created by the Initial Developer are Copyright (C) 2011
-# the Initial Developer. All Rights Reserved.
-#
-# Contributor(s):
-#   Aki Sasaki <aki@mozilla.com>
-#
-# Alternatively, the contents of this file may be used under the terms of
-# either the GNU General Public License Version 2 or later (the "GPL"), or
-# the GNU Lesser General Public License Version 2.1 or later (the "LGPL"),
-# in which case the provisions of the GPL or the LGPL are applicable instead
-# of those above. If you wish to allow use of your version of this file only
-# under the terms of either the GPL or the LGPL, and not to allow others to
-# use your version of this file under the terms of the MPL, indicate your
-# decision by deleting the provisions above and replace them with the notice
-# and other provisions required by the GPL or the LGPL. If you do not delete
-# the provisions above, a recipient may use your version of this file under
-# the terms of any one of the MPL, the GPL or the LGPL.
-#
+# This Source Code Form is subject to the terms of the Mozilla Public
+# License, v. 2.0. If a copy of the MPL was not distributed with this file,
+# You can obtain one at http://mozilla.org/MPL/2.0/.
 # ***** END LICENSE BLOCK *****
 """Generic config parsing and dumping, the way I remember it from scripts
 gone by.
@@ -64,7 +33,7 @@ try:
 except ImportError:
     import json
 
-from mozharness.base.log import DEBUG, INFO, WARNING, ERROR, CRITICAL, FATAL, IGNORE
+from mozharness.base.log import DEBUG, INFO, WARNING, ERROR, CRITICAL, FATAL
 
 
 
@@ -136,7 +105,8 @@ class ReadOnlyDict(dict):
 
 
 # parse_config_file {{{1
-def parse_config_file(file_name, quiet=False, search_path=None):
+def parse_config_file(file_name, quiet=False, search_path=None,
+                      config_dict_name="config"):
     """Read a config file and return a dictionary.
     """
     file_path = None
@@ -156,7 +126,7 @@ def parse_config_file(file_name, quiet=False, search_path=None):
         global_dict = {}
         local_dict = {}
         execfile(file_path, global_dict, local_dict)
-        config = local_dict['config']
+        config = local_dict[config_dict_name]
     elif file_name.endswith('.json'):
         fh = open(file_path)
         config = {}
@@ -176,7 +146,7 @@ class BaseConfig(object):
     """
     def __init__(self, config=None, initial_config_file=None, config_options=None,
                  all_actions=None, default_actions=None,
-                 volatile_config_vars=None,
+                 volatile_config=None,
                  require_config_file=False, usage="usage: %prog [options]"):
         self._config = {}
         self.actions = []
@@ -191,10 +161,14 @@ class BaseConfig(object):
             self.default_actions = default_actions[:]
         else:
             self.default_actions = self.all_actions[:]
-        if volatile_config_vars is None:
-            self.volatile_config_vars = []
+        if volatile_config is None:
+            self.volatile_config = {
+                'actions': None,
+                'add_actions': None,
+                'no_actions': None,
+            }
         else:
-            self.volatile_config_vars = volatile_config_vars[:]
+            self.volatile_config = deepcopy(volatile_config)
 
         if config:
             self.set_config(config)
@@ -270,7 +244,7 @@ class BaseConfig(object):
         )
         action_option_group.add_option(
          "--action", action="extend",
-         dest="only_actions", metavar="ACTIONS",
+         dest="actions", metavar="ACTIONS",
          help="Do action %s" % self.all_actions
         )
         action_option_group.add_option(
@@ -286,7 +260,7 @@ class BaseConfig(object):
         for action in self.all_actions:
             action_option_group.add_option(
              "--only-%s" % action, "--%s" % action, action="append_const",
-             dest="only_actions", const=action,
+             dest="actions", const=action,
              help="Add %s to the limited list of actions" % action
             )
             action_option_group.add_option(
@@ -295,9 +269,6 @@ class BaseConfig(object):
              help="Remove %s from the list of actions to perform" % action
             )
         self.config_parser.add_option_group(action_option_group)
-        self.volatile_config_vars.extend(['only_actions', 'add_actions',
-                                          'no_actions', 'list_actions',
-                                          'noop'])
         # Child-specified options
         # TODO error checking for overlapping options
         if config_options:
@@ -331,6 +302,12 @@ class BaseConfig(object):
                 raise SystemExit(-1)
         return action_list
 
+    def list_actions(self):
+        print "Actions available: " + ', '.join(self.all_actions)
+        if self.default_actions != self.all_actions:
+            print "Default actions: " + ', '.join(self.default_actions)
+        raise SystemExit(0)
+
     def parse_args(self, args=None):
         """Parse command line arguments in a generic way.
         Return the parser object after adding the basic options, so
@@ -340,17 +317,14 @@ class BaseConfig(object):
         if not args:
             args = sys.argv[1:]
         (options, args) = self.config_parser.parse_args(args)
-        if options.list_actions:
-            print "Actions available: " + ', '.join(self.all_actions)
-            if self.default_actions != self.all_actions:
-                print "Default actions: " + ', '.join(self.default_actions)
-            raise SystemExit(0)
 
         defaults = self.config_parser.defaults.copy()
 
         if not options.config_file:
             if self.require_config_file:
-                print("Required config file not set!")
+                if options.list_actions:
+                    self.list_actions()
+                print("Required config file not set! (use --config-file option)")
                 raise SystemExit(-1)
         else:
             self.set_config(parse_config_file(options.config_file))
@@ -363,31 +337,52 @@ class BaseConfig(object):
                 continue
             self._config[key] = value
 
+        # The idea behind the volatile_config is we don't want to save this
+        # info over multiple runs.  This defaults to the action-specific
+        # config options, but can be anything.
+        for key in self.volatile_config.keys():
+            if self._config.get(key) is not None:
+                self.volatile_config[key] = self._config[key]
+                del(self._config[key])
+
         """Actions.
 
         Seems a little complex, but the logic goes:
 
-        If we specify --BLAH or --only-BLAH once or multiple times,
-        we want to override the default_actions list with the ones we list.
+        First, if default_actions is specified in the config, set our
+        default actions even if the script specifies other default actions.
 
-        Otherwise, if we specify --add-action, we want to add an action to
-        the default list.
+        Without any other action-specific options, run with default actions.
 
-        Finally, if we specify --no-BLAH, remove that from the list of
+        If we specify --ACTION or --only-ACTION once or multiple times,
+        we want to override the default_actions list with the one(s) we list.
+
+        Otherwise, if we specify --add-action ACTION, we want to add an
+        action to the list.
+
+        Finally, if we specify --no-ACTION, remove that from the list of
         actions to perform.
         """
+        if self._config.get('default_actions'):
+            default_actions = self.verify_actions(self._config['default_actions'])
+            self.default_actions = default_actions
+        if options.list_actions:
+            self.list_actions()
         self.actions = self.default_actions[:]
-        if options.only_actions:
-            actions = self.verify_actions(options.only_actions)
+        if self.volatile_config['actions']:
+            actions = self.verify_actions(self.volatile_config['actions'])
             self.actions = actions
-        elif options.add_actions:
-            actions = self.verify_actions(options.add_actions)
+        elif self.volatile_config['add_actions']:
+            actions = self.verify_actions(self.volatile_config['add_actions'])
             self.actions.extend(actions)
-        if options.no_actions:
-            actions = self.verify_actions(options.no_actions)
+        if self.volatile_config['no_actions']:
+            actions = self.verify_actions(self.volatile_config['no_actions'])
             for action in actions:
                 if action in self.actions:
                     self.actions.remove(action)
+
+        # Keep? This is for saving the volatile config in the dump_config
+        self._config['volatile_config'] = self.volatile_config
 
         self.options = options
         self.args = args

@@ -1,40 +1,8 @@
 #!/usr/bin/env python
 # ***** BEGIN LICENSE BLOCK *****
-# Version: MPL 1.1/GPL 2.0/LGPL 2.1
-#
-# The contents of this file are subject to the Mozilla Public License Version
-# 1.1 (the "License"); you may not use this file except in compliance with
-# the License. You may obtain a copy of the License at
-# http://www.mozilla.org/MPL/
-#
-# Software distributed under the License is distributed on an "AS IS" basis,
-# WITHOUT WARRANTY OF ANY KIND, either express or implied. See the License
-# for the specific language governing rights and limitations under the
-# License.
-#
-# The Original Code is Mozilla.
-#
-# The Initial Developer of the Original Code is
-# the Mozilla Foundation <http://www.mozilla.org/>.
-# Portions created by the Initial Developer are Copyright (C) 2011
-# the Initial Developer. All Rights Reserved.
-#
-# Contributor(s):
-#   Aki Sasaki <aki@mozilla.com>
-#   Andrew Halberstadt <ahalberstadt@mozilla.com>
-#
-# Alternatively, the contents of this file may be used under the terms of
-# either the GNU General Public License Version 2 or later (the "GPL"), or
-# the GNU Lesser General Public License Version 2.1 or later (the "LGPL"),
-# in which case the provisions of the GPL or the LGPL are applicable instead
-# of those above. If you wish to allow use of your version of this file only
-# under the terms of either the GPL or the LGPL, and not to allow others to
-# use your version of this file under the terms of the MPL, indicate your
-# decision by deleting the provisions above and replace them with the notice
-# and other provisions required by the GPL or the LGPL. If you do not delete
-# the provisions above, a recipient may use your version of this file under
-# the terms of any one of the MPL, the GPL or the LGPL.
-#
+# This Source Code Form is subject to the terms of the Mozilla Public
+# License, v. 2.0. If a copy of the MPL was not distributed with this file,
+# You can obtain one at http://mozilla.org/MPL/2.0/.
 # ***** END LICENSE BLOCK *****
 """Generic script objects.
 
@@ -65,9 +33,7 @@ except ImportError:
 
 from mozharness.base.config import BaseConfig
 from mozharness.base.log import SimpleFileLogger, MultiFileLogger, \
-                                LogMixin, DEBUG, INFO, WARNING, ERROR, \
-                                CRITICAL, FATAL, IGNORE
-from mozharness.base.errors import HgErrorList
+     LogMixin, OutputParser, DEBUG, INFO, ERROR, FATAL
 
 # OSMixin {{{1
 class OSMixin(object):
@@ -83,8 +49,8 @@ class OSMixin(object):
         else:
             self.debug("mkdir_p: %s Already exists." % path)
 
-    def rmtree(self, path, error_level=ERROR, exit_code=-1):
-        self.info("rmtree: %s" % path)
+    def rmtree(self, path, log_level=INFO, error_level=ERROR, exit_code=-1):
+        self.log("rmtree: %s" % path, level=log_level)
         if os.path.exists(path):
             if not self.config.get('noop'):
                 if os.path.isdir(path):
@@ -103,9 +69,10 @@ class OSMixin(object):
         return 0
 
     def _is_windows(self):
-        if platform.system() in ("Windows",):
+        system = platform.system()
+        if system in ("Windows", "Microsoft"):
             return True
-        if platform.system().startswith("CYGWIN"):
+        if system.startswith("CYGWIN"):
             return True
 
     def _rmdir_recursive(self, path):
@@ -142,25 +109,37 @@ class OSMixin(object):
         if parsed.path != '':
             return parsed.path.rsplit('/', 1)[-1]
         else:
-            file_name = parsed.netloc
+            return parsed.netloc
 
     # http://www.techniqal.com/blog/2008/07/31/python-file-read-write-with-urllib2/
     # TODO thinking about creating a transfer object.
-    def download_file(self, url, file_name=None,
-                     error_level=ERROR, exit_code=-1):
+    def download_file(self, url, file_name=None, parent_dir=None,
+                      create_parent_dir=True, error_level=ERROR,
+                      exit_code=-1):
         """Python wget.
-        TODO: option to mkdir_p dirname(file_name) if it doesn't exist.
         TODO: should noop touch the filename? seems counter-noop.
+        TODO: the initial log line should say "Downloading url to file_name"
         """
+        message = ""
         if not file_name:
-            file_name = self.get_filename_from_url(url)
+            try:
+                file_name = self.get_filename_from_url(url)
+            except AttributeError:
+                self.log("Unable to get filename from %s; bad url?" % url,
+                         level=error_level, exit_code=exit_code)
+                return
+        if parent_dir:
+            file_name = os.path.join(parent_dir, file_name)
+        parent_dir = os.path.dirname(file_name)
         if self.config.get('noop'):
-            self.info("Downloading %s" % url)
+            self.info("Downloading %s%s" % (url, message))
             return file_name
         req = urllib2.Request(url)
         try:
-            self.info("Downloading %s" % url)
+            self.info("Downloading %s%s" % (url, message))
             f = urllib2.urlopen(req)
+            if create_parent_dir and parent_dir:
+                self.mkdir_p(parent_dir)
             local_file = open(file_name, 'wb')
             local_file.write(f.read())
             local_file.close()
@@ -174,59 +153,9 @@ class OSMixin(object):
             return
         return file_name
 
-    def extract(self, path, extdir=None, delete=False,
-                error_level=ERROR, exit_code=-1):
-        """
-        Takes in a tar or zip file and extracts it to extdir
-        - If extdir is not specified, extracts to os.path.dirname(path)
-        - If delete is set to True, deletes the bundle at path
-        - Returns the list of top level files that were extracted
-
-        TODO: dmg
-        """
-        # determine directory to extract to
-        if extdir is None:
-            extdir = os.path.dirname(path)
-        elif not os.path.exists(extdir):
-            self.mkdir_p(extdir)
-        self.info("Extracting %s to %s" % (os.path.abspath(path),
-                                           os.path.abspath(extdir)))
-        try:
-            if zipfile.is_zipfile(path):
-                bundle = zipfile.ZipFile(path)
-                namelist = bundle.namelist()
-            elif tarfile.is_tarfile(path):
-                bundle = tarfile.open(path)
-                namelist = bundle.getnames()
-            else:
-                # unkown filetype
-                self.warning("Unsupported file type: %s" % path)
-            bundle.extractall(path=extdir)
-            bundle.close()
-        except (zipfile.BadZipfile, zipfile.LargeZipFile,
-                tarfile.ReadError, tarfile.CompressionError), e:
-            cla = sys.exc_info()[0]
-            self.log("%s, Error extracting: %s" % (cla.__name__,
-                                                   os.path.abspath(path)),
-                     level=error_level, exit_code=exit_code)
-            return
-        if delete:
-            self.rmtree(path)
-
-        # namelist returns paths with forward slashes even in windows
-        top_level_files = [os.path.join(extdir, name) for name in namelist
-                                 if len(name.rstrip('/').split('/')) == 1]
-        # namelist doesn't include folders  in windows, append these to the list
-        if platform.system() == "Windows":
-            for name in namelist:
-                root = name[:name.find('/')]
-                if root not in top_level_files:
-                    top_level_files.append(root)
-        # return list of paths of top level extracted files
-        return top_level_files
-
-    def move(self, src, dest, error_level="error", exit_code=-1):
-        self.info("Moving %s to %s" % (src, dest))
+    def move(self, src, dest, log_level=INFO, error_level=ERROR,
+             exit_code=-1):
+        self.log("Moving %s to %s" % (src, dest), level=log_level)
         if not self.config.get('noop'):
             try:
                 shutil.move(src, dest)
@@ -242,8 +171,8 @@ class OSMixin(object):
         if not self.config.get('noop'):
             os.chmod(path, mode)
 
-    def copyfile(self, src, dest, error_level=ERROR):
-        self.info("Copying %s to %s" % (src, dest))
+    def copyfile(self, src, dest, log_level=INFO, error_level=ERROR):
+        self.log("Copying %s to %s" % (src, dest), level=log_level)
         if not self.config.get('noop'):
             try:
                 shutil.copyfile(src, dest)
@@ -281,6 +210,8 @@ class OSMixin(object):
                     return exe_file
         return None
 
+
+
 # ShellMixin {{{1
 class ShellMixin(object):
     """These are very special but very complex methods that, together with
@@ -292,7 +223,8 @@ class ShellMixin(object):
     def __init__(self):
         self.env = None
 
-    def query_env(self, partial_env=None, replace_dict=None):
+    def query_env(self, partial_env=None, replace_dict=None,
+                  set_self_env=None):
         """Environment query/generation method.
 
         The default, self.query_env(), will look for self.config['env']
@@ -303,18 +235,23 @@ class ShellMixin(object):
         self.config['env'], and we don't save self.env as it's a one-off.
 
         """
-        set_self_env = False
         if partial_env is None:
             if self.env is not None:
                 return self.env
             partial_env = self.config.get('env', None)
             if partial_env is None:
                 partial_env = {}
-            set_self_env = True
+            if set_self_env is None:
+                set_self_env = True
         env = os.environ.copy()
-        if replace_dict is None:
-            replace_dict = {}
-        replace_dict['PATH'] = os.environ['PATH']
+        default_replace_dict = self.query_abs_dirs()
+        default_replace_dict['PATH'] = os.environ['PATH']
+        if not replace_dict:
+            replace_dict = default_replace_dict
+        else:
+            for key in default_replace_dict:
+                if key not in replace_dict:
+                    replace_dict[key] = default_replace_dict[key]
         for key in partial_env.keys():
             env[key] = partial_env[key] % replace_dict
             self.debug("ENV: %s is now %s" % (key, env[key]))
@@ -322,28 +259,39 @@ class ShellMixin(object):
             self.env = env
         return env
 
-    def run_command(self, command, cwd=None, error_list=[], parse_at_end=False,
-                    halt_on_failure=False, success_codes=[0],
+    def query_exe(self, exe_name, exe_dict='exes'):
+        """One way to work around PATH rewrites.
+
+        By default, return exe_name, and we'll fall through to searching
+        os.environ["PATH"].
+        However, if self.config[exe_dict][exe_name] exists, return that.
+        This lets us override exe paths via config file.
+
+        If we need runtime setting, we can build in self.exes support later.
+        """
+        return self.config.get(exe_dict, {}).get(exe_name, exe_name)
+
+    def run_command(self, command, cwd=None, error_list=None, parse_at_end=False,
+                    halt_on_failure=False, success_codes=None,
                     env=None, return_type='status', throw_exception=False):
         """Run a command, with logging and error parsing.
 
-        TODO: parse_at_end, contextLines
+        TODO: parse_at_end, context_lines
         TODO: retry_interval?
         TODO: error_level_override?
         TODO: Add a copy-pastable version of |command| if it's a list.
+        TODO: print env if set
 
         error_list example:
-        [{'regex': '^Error: LOL J/K', level=IGNORE},
-         {'regex': '^Error:', level=ERROR, contextLines='5:5'},
+        [{'regex': re.compile('^Error: LOL J/K'), level=IGNORE},
+         {'regex': re.compile('^Error:'), level=ERROR, contextLines='5:5'},
          {'substr': 'THE WORLD IS ENDING', level=FATAL, contextLines='20:'}
         ]
         """
-        # Get rid of this when we get rid of the scratchbox stuff
-        if return_type == 'output':
-            return self.get_output_from_command(command=command, cwd=cwd,
-                                                halt_on_failure=halt_on_failure,
-                                                env=env)
-        num_errors = 0
+        if error_list is None:
+            error_list = []
+        if success_codes is None:
+            success_codes = [0]
         if cwd:
             if not os.path.isdir(cwd):
                 level = ERROR
@@ -363,34 +311,15 @@ class ShellMixin(object):
             shell = False
         p = subprocess.Popen(command, shell=shell, stdout=subprocess.PIPE,
                              cwd=cwd, stderr=subprocess.STDOUT, env=env)
+        parser = OutputParser(config=self.config, log_obj=self.log_obj,
+                              error_list=error_list)
         loop = True
         while loop:
             if p.poll() is not None:
                 """Avoid losing the final lines of the log?"""
                 loop = False
             for line in p.stdout:
-                if not line or line.isspace():
-                    continue
-                line = line.decode("utf-8").rstrip()
-                for error_check in error_list:
-                    match = False
-                    if 'substr' in error_check:
-                        if error_check['substr'] in line:
-                            match = True
-                    elif 'regex' in error_check:
-                        if re.search(error_check['regex'], line):
-                            match = True
-                    else:
-                        self.warn("error_list: 'substr' and 'regex' not in %s" % \
-                                  error_check)
-                    if match:
-                        level=error_check.get('level', INFO)
-                        self.log(' %s' % line, level=level)
-                        if level in (ERROR, CRITICAL, FATAL):
-                            num_errors = num_errors + 1
-                        break
-                else:
-                    self.info(' %s' % line)
+                parser.add_lines(line)
         return_level = INFO
         if p.returncode not in success_codes:
             return_level = ERROR
@@ -398,11 +327,11 @@ class ShellMixin(object):
                 raise subprocess.CalledProcessError(p.returncode, command)
         self.log("Return code: %d" % p.returncode, level=return_level)
         if halt_on_failure:
-            if num_errors or p.returncode not in success_codes:
+            if parser.num_errors or p.returncode not in success_codes:
                 self.fatal("Halting on failure while running %s" % command,
                            exit_code=p.returncode)
         if return_type == 'num_errors':
-            return num_errors
+            return parser.num_errors
         return p.returncode
 
     def get_output_from_command(self, command, cwd=None,
@@ -438,8 +367,6 @@ class ShellMixin(object):
         if self.config.get('noop'):
             self.info("(Dry run; skipping)")
             return
-        pv = platform.python_version_tuple()
-        python_26 = False
         tmp_stdout = None
         tmp_stderr = None
         tmp_stdout_filename = '%s_stdout' % tmpfile_base_path
@@ -503,8 +430,8 @@ class ShellMixin(object):
             return_level = ERROR
         # Clean up.
         if not save_tmpfiles:
-            self.rmtree(tmp_stderr_filename)
-            self.rmtree(tmp_stdout_filename)
+            self.rmtree(tmp_stderr_filename, log_level=DEBUG)
+            self.rmtree(tmp_stdout_filename, log_level=DEBUG)
         if p.returncode and throw_exception:
             raise subprocess.CalledProcessError(p.returncode, command)
         self.log("Return code: %d" % p.returncode, level=return_level)
@@ -530,6 +457,7 @@ class BaseScript(ShellMixin, OSMixin, LogMixin, object):
         if config_options is None:
             config_options = []
         self.summary_list = []
+        self.failures = []
         rw_config = BaseConfig(config_options=config_options,
                                **kwargs)
         self.config = rw_config.get_read_only_config()
@@ -610,7 +538,7 @@ class BaseScript(ShellMixin, OSMixin, LogMixin, object):
         """
         dirs = self.query_abs_dirs()
         self.rmtree(dirs['abs_work_dir'])
-        
+
     def query_abs_dirs(self):
         if self.abs_dirs:
             return self.abs_dirs
@@ -679,9 +607,27 @@ class BaseScript(ShellMixin, OSMixin, LogMixin, object):
         # Summaries need a lot more love.
         self.log(message, level=level)
 
+    def add_failure(self, key, message="%(key)s failed.", level=ERROR):
+        if key not in self.failures:
+            self.failures.append(key)
+            self.return_code += 1
+            self.add_summary(message % {'key': key}, level=level)
+
+    def query_failure(self, key):
+        return key in self.failures
+
+    def summarize_success_count(self, success_count, total_count,
+                                message="%d of %d successful."):
+        level = INFO
+        if success_count < total_count:
+            level = ERROR
+        self.add_summary(message % (success_count, total_count),
+                         level=level)
+
     def copy_to_upload_dir(self, target, dest=None, short_desc="unknown",
-                           long_desc="unknown", error_level="error",
-                           rotate=False, max_backups=None):
+                           long_desc="unknown", log_level=DEBUG,
+                           error_level=ERROR, rotate=False,
+                           max_backups=None):
         """Copy target file to upload_dir/dest.
 
         Potentially update a manifest in the future if we go that route.
@@ -716,24 +662,26 @@ class BaseScript(ShellMixin, OSMixin, LogMixin, object):
                 oldest_backup = None
                 backup_regex = re.compile("^%s\.(\d+)$" % dest_file)
                 for filename in os.listdir(dest_dir):
-                    r = re.match(backup_regex, filename)
+                    r = backup_regex.match(filename)
                     if r and r.groups()[0] > oldest_backup:
                         oldest_backup = r.groups()[0]
                 for backup_num in range(oldest_backup, 0, -1):
                     # TODO more error checking?
                     if backup_num >= max_backups:
-                        self.rmtree(os.path.join(dest_dir, dest_file, backup_num))
+                        self.rmtree(os.path.join(dest_dir, dest_file, backup_num),
+                                    log_level=log_level)
                     else:
                         self.move(os.path.join(dest_dir, dest_file, '.%d' % backup_num),
-                                  os.path.join(dest_dir, dest_file, '.%d' % backup_num +1))
-                if self.move(dest, "%s.1" % dest):
+                                  os.path.join(dest_dir, dest_file, '.%d' % backup_num +1),
+                                  log_level=log_level)
+                if self.move(dest, "%s.1" % dest, log_level=log_level):
                     self.log("Unable to move %s!" % dest, level=error_level)
                     return -1
             else:
-                if self.rmtree(dest):
+                if self.rmtree(dest, log_level=log_level):
                     self.log("Unable to remove %s!" % dest, level=error_level)
                     return -1
-        self.copyfile(target, dest)
+        self.copyfile(target, dest, log_level=log_level)
         if os.path.exists(dest):
             return dest
         else:
