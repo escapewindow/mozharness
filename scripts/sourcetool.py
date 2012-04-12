@@ -44,12 +44,10 @@ SOURCE_TOOL_USAGE = """Usage:
 
 # SourceTool {{{1
 class SourceTool(BaseScript):
-    """ These options were chosen with an eye towards backwards
-    compatibility with the existing hgtool.
-
-    TODO: get rid of env options, or at least remove HG from the names.
-    If/when we retire the old hgtool, we can revisit these options.
-    """
+    # These options were chosen with an eye towards backwards
+    # compatibility with the existing hgtool.
+    #
+    # TODO: get rid of env options, or at least remove HG from the names.
     config_options = [[
      ["--rev", "-r"],
      {"action": "store",
@@ -140,19 +138,18 @@ class SourceTool(BaseScript):
                             require_config_file=require_config_file)
 
     def _pre_config_lock(self, rw_config):
-        """ This is a workaround for legacy compatibility with the original
-        hgtool.py.
-
-        Since we need to read the buildbot json props, as well as parse
-        additional commandline arguments that aren't specified via
-        options, we call this function before locking the config.
-
-        rw_config is the BaseConfig object that parsed the options;
-        self.config is the soon-to-be-locked runtime configuration.
-
-        This is a powerful way to hack the config before locking;
-        we need to be careful not to abuse it.
-        """
+        # This is a workaround for legacy compatibility with the original
+        # hgtool.py.
+        #
+        # Since we need to read the buildbot json props, as well as parse
+        # additional commandline arguments that aren't specified via
+        # options, we call this function before locking the config.
+        #
+        # rw_config is the BaseConfig object that parsed the options;
+        # self.config is the soon-to-be-locked runtime configuration.
+        #
+        # This is a powerful way to hack the config before locking;
+        # we need to be careful not to abuse it.
         args = rw_config.args
         c = self.config
         if c.get('vcs') is None:
@@ -179,9 +176,6 @@ You need to either specify --repo or specify it after the options:
                 self.config['vcs_branch'] = js['sourcestamp']['branch']
 
     def source(self):
-        """ Can handle any supported VCS, which is, at the moment, only
-        hg.
-        """
         c = self.config
         vcs_obj = None
         if self.config['vcs'] == 'hg':
