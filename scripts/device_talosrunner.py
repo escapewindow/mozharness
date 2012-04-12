@@ -12,14 +12,12 @@ WIP.
 """
 
 import os
-import re
 import sys
 import time
 
 sys.path.insert(1, os.path.dirname(sys.path[0]))
 
 from mozharness.base.errors import PythonErrorList
-from mozharness.base.log import DEBUG, ERROR, CRITICAL
 from mozharness.base.vcs.vcsbase import VCSMixin
 from mozharness.mozilla.talos import Talos
 from mozharness.test.device import device_config_options, DeviceMixin
@@ -74,9 +72,6 @@ class DeviceTalosRunner(VCSMixin, DeviceMixin, Talos):
 #                          'post-cleanup-device',
                          ],
          require_config_file=require_config_file,
-         config={"virtualenv_modules": ["talos"],
-                 "browser_dir": "fennec",
-                },
         )
 
     # Helper methods {{{2
@@ -90,22 +85,6 @@ class DeviceTalosRunner(VCSMixin, DeviceMixin, Talos):
         for suite in c['tests']:
             if suite not in KNOWN_SUITES:
                 self.fatal("Unknown suite %s! Choose from %s" % (suite, KNOWN_SUITES))
-
-    def query_abs_dirs(self):
-        if self.abs_dirs:
-            return self.abs_dirs
-        abs_dirs = super(DeviceTalosRunner, self).query_abs_dirs()
-        c = self.config
-        dirs = {}
-        dirs['abs_talos_dir'] = os.path.join(abs_dirs['abs_work_dir'],
-                                             'talos')
-        dirs['abs_browser_dir'] = os.path.join(abs_dirs['abs_work_dir'],
-                                               c.get('browser_dir', 'browser'))
-        for key in dirs.keys():
-            if key not in abs_dirs:
-                abs_dirs[key] = dirs[key]
-        self.abs_dirs = abs_dirs
-        return self.abs_dirs
 
     # Actions {{{2
 
@@ -173,7 +152,7 @@ class DeviceTalosRunner(VCSMixin, DeviceMixin, Talos):
                    '--browserWait', '60',
                    '--webServer', c['talos_webserver'],
                   ] + additional_options
-        self.run_command(command, cwd=dirs['abs_talos_dir'],
+        self.run_command(command, cwd=dirs['abs_work_dir'],
                          error_list=PythonErrorList,
                          halt_on_failure=True)
 
