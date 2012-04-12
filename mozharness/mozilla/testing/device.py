@@ -70,16 +70,6 @@ class BaseDeviceHandler(ShellMixin, OSMixin, LogMixin):
         self.device_id = device_id
         return self.device_id
 
-    def exit_on_error(self, message, *args, **kwargs):
-        '''When exit_on_error is defined, a FATAL log call will call it
-        and use the message and other args from it.
-        '''
-        if self.config['enable_automation']:
-            # TODO take device out of production if required?
-            # TODO we might want a method flag for that.
-            message = "Remote Device Error: %s" % message
-        return (message, args, kwargs)
-
     def query_download_filename(self, file_id=None):
         pass
 
