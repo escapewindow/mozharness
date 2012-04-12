@@ -6,9 +6,7 @@
 # ***** END LICENSE BLOCK *****
 """mozmill_updates.py
 
-Download and update Firefox against a specific channel using MozMill.
-
-Currently unfinished; blocked by bug 646076.
+Download and update Firefox against a specific channel.
 """
 
 import os
