@@ -18,36 +18,22 @@ import time
 sys.path.insert(1, os.path.dirname(sys.path[0]))
 
 from mozharness.base.errors import PythonErrorList
-from mozharness.base.vcs.vcsbase import VCSMixin
 from mozharness.mozilla.testing.device import device_config_options, DeviceMixin
 from mozharness.mozilla.testing.talos import Talos
 
 # Stop buffering!
 sys.stdout = os.fdopen(sys.stdout.fileno(), 'w', 0)
 
-KNOWN_SUITES = (
-    'ts',
-    'tdhtml',
-    'tgfx',
-    'tp4m',
-    'tpan',
-    'tsspider',
-    'tsvg',
-    'twinopen',
-    'tzoom',
-)
-
 # DeviceTalosRunner {{{1
-class DeviceTalosRunner(VCSMixin, DeviceMixin, Talos):
+class DeviceTalosRunner(DeviceMixin, Talos):
     config_options = Talos.config_options + device_config_options
 
     def __init__(self, require_config_file=False):
         super(DeviceTalosRunner, self).__init__(
          config_options=self.config_options,
          all_actions=['preclean',
-                      'pull',
-                      'check-device',
                       'create-virtualenv',
+                      'check-device',
                       'pre-cleanup-device',
                       'download',
                       'unpack',
@@ -61,7 +47,7 @@ class DeviceTalosRunner(VCSMixin, DeviceMixin, Talos):
 #                      'reboot-host',
                       ],
          default_actions=['preclean',
-#                          'pull',
+                          'create-virtualenv',
 #                          'check-device',
 #                          'pre-cleanup-device',
 #                          'download',
@@ -71,40 +57,20 @@ class DeviceTalosRunner(VCSMixin, DeviceMixin, Talos):
 #                          'run-tests',
 #                          'post-cleanup-device',
                          ],
+         config={'virtualenv_modules': ['talos']},
          require_config_file=require_config_file,
         )
 
-    # Helper methods {{{2
-
     def _pre_config_lock(self, rw_config):
-        c = self.config
-        if 'device_protocol' not in c:
+        super(DeviceTalosRunner, self)._pre_config_lock(rw_config)
+        if 'device_protocol' not in self.config:
             self.fatal("Must specify --device-protocol!")
-        if 'tests' not in c:
-            self.fatal("Must specify --talos-suites!")
-        for suite in c['tests']:
-            if suite not in KNOWN_SUITES:
-                self.fatal("Unknown suite %s! Choose from %s" % (suite, KNOWN_SUITES))
+
 
     # Actions {{{2
 
     def preclean(self):
         self.clobber()
-
-    def pull(self):
-        c = self.config
-        dirs = self.query_abs_dirs()
-        if c.get('talos_zip'):
-            self.mkdir_p(dirs['abs_work_dir'])
-            self.download_file(
-                c['talos_zip'],
-                file_name=os.path.join(dirs['abs_work_dir'],
-                                       "talos.zip")
-            )
-            self.rmtree(os.path.join(dirs['abs_work_dir'], "talos"))
-            self.run_command("unzip talos.zip", cwd=dirs['abs_work_dir'],
-                             halt_on_failure=True)
-        self.vcs_checkout_repos(c['repos'], parent_dir=dirs['abs_work_dir'])
 
     # check_device defined in DeviceMixin
     # create_virtualenv defined in VirtualenvMixin

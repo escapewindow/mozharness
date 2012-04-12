@@ -85,7 +85,6 @@ class Talos(VirtualenvMixin, BaseScript):
         kwargs.setdefault('config', {})
         kwargs['config'].setdefault('virtualenv_modules', ["talos", "mozinstall"])
         BaseScript.__init__(self, **kwargs)
-        self.check() # basic setup and sanity check
 
         # results output
         self.results_url = self.config.get('results_url')
@@ -93,23 +92,16 @@ class Talos(VirtualenvMixin, BaseScript):
             # use a results_url by default based on the class name in the working directory
             self.results_url = 'file://%s' % os.path.join(self.workdir, self.__class__.__name__.lower() + '.txt')
 
-    def check(self):
-        """ setup and sanity check"""
+    def _pre_config_lock(self, rw_config):
+        """setup and sanity check"""
 
         self.workdir = self.query_abs_dirs()['abs_work_dir'] # convenience
 
-        # path to browser
-        self.binary = self.config.get('binary')
-        if not self.binary:
-            self.fatal("No path to binary specified; please specify --binary")
-        self.binary = os.path.abspath(self.binary)
-        if not os.path.exists(self.binary):
-            self.fatal("Path to binary does not exist: %s" % self.binary)
-
-        # Talos tests to run
-        self.tests = self.config['tests']
-        if not self.tests:
-            self.fatal("No tests specified; please specify --tests")
+        if 'run-tests' in self.actions:
+            # Talos tests to run
+            self.tests = self.config['tests']
+            if not self.tests:
+                self.fatal("No tests specified; please specify --tests")
 
     def PerfConfigurator_options(self, args=None, **kw):
         """return options to PerfConfigurator"""

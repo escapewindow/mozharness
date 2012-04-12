@@ -1,14 +1,11 @@
 config = {
     "log_name": "talos",
 
-    # this talos_zip has the --develop webserver patch
-    "talos_zip": "http://people.mozilla.org/~asasaki/talos_webserver.zip",
-
     "browser_url": "http://ftp.mozilla.org/pub/mozilla.org/mobile/nightly/latest-mozilla-aurora-android/fennec-9.0a2.multi.android-arm.apk",
+    "pypi_url": "http://people.mozilla.com/~jhammel/pypi/",
     "device_name": "tegra-029",
     "device_package_name": "org.mozilla.fennec_aurora",
     "talos_device_name": "tegra-029",
-    "talos_branch": "mobile",
 
     # set graph_server to a real graph server if you want to publish your
     # results (the device needs to be in the database already or you'll
@@ -43,17 +40,4 @@ config = {
 
 #    "actions": ["check-device"],
 #    "no_actions": ["preclean", "pull", "download", "unpack"],
-    "repos": [{
-#        "repo": "http://hg.mozilla.org/build/talos",
-#        "tag": "default",
-#        "dest": "talos", # this should be talos if no talos_zip
-#    },{
-        "repo": "http://hg.mozilla.org/build/pageloader",
-        "tag": "default",
-        "dest": "talos/mobile_profile/extensions/pageloader@mozilla.org",
-    },{
-        "repo": "http://hg.mozilla.org/users/tglek_mozilla.com/fennecmark",
-        "tag": "default",
-        "dest": "talos/mobile_profile/extensions/bench@taras.glek",
-    }],
 }
