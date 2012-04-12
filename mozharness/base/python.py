@@ -9,7 +9,7 @@
 
 import os
 
-from mozharness.base.errors import PythonErrorList
+from mozharness.base.errors import VirtualenvErrorList
 from mozharness.base.log import WARNING, FATAL
 
 # Virtualenv {{{1
@@ -119,7 +119,7 @@ class VirtualenvMixin(object):
             self.mkdir_p(virtualenv_cache_dir)
             command += ["--download-cache", virtualenv_cache_dir]
         self.run_command(command + [module_url],
-                         error_list=PythonErrorList,
+                         error_list=VirtualenvErrorList,
                          cwd=dirs['abs_work_dir'],
                          halt_on_failure=True)
 
@@ -182,14 +182,9 @@ class VirtualenvMixin(object):
         virtualenv_options = c.get('virtualenv_options',
                                    ['--no-site-packages', '--distribute'])
 
-        virtualenv_error_list = [
-         {'substr': r'''not found or a compiler error:''', 'level': 'error'},
-         {'regex': r'''\d+: error: ''', 'level': 'error'},
-         {'regex': r'''\d+: warning: ''', 'level': 'warning'},
-        ] + PythonErrorList
         self.run_command(virtualenv + virtualenv_options + [venv_path],
                          cwd=dirs['abs_work_dir'],
-                         error_list=virtualenv_error_list,
+                         error_list=VirtualenvErrorList,
                          halt_on_failure=True)
         for module in c.get('virtualenv_modules', []):
             module_url = module
