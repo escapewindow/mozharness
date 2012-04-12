@@ -20,8 +20,8 @@ sys.path.insert(1, os.path.dirname(sys.path[0]))
 
 from mozharness.base.errors import PythonErrorList
 from mozharness.base.log import DEBUG, ERROR, CRITICAL
-from mozharness.base.python import virtualenv_config_options, VirtualenvMixin
-from mozharness.base.vcs.vcsbase import MercurialScript
+from mozharness.base.vcs.vcsbase import VCSMixin
+from mozharness.mozilla.talos import Talos
 from mozharness.test.device import device_config_options, DeviceMixin
 
 # Stop buffering!
@@ -40,67 +40,10 @@ KNOWN_SUITES = (
 )
 
 # DeviceTalosRunner {{{1
-class DeviceTalosRunner(VirtualenvMixin, DeviceMixin, MercurialScript):
-    config_options = [[
-     ["--talos-zip"],
-     {"action": "store",
-      "dest": "talos_zip",
-      "help": "Specify a talos zipfile."
-     }
-    ],[
-     ["--talos-repo"],
-     {"action": "store",
-      "dest": "talos_repo",
-      "default": "http://hg.mozilla.org/build/talos",
-      "help": "Specify the talos repo. This is unused if --talos-zip is set."
-     }
-    ],[
-     ["--talos-tag"],
-     {"action": "store",
-      "dest": "talos_tag",
-      "default": "default",
-      "help": "Specify the talos tag for the talos repo."
-     }
-    ],[
-     ["--talos-suite",],
-     {"action": "extend",
-      "dest": "talos_suites",
-      "type": "string",
-      "help": "Specify the talos suite(s) to run."
-     }
-    ],[
-     ["--tp-zip",],
-     {"action": "store",
-      "dest": "tp_zip",
-      "type": "string",
-      "help": "Specify the a page load test zip if setting up a local webserver."
-     }
-    ],[
-     ["--enable-automation"],
-     {"action": "store_true",
-      "dest": "enable_automation",
-      "default": "default",
-      "help": "Integrate with clientproxy automation (non-developer setting)."
-     }
-    ],[
-     ["--browser-url", "--url"],
-     {"action": "store",
-      "dest": "browser_url",
-      # TODO: wildcard download?
-      "help": "Specify the url to the browser installer/bundle."
-     }
-    ],[
-     ["--yaml-url"],
-     {"action": "store",
-      "dest": "yaml_url",
-      "default": "http://pypi.python.org/packages/source/P/PyYAML/PyYAML-3.10.tar.gz#md5=74c94a383886519e9e7b3dd1ee540247",
-      "help": "Specify the yaml pip url for the virtualenv."
-     }
-    ]] + virtualenv_config_options + device_config_options
+class DeviceTalosRunner(VCSMixin, DeviceMixin, Talos):
+    config_options = Talos.config_options + device_config_options
 
     def __init__(self, require_config_file=False):
-        self.python = None
-        self.download_file_name = None
         super(DeviceTalosRunner, self).__init__(
          config_options=self.config_options,
          all_actions=['preclean',
@@ -116,21 +59,22 @@ class DeviceTalosRunner(VirtualenvMixin, DeviceMixin, MercurialScript):
                       'post-cleanup-device',
 #                      'upload',
 #                      'notify',
+#                      'postclean',
 #                      'reboot-host',
                       ],
          default_actions=['preclean',
-                          'pull',
-                          'check-device',
-                          'pre-cleanup-device',
-                          'download',
-                          'unpack',
-                          'install-app',
-                          'configure',
-                          'run-talos',
-                          'post-cleanup-device',
+#                          'pull',
+#                          'check-device',
+#                          'pre-cleanup-device',
+#                          'download',
+#                          'unpack',
+#                          'install-app',
+#                          'configure',
+#                          'run-talos',
+#                          'post-cleanup-device',
                          ],
          require_config_file=require_config_file,
-         config={"virtualenv_modules": ["PyYAML"],
+         config={"virtualenv_modules": ["talos"],
                  "browser_dir": "fennec",
                 },
         )
@@ -141,9 +85,9 @@ class DeviceTalosRunner(VirtualenvMixin, DeviceMixin, MercurialScript):
         c = self.config
         if 'device_protocol' not in c:
             self.fatal("Must specify --device-protocol!")
-        if 'talos_suites' not in c:
+        if 'tests' not in c:
             self.fatal("Must specify --talos-suites!")
-        for suite in c['talos_suites']:
+        for suite in c['tests']:
             if suite not in KNOWN_SUITES:
                 self.fatal("Unknown suite %s! Choose from %s" % (suite, KNOWN_SUITES))
 
@@ -163,25 +107,21 @@ class DeviceTalosRunner(VirtualenvMixin, DeviceMixin, MercurialScript):
         self.abs_dirs = abs_dirs
         return self.abs_dirs
 
-    def query_download_file_name(self, url_key='browser_url'):
-        if self.download_file_name:
-            return self.download_file_name
-        c = self.config
-        download_file_name = self.get_filename_from_url(c[url_key])
-        m = re.match(r'([a-zA-Z0-9]*).*\.([^.]*)', download_file_name)
-        if m.group(1) and m.group(2):
-            download_file_name = '%s.%s' % (m.group(1), m.group(2))
-        self.download_file_name = download_file_name
-        return self.download_file_name
-
-    def _clobber(self):
-        dirs = self.query_abs_dirs()
-        self.rmtree(dirs['abs_work_dir'])
+#    def query_download_file_name(self, url_key='browser_url'):
+#        if self.download_file_name:
+#            return self.download_file_name
+#        c = self.config
+#        download_file_name = self.get_filename_from_url(c[url_key])
+#        m = re.match(r'([a-zA-Z0-9]*).*\.([^.]*)', download_file_name)
+#        if m.group(1) and m.group(2):
+#            download_file_name = '%s.%s' % (m.group(1), m.group(2))
+#        self.download_file_name = download_file_name
+#        return self.download_file_name
 
     # Actions {{{2
 
     def preclean(self):
-        self._clobber()
+        self.clobber()
 
     def pull(self):
         c = self.config
@@ -204,24 +144,12 @@ class DeviceTalosRunner(VirtualenvMixin, DeviceMixin, MercurialScript):
     def pre_cleanup_device(self):
         self.cleanup_device()
 
-    def download(self):
-        # TODO: a user friendly way to do this without specifying a url?
-        c = self.config
-        dirs = self.query_abs_dirs()
-        orig_dir = os.getcwd()
-        self.mkdir_p(dirs["abs_work_dir"])
-        self.chdir(dirs["abs_work_dir"])
-        file_name = self.query_download_file_name()
-        self.download_file(c['browser_url'], file_name=file_name,
-                           error_level="fatal")
-        self.chdir(orig_dir)
-
-    def unpack(self):
-        dirs = self.query_abs_dirs()
-        file_name = self.query_download_file_name()
-        self.mkdir_p(dirs['abs_browser_dir'])
-        self.extract(os.path.join(dirs['abs_work_dir'], file_name),
-                     extdir=dirs['abs_browser_dir'])
+#    def unpack(self):
+#        dirs = self.query_abs_dirs()
+#        file_name = self.query_download_file_name()
+#        self.mkdir_p(dirs['abs_browser_dir'])
+#        self.extract(os.path.join(dirs['abs_work_dir'], file_name),
+#                     extdir=dirs['abs_browser_dir'])
 
     # TODO install_app defined in DeviceMixin
 
@@ -257,7 +185,7 @@ class DeviceTalosRunner(VirtualenvMixin, DeviceMixin, MercurialScript):
                    '--branchName', c['talos_branch'],
                    '--resultsServer', c['graph_server'],
                    '--resultsLink', c['results_link'],
-                   '--activeTests', ':'.join(c['talos_suites']),
+                   '--activeTests', ':'.join(c['tests']),
                    '--sampleConfig', c['talos_config_file'],
                    '--output', 'local.yml',
                    '--browserWait', '60',
@@ -317,7 +245,7 @@ class DeviceTalosRunner(VirtualenvMixin, DeviceMixin, MercurialScript):
                                    'PYTHONUNBUFFERED': '1',
                                   })
         self.add_summary("Ran talos suite(s) %s with exit status %s." % (
-                         ','.join(c['talos_suites']), str(status)))
+                         ','.join(c['tests']), str(status)))
 
     def post_cleanup_device(self):
         c = self.config
