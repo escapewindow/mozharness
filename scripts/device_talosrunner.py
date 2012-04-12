@@ -19,8 +19,8 @@ sys.path.insert(1, os.path.dirname(sys.path[0]))
 
 from mozharness.base.errors import PythonErrorList
 from mozharness.base.vcs.vcsbase import VCSMixin
-from mozharness.mozilla.talos import Talos
-from mozharness.test.device import device_config_options, DeviceMixin
+from mozharness.mozilla.testing.device import device_config_options, DeviceMixin
+from mozharness.mozilla.testing.talos import Talos
 
 # Stop buffering!
 sys.stdout = os.fdopen(sys.stdout.fileno(), 'w', 0)
