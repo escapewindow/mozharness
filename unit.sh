@@ -58,7 +58,7 @@ pyflakes $MOZHARNESS_PY_FILES $SCRIPTS_PY_FILES | grep -v "local variable 'url' 
 echo "### Running pylint"
 pylint -E -e F -f parseable $MOZHARNESS_PY_FILES $SCRIPTS_PY_FILES 2>&1 | egrep -v '(No config file found, using default configuration|Instance of .* has no .* member|Unable to import .devicemanager|Undefined variable .DMError)'
 
-rm -rf build logs localconfig.json
+rm -rf build logs
 if [ $OS_TYPE != 'windows' ] ; then
 echo "### Testing non-networked unit tests"
 coverage run -a --branch $COVERAGE_ARGS $NOSETESTS test/test_*.py
@@ -87,4 +87,4 @@ else
   echo "### Running nosetests..."
   nosetests
 fi
-rm -rf build logs localconfig.json
+rm -rf build logs
