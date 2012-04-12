@@ -687,8 +687,6 @@ class BaseScript(ShellMixin, OSMixin, LogMixin, object):
                     print "### Log is closed! (%s)" % item['message']
 
     def add_summary(self, message, level=INFO):
-        """Add a summary line.
-        """
         self.summary_list.append({'message': message, 'level': level})
         # TODO write to a summary-only log?
         # Summaries need a lot more love.
