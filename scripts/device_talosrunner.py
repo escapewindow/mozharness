@@ -55,7 +55,7 @@ class DeviceTalosRunner(VCSMixin, DeviceMixin, Talos):
                       'unpack',
                       'install-app',
                       'configure',
-                      'run-talos',
+                      'run-tests',
                       'post-cleanup-device',
 #                      'upload',
 #                      'notify',
@@ -70,7 +70,7 @@ class DeviceTalosRunner(VCSMixin, DeviceMixin, Talos):
 #                          'unpack',
 #                          'install-app',
 #                          'configure',
-#                          'run-talos',
+#                          'run-tests',
 #                          'post-cleanup-device',
                          ],
          require_config_file=require_config_file,
@@ -107,17 +107,6 @@ class DeviceTalosRunner(VCSMixin, DeviceMixin, Talos):
         self.abs_dirs = abs_dirs
         return self.abs_dirs
 
-#    def query_download_file_name(self, url_key='browser_url'):
-#        if self.download_file_name:
-#            return self.download_file_name
-#        c = self.config
-#        download_file_name = self.get_filename_from_url(c[url_key])
-#        m = re.match(r'([a-zA-Z0-9]*).*\.([^.]*)', download_file_name)
-#        if m.group(1) and m.group(2):
-#            download_file_name = '%s.%s' % (m.group(1), m.group(2))
-#        self.download_file_name = download_file_name
-#        return self.download_file_name
-
     # Actions {{{2
 
     def preclean(self):
@@ -143,13 +132,6 @@ class DeviceTalosRunner(VCSMixin, DeviceMixin, Talos):
 
     def pre_cleanup_device(self):
         self.cleanup_device()
-
-#    def unpack(self):
-#        dirs = self.query_abs_dirs()
-#        file_name = self.query_download_file_name()
-#        self.mkdir_p(dirs['abs_browser_dir'])
-#        self.extract(os.path.join(dirs['abs_work_dir'], file_name),
-#                     extdir=dirs['abs_browser_dir'])
 
     # TODO install_app defined in DeviceMixin
 
@@ -217,42 +199,14 @@ class DeviceTalosRunner(VCSMixin, DeviceMixin, Talos):
 #                                          kill, line_contents[1]],
 #                                         error_list=ADBErrorList)
 
-    def run_talos(self):
-        c = self.config
-        dirs = self.query_abs_dirs()
-        python = self.query_python_path()
-        python_dir = os.path.dirname(python)
-        TalosErrorList = PythonErrorList[:]
-        TalosErrorList += [
-         {'regex': r'''run-as: Package '.*' is unknown''', 'level': DEBUG},
-         {'substr': r'''FAIL: Graph server unreachable''', 'level': CRITICAL},
-         {'substr': r'''FAIL: Busted:''', 'level': CRITICAL},
-         {'substr': r'''FAIL: failed to cleanup''', 'level': ERROR},
-         {'substr': r'''erfConfigurator.py: Unknown error''', 'level': CRITICAL},
-         {'regex': r'''No machine_name called '.*' can be found''', 'level': CRITICAL},
-         {'substr': r"""No such file or directory: 'browser_output.txt'""",
-          'level': CRITICAL,
-          'explanation': r"""Most likely the browser failed to launch, or the test was otherwise unsuccessful in even starting."""},
-        ]
-        status = self.run_command([python, 'run_tests.py', '--noisy',
-                                   '--debug', 'local.yml'],
-                                  error_list=TalosErrorList,
-                                  cwd=dirs['abs_talos_dir'],
-                                  # TODO does this work on windows? possibly ';'
-                                  env={
-                                   'PATH': '%s:%s' % (python_dir,
-                                                      os.environ['PATH']),
-                                   'PYTHONUNBUFFERED': '1',
-                                  })
-        self.add_summary("Ran talos suite(s) %s with exit status %s." % (
-                         ','.join(c['tests']), str(status)))
-
     def post_cleanup_device(self):
         c = self.config
         if c.get('enable_automation'):
             self.cleanup_device(reboot=True)
         else:
             self.info("Nothing to do without enable_automation set.")
+
+    # run_tests() is in Talos
 
 # __main__ {{{1
 if __name__ == '__main__':
