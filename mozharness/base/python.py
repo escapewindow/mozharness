@@ -110,7 +110,7 @@ class VirtualenvMixin(object):
         Return whether the package is installed
         """
         packages = self.package_versions(error_level=error_level).keys()
-        return package_name.lower in [package.lower() for package in packages]
+        return package_name.lower() in [package.lower() for package in packages]
 
     def _check_existing_virtualenv(self, error_level=WARNING):
         if 'VIRTUAL_ENV' in os.environ:
