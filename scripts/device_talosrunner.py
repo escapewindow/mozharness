@@ -49,7 +49,7 @@ class DeviceTalosRunner(DeviceMixin, Talos):
          default_actions=['preclean',
                           'create-virtualenv',
                           'check-device',
-#                          'pre-cleanup-device',
+                          'pre-cleanup-device',
 #                          'download',
 #                          'unpack',
 #                          'install-app',
@@ -72,8 +72,8 @@ class DeviceTalosRunner(DeviceMixin, Talos):
     def preclean(self):
         self.clobber()
 
-    # check_device defined in DeviceMixin
     # create_virtualenv defined in VirtualenvMixin
+    # check_device defined in DeviceMixin
 
     def pre_cleanup_device(self):
         self.cleanup_device()
