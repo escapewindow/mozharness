@@ -3,9 +3,9 @@ config = {
 
     "browser_url": "http://ftp.mozilla.org/pub/mozilla.org/mobile/nightly/latest-mozilla-aurora-android/fennec-9.0a2.multi.android-arm.apk",
     "pypi_url": "http://people.mozilla.com/~jhammel/pypi/",
-    "device_name": "tegra-029",
+    "device_name": "tegra-031",
     "device_package_name": "org.mozilla.fennec_aurora",
-    "talos_device_name": "tegra-029",
+    "talos_device_name": "tegra-031",
 
     # set graph_server to a real graph server if you want to publish your
     # results (the device needs to be in the database already or you'll
@@ -29,7 +29,7 @@ config = {
 #    "devicemanager_debug_level": 2,
 
     # set this for adb-over-ip or sut.
-    "device_ip": "10.250.49.16",
+    "device_ip": "10.250.49.18",
 
     # setting this to tegra250 will add tegra-specific behavior
     "device_type": "tegra250",
