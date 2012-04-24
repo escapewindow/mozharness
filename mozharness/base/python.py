@@ -141,10 +141,12 @@ class VirtualenvMixin(object):
         if virtualenv_cache_dir:
             self.mkdir_p(virtualenv_cache_dir)
             command += ["--download-cache", virtualenv_cache_dir]
-        self.run_command(command + [module_url],
-                         error_list=VirtualenvErrorList,
-                         cwd=dirs['abs_work_dir'],
-                         halt_on_failure=True)
+        # Allow for errors while building modules, but require a
+        # return status of 0.
+        if self.run_command(command + [module_url],
+                            error_list=VirtualenvErrorList,
+                            cwd=dirs['abs_work_dir']) != 0:
+            self.fatal("Unable to install %s!" % module_url)
 
     def create_virtualenv(self):
         """
