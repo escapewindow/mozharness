@@ -48,7 +48,7 @@ class DeviceTalosRunner(DeviceMixin, Talos):
                       ],
          default_actions=['preclean',
                           'create-virtualenv',
-#                          'check-device',
+                          'check-device',
 #                          'pre-cleanup-device',
 #                          'download',
 #                          'unpack',
