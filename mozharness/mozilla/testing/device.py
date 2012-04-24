@@ -19,6 +19,7 @@ import time
 
 from mozharness.base.errors import ADBErrorList
 from mozharness.base.log import LogMixin, DEBUG, FATAL
+from mozharness.base.python import VirtualenvMixin
 from mozharness.base.script import ShellMixin, OSMixin
 
 
@@ -434,7 +435,7 @@ class ADBDeviceHandler(BaseDeviceHandler):
 
 
 # SUTDeviceHandler {{{1
-class SUTDeviceHandler(BaseDeviceHandler):
+class SUTDeviceHandler(VirtualenvMixin, BaseDeviceHandler):
     def __init__(self, **kwargs):
         super(SUTDeviceHandler, self).__init__(**kwargs)
         self.devicemanager = None
@@ -446,7 +447,8 @@ class SUTDeviceHandler(BaseDeviceHandler):
             return self.devicemanager
         c = self.config
         dirs = self.script_obj.query_abs_dirs()
-        dm_path = c.get("devicemanager_path", dirs['abs_talos_dir'])
+        site_packages_path = self.query_python_site_packages_path()
+        dm_path = os.path.join(site_packages_path, 'mozdevice')
         sys.path.append(dm_path)
         try:
 #            import devicemanagerSUT
@@ -460,12 +462,16 @@ class SUTDeviceHandler(BaseDeviceHandler):
             raise
         return self.devicemanager
 
+    def query_abs_dirs(self):
+        return self.script_obj.query_abs_dirs()
+
     # maintenance {{{2
     def ping_device(self):
         #TODO writeme
         pass
 
     def check_device(self):
+        self.info("Checking for device root to verify the device is alive.")
         dev_root = self.query_device_root(strict=True)
         if not dev_root:
             self.add_device_flag(DEVICE_UNREACHABLE)
