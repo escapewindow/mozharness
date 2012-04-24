@@ -19,7 +19,6 @@ import time
 
 from mozharness.base.errors import ADBErrorList
 from mozharness.base.log import LogMixin, DEBUG, FATAL
-from mozharness.base.python import VirtualenvMixin
 from mozharness.base.script import ShellMixin, OSMixin
 
 
@@ -435,7 +434,7 @@ class ADBDeviceHandler(BaseDeviceHandler):
 
 
 # SUTDeviceHandler {{{1
-class SUTDeviceHandler(VirtualenvMixin, BaseDeviceHandler):
+class SUTDeviceHandler(BaseDeviceHandler):
     def __init__(self, **kwargs):
         super(SUTDeviceHandler, self).__init__(**kwargs)
         self.devicemanager = None
@@ -447,7 +446,7 @@ class SUTDeviceHandler(VirtualenvMixin, BaseDeviceHandler):
             return self.devicemanager
         c = self.config
         dirs = self.script_obj.query_abs_dirs()
-        site_packages_path = self.query_python_site_packages_path()
+        site_packages_path = self.script_obj.query_python_site_packages_path()
         dm_path = os.path.join(site_packages_path, 'mozdevice')
         sys.path.append(dm_path)
         try:
@@ -461,9 +460,6 @@ class SUTDeviceHandler(VirtualenvMixin, BaseDeviceHandler):
             self.log("Can't import DeviceManagerSUT! %s\nDid you check out talos?" % str(e), level=error_level)
             raise
         return self.devicemanager
-
-    def query_abs_dirs(self):
-        return self.script_obj.query_abs_dirs()
 
     # maintenance {{{2
     def ping_device(self):

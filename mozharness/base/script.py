@@ -750,12 +750,12 @@ class BaseScript(ShellMixin, OSMixin, LogMixin, object):
                 backup_regex = re.compile("^%s\.(\d+)$" % dest_file)
                 for filename in os.listdir(dest_dir):
                     r = backup_regex.match(filename)
-                    if r and r.groups()[0] > oldest_backup:
-                        oldest_backup = r.groups()[0]
+                    if r and int(r.groups()[0]) > oldest_backup:
+                        oldest_backup = int(r.groups()[0])
                 for backup_num in range(oldest_backup, 0, -1):
                     # TODO more error checking?
                     if backup_num >= max_backups:
-                        self.rmtree(os.path.join(dest_dir, dest_file, backup_num),
+                        self.rmtree(os.path.join(dest_dir, dest_file, str(backup_num)),
                                     log_level=log_level)
                     else:
                         self.move(os.path.join(dest_dir, dest_file, '.%d' % backup_num),
