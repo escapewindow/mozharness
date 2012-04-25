@@ -389,8 +389,6 @@ class ADBDeviceHandler(BaseDeviceHandler):
             self.run_command([adb, "-s", device_id, "install", '-r',
                               file_path],
                              error_list=ADBErrorList)
-            file_path = os.path.join(dirs['abs_application_dir'], 'application.ini')
-            self.run_command([adb, "-s", device_id, "push", file_path,                              '/data/data/%s/application.ini' % c['device_package_name']])
 
     def uninstall_app(self, package_name, package_root="/data/data",
                       error_level="error"):
@@ -560,9 +558,6 @@ class SUTDeviceHandler(BaseDeviceHandler):
             self.set_device_time()
             self.query_device_time()
         target = os.path.join(dev_root, os.path.basename(file_path))
-        inifile = os.path.join(dirs['abs_application_dir'], 'application.ini')
-        remoteappini = os.path.join(dirs['abs_talos_dir'], 'remoteapp.ini')
-        self.copyfile(inifile, remoteappini)
         self.info("Installing %s on device..." % file_path)
         dm.pushFile(file_path, target)
         # TODO screen resolution
