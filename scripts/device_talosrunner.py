@@ -77,6 +77,8 @@ class DeviceTalosRunner(DeviceMixin, Talos):
         abs_dirs = super(DeviceTalosRunner, self).query_abs_dirs()
         abs_dirs['abs_application_dir'] = os.path.join(abs_dirs['abs_work_dir'],
                                                        'application')
+        self.abs_dirs = abs_dirs
+        return self.abs_dirs
 
     # Actions {{{2
 
