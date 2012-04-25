@@ -119,25 +119,35 @@ You can set this by:
         if message:
             self.fatal(message + "Can't run download-and-extract... exiting")
 
+    def _download_test_zip(self):
+        self.test_path = self.download_file(self.test_url,
+                                            parent_dir=dirs['abs_work_dir'],
+                                            error_level=FATAL)
+
+    def _extract_test_zip(self):
+        dirs = self.query_abs_dirs()
+        unzip = self.query_exe("unzip")
+        test_install_dir = dirs.get('abs_test_install_dir',
+                                    os.path.join(dirs['abs_work_dir'], 'tests'))
+        self.mkdir_p(test_install_dir)
+        # TODO error_list
+        self.run_command([unzip, self.test_path],
+                         cwd=test_install_dir)
+
+    def _download_installer(self):
+        dirs = self.query_abs_dirs()
+        source = self.download_file(self.installer_url, error_level=FATAL,
+                                    parent_dir=dirs['abs_work_dir'])
+        self.installer_path = os.path.realpath(source)
+
     def download_and_extract(self):
         """
         Create virtualenv and install dependencies
         """
-        dirs = self.query_abs_dirs()
         if self.test_url:
-            bundle = self.download_file(self.test_url,
-                                        parent_dir=dirs['abs_work_dir'],
-                                        error_level=FATAL)
-            unzip = self.query_exe("unzip")
-            test_install_dir = dirs.get('abs_test_install_dir',
-                                        os.path.join(dirs['abs_work_dir'], 'tests'))
-            self.mkdir_p(test_install_dir)
-            # TODO error_list
-            self.run_command([unzip, bundle],
-                             cwd=test_install_dir)
-        source = self.download_file(self.installer_url, error_level=FATAL,
-                                    parent_dir=dirs['abs_work_dir'])
-        self.installer_path = os.path.realpath(source)
+            self._download_test_zip()
+            self._extract_test_zip()
+        self._aownload_installer()
 
 
     # create_virtualenv is in VirtualenvMixin.

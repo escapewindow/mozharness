@@ -35,6 +35,7 @@ class DeviceTalosRunner(DeviceMixin, Talos):
                       'create-virtualenv',
                       'check-device',
                       'pre-cleanup-device',
+                      'read-buildbot-config',
                       'download',
                       'unpack',
                       'install-app',
@@ -50,8 +51,8 @@ class DeviceTalosRunner(DeviceMixin, Talos):
                           'create-virtualenv',
                           'check-device',
                           'pre-cleanup-device',
-#                          'download',
-#                          'unpack',
+                          'download',
+                          'unpack',
 #                          'install-app',
 #                          'configure',
 #                          'run-tests',
@@ -77,6 +78,22 @@ class DeviceTalosRunner(DeviceMixin, Talos):
 
     def pre_cleanup_device(self):
         self.cleanup_device()
+
+    # read_buildbot_config defined in BuildbotMixin
+
+    def download(self):
+        if not self.installer_url:
+            self.installer_url = self.config['installer_url']
+        self._download_installer()
+
+    def unpack(self):
+        # We need a generic extract() again.
+        dirs = self.query_abs_dirs()
+        app_dir = os.path.join(dirs['abs_work_dir'], 'application')
+        unzip = self.query_exe("unzip")
+        self.mkdir_p(app_dir)
+        self.run_command([unzip, self.installer_path],
+                         cwd=app_dir)
 
     # TODO install_app defined in DeviceMixin
 

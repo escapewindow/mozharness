@@ -3,7 +3,7 @@ config = {
     "log_name": "talos",
     "base_work_dir": os.path.join(os.getcwd(), "tablet_bwd"),
 
-    "browser_url": "http://ftp.mozilla.org/pub/mozilla.org/mobile/nightly/latest-mozilla-aurora-android/fennec-9.0a2.multi.android-arm.apk",
+    "installer_url": "http://ftp.mozilla.org/pub/mozilla.org/mobile/nightly/latest-mozilla-central-android/fennec-15.0a1.en-US.android-arm.apk",
     "pypi_url": "http://people.mozilla.com/~jhammel/pypi/",
     "device_name": "aki_tablet",
     "device_package_name": "org.mozilla.fennec_aurora",
