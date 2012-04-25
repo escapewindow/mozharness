@@ -34,10 +34,10 @@ class DeviceTalosRunner(DeviceMixin, Talos):
          all_actions=['preclean',
                       'create-virtualenv',
                       'check-device',
-                      'pre-cleanup-device',
                       'read-buildbot-config',
                       'download',
                       'unpack',
+                      'pre-cleanup-device',
                       'install-app',
                       'configure',
                       'run-tests',
@@ -53,7 +53,7 @@ class DeviceTalosRunner(DeviceMixin, Talos):
                           'pre-cleanup-device',
                           'download',
                           'unpack',
-#                          'install-app',
+                          'install-app',
 #                          'configure',
 #                          'run-tests',
 #                          'post-cleanup-device',
@@ -61,12 +61,22 @@ class DeviceTalosRunner(DeviceMixin, Talos):
          config={'virtualenv_modules': ['talos']},
          require_config_file=require_config_file,
         )
+        if not self.installer_path:
+            self.installer_path = os.path.join(self.workdir, 'installer.apk')
 
     def _pre_config_lock(self, rw_config):
         super(DeviceTalosRunner, self)._pre_config_lock(rw_config)
         if 'device_protocol' not in self.config:
             self.fatal("Must specify --device-protocol!")
 
+    # Helper methods {{{2
+
+    def query_abs_dirs(self):
+        if self.abs_dirs:
+            return self.abs_dirs
+        abs_dirs = super(DeviceTalosRunner, self).query_abs_dirs()
+        abs_dirs['abs_application_dir'] = os.path.join(abs_dirs['abs_work_dir'],
+                                                       'application')
 
     # Actions {{{2
 
@@ -89,11 +99,10 @@ class DeviceTalosRunner(DeviceMixin, Talos):
     def unpack(self):
         # We need a generic extract() again.
         dirs = self.query_abs_dirs()
-        app_dir = os.path.join(dirs['abs_work_dir'], 'application')
         unzip = self.query_exe("unzip")
-        self.mkdir_p(app_dir)
+        self.mkdir_p(dirs['abs_application_dir'])
         self.run_command([unzip, self.installer_path],
-                         cwd=app_dir)
+                         cwd=dirs['abs_application_dir'])
 
     # TODO install_app defined in DeviceMixin
 

@@ -389,7 +389,7 @@ class ADBDeviceHandler(BaseDeviceHandler):
             self.run_command([adb, "-s", device_id, "install", '-r',
                               file_path],
                              error_list=ADBErrorList)
-            file_path = os.path.join(dirs['abs_browser_dir'], 'application.ini')
+            file_path = os.path.join(dirs['abs_application_dir'], 'application.ini')
             self.run_command([adb, "-s", device_id, "push", file_path,                              '/data/data/%s/application.ini' % c['device_package_name']])
 
     def uninstall_app(self, package_name, package_root="/data/data",
@@ -560,7 +560,7 @@ class SUTDeviceHandler(BaseDeviceHandler):
             self.set_device_time()
             self.query_device_time()
         target = os.path.join(dev_root, os.path.basename(file_path))
-        inifile = os.path.join(dirs['abs_browser_dir'], 'application.ini')
+        inifile = os.path.join(dirs['abs_application_dir'], 'application.ini')
         remoteappini = os.path.join(dirs['abs_talos_dir'], 'remoteapp.ini')
         self.copyfile(inifile, remoteappini)
         self.info("Installing %s on device..." % file_path)
@@ -687,10 +687,7 @@ class DeviceMixin(object):
     def install_app(self):
         dirs = self.query_abs_dirs()
         dh = self.query_device_handler()
-        return dh.install_app(
-            file_path=os.path.join(dirs['abs_work_dir'],
-                                   self.query_download_file_name())
-        )
+        return dh.install_app(file_path=self.installer_path)
 
     def reboot_device(self):
         dh = self.query_device_handler()

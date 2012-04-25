@@ -6,7 +6,7 @@ config = {
     "installer_url": "http://ftp.mozilla.org/pub/mozilla.org/mobile/nightly/latest-mozilla-central-android/fennec-15.0a1.en-US.android-arm.apk",
     "pypi_url": "http://people.mozilla.com/~jhammel/pypi/",
     "device_name": "tegra-031",
-    "device_package_name": "org.mozilla.fennec_aurora",
+    "device_package_name": "org.mozilla.fennec",
     "talos_device_name": "tegra-031",
 
     # set graph_server to a real graph server if you want to publish your

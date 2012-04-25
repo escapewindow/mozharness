@@ -136,7 +136,11 @@ You can set this by:
 
     def _download_installer(self):
         dirs = self.query_abs_dirs()
-        source = self.download_file(self.installer_url, error_level=FATAL,
+        file_name = None
+        if self.installer_path:
+            file_name = self.installer_path
+        source = self.download_file(self.installer_url, file_name=file_name,
+                                    error_level=FATAL,
                                     parent_dir=dirs['abs_work_dir'])
         self.installer_path = os.path.realpath(source)
 
