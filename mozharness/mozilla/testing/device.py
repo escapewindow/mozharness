@@ -504,6 +504,8 @@ class SUTDeviceHandler(BaseDeviceHandler):
                 self.fatal("Can't remove dev_root!")
         if c.get("enable_automation"):
             self.remove_etc_hosts()
+        # TODO I need to abstract this uninstall as we'll need to clean
+        # multiple packages off devices.
         if c.get("device_package_name"):
             if dm.dirExists('/data/data/%s' % c['device_package_name']):
                 self.info("Uninstalling %s..." % c['device_package_name'])
