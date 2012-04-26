@@ -145,6 +145,7 @@ You can set this by:
         if self.installer_path:
             file_name = self.installer_path
         source = self.download_file(self.installer_url, file_name=file_name,
+                                    parent_dir=dirs['abs_work_dir'],
                                     error_level=FATAL)
         self.installer_path = os.path.realpath(source)
 
