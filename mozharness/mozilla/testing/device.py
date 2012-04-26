@@ -341,7 +341,6 @@ class ADBDeviceHandler(BaseDeviceHandler):
     def install_app(self, file_path):
         c = self.config
         device_id = self.query_device_id()
-        dirs = self.script_obj.query_abs_dirs()
         adb = self.query_exe('adb')
         uptime = self.query_device_exe('uptime')
         if c['enable_automation']:
@@ -443,7 +442,6 @@ class SUTDeviceHandler(BaseDeviceHandler):
         if self.devicemanager:
             return self.devicemanager
         c = self.config
-        dirs = self.script_obj.query_abs_dirs()
         site_packages_path = self.script_obj.query_python_site_packages_path()
         dm_path = os.path.join(site_packages_path, 'mozdevice')
         sys.path.append(dm_path)
@@ -552,7 +550,6 @@ class SUTDeviceHandler(BaseDeviceHandler):
             self.fatal("dev_root %s not correct!" % str(dev_root))
         dm = self.query_devicemanager()
         c = self.config
-        dirs = self.script_obj.query_abs_dirs()
         if c.get('enable_automation'):
             self.query_device_time()
             self.set_device_time()
@@ -680,7 +677,6 @@ class DeviceMixin(object):
         return dh.cleanup_device(**kwargs)
 
     def install_app(self):
-        dirs = self.query_abs_dirs()
         dh = self.query_device_handler()
         return dh.install_app(file_path=self.installer_path)
 
