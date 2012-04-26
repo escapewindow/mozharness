@@ -120,7 +120,11 @@ You can set this by:
             self.fatal(message + "Can't run download-and-extract... exiting")
 
     def _download_test_zip(self):
-        self.test_path = self.download_file(self.test_url,
+        dirs = self.query_abs_dirs()
+        file_name = None
+        if self.test_path:
+            file_name = self.test_path
+        self.test_path = self.download_file(self.test_url, file_name=file_name,
                                             parent_dir=dirs['abs_work_dir'],
                                             error_level=FATAL)
 
