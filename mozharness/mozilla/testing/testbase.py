@@ -144,6 +144,7 @@ You can set this by:
         file_name = None
         if self.installer_path:
             file_name = self.installer_path
+        dirs = self.query_abs_dirs()
         source = self.download_file(self.installer_url, file_name=file_name,
                                     parent_dir=dirs['abs_work_dir'],
                                     error_level=FATAL)
