@@ -52,6 +52,7 @@ class TestingMixin(VirtualenvMixin, BuildbotMixin):
     installer_path = None
     binary_path = None
     test_url = None
+    test_zip_path = None
 
     # read_buildbot_config is in BuildbotMixin.
 
@@ -122,11 +123,12 @@ You can set this by:
     def _download_test_zip(self):
         dirs = self.query_abs_dirs()
         file_name = None
-        if self.test_path:
-            file_name = self.test_path
-        self.test_path = self.download_file(self.test_url, file_name=file_name,
-                                            parent_dir=dirs['abs_work_dir'],
-                                            error_level=FATAL)
+        if self.test_zip_path:
+            file_name = self.test_zip_path
+        source = self.download_file(self.test_url, file_name=file_name,
+                                    parent_dir=dirs['abs_work_dir'],
+                                    error_level=FATAL)
+        self.test_zip_path = os.path.realpath(source)
 
     def _extract_test_zip(self):
         dirs = self.query_abs_dirs()
@@ -135,17 +137,15 @@ You can set this by:
                                     os.path.join(dirs['abs_work_dir'], 'tests'))
         self.mkdir_p(test_install_dir)
         # TODO error_list
-        self.run_command([unzip, self.test_path],
+        self.run_command([unzip, self.test_zip_path],
                          cwd=test_install_dir)
 
     def _download_installer(self):
-        dirs = self.query_abs_dirs()
         file_name = None
         if self.installer_path:
             file_name = self.installer_path
         source = self.download_file(self.installer_url, file_name=file_name,
-                                    error_level=FATAL,
-                                    parent_dir=dirs['abs_work_dir'])
+                                    error_level=FATAL)
         self.installer_path = os.path.realpath(source)
 
     def download_and_extract(self):

@@ -4,6 +4,7 @@ config = {
     # mozharness script options
     "log_name": "pep",
     "base_work_dir": "peptest",
+    "pypi_url": "http://people.mozilla.com/~jhammel/pypi",
     "test_url": "http://ftp.mozilla.org/pub/mozilla.org/firefox/nightly/latest-mozilla-central/firefox-15.0a1.en-US.mac.tests.zip",
 
     # peptest options
