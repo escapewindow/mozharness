@@ -155,7 +155,7 @@ You can set this by:
         if self.test_url:
             self._download_test_zip()
             self._extract_test_zip()
-        self._aownload_installer()
+        self._download_installer()
 
 
     # create_virtualenv is in VirtualenvMixin.
