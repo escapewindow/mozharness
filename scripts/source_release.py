@@ -24,10 +24,11 @@ from mozharness.mozilla.release import ReleaseMixin
 
 
 VALID_REVISION_SOURCES = ["hgweb", "revision"]
+VALID_SOURCE_TYPES = ["bundle", "text"]
 
 
-# SourceText {{{1
-class SourceText(ReleaseMixin, TransferMixin, BuildbotMixin, MercurialScript):
+# SourceRelease {{{1
+class SourceRelease(ReleaseMixin, TransferMixin, BuildbotMixin, MercurialScript):
     config_options = [[
      ['--tag-override',],
      {"action": "store",
@@ -68,19 +69,18 @@ class SourceText(ReleaseMixin, TransferMixin, BuildbotMixin, MercurialScript):
     ],[
      ['--source-repo-nick',],
      {"action": "extend",
-      "dest": "source_repo_nick",
-      "default": ["mozilla"],
+      "dest": "source_repo_nicks",
       "help": "Specify the release source nick"
      }
     ]]
 
-    def __init__(self, require_config_file=False):
-        super(SourceText, self).__init__(
+    def __init__(self, require_config_file=True):
+        super(SourceRelease, self).__init__(
             config_options=self.config_options,
             all_actions=[
                 "clobber",
                 "pull",
-                "create-source-text",
+                "create-source",
                 "upload",
             ],
             require_config_file=require_config_file,
@@ -124,9 +124,13 @@ class SourceText(ReleaseMixin, TransferMixin, BuildbotMixin, MercurialScript):
         self.vcs_checkout_repos(repos, parent_dir=dirs['abs_work_dir'],
                                 tag_override=c.get('tag_override'))
 
-    def create_source_text(self):
+    def create_source(self):
         c = self.config
         rc = self.query_release_config()
+        if c['source_type'] == "bundle":
+            pass
+        else:
+            pass
         if c['revision_source'] == "hgweb":
             source_info = self.parse_hgweb()
         else:
@@ -137,5 +141,5 @@ class SourceText(ReleaseMixin, TransferMixin, BuildbotMixin, MercurialScript):
 
 # main {{{1
 if __name__ == '__main__':
-    source_text = SourceText()
+    source_text = SourceRelease()
     source_text.run()
