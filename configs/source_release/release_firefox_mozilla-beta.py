@@ -15,6 +15,11 @@ config = {
     'source_repo_nicks': ['mozilla']
     'source_type': 'text',
     'revision_source': 'hgweb',
+    'configure_env': {
+        'MOZ_OBJDIR': 'objdir',
+        'MOZ_PKG_PRETTYNAMES': '1',
+        'MOZ_PKG_APPNAME']: 'firefox',
+    }
 
 #    "upload_env": {
 #        "UPLOAD_USER": STAGE_USER,
@@ -23,6 +28,6 @@ config = {
 #        "UPLOAD_TO_TEMP": "1",
 #        "MOZ_PKG_VERSION": "%(version)s",
 #    },
-    "base_post_upload_cmd": "post_upload.py -p firefox -n 1 -v %(version)s --builddir android/%(locale)s --nightly-dir=candidates",
+    "base_post_upload_cmd": "post_upload.py -p firefox -n 1 -v %(version)s --nightly-dir=candidates",
     "mozilla_dir": MOZILLA_DIR,
 }

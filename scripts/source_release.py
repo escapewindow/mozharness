@@ -51,13 +51,22 @@ class SourceRelease(ReleaseMixin, TransferMixin, BuildbotMixin, MercurialScript)
       "help": "Specify the release config file to use"
      }
     ],[
+     ['--source-type',],
+     {"action": "store",
+      "dest": "source_type",
+      "type": "choice",
+      "choices": VALID_SOURCE_TYPES,
+      "default": "bundle",
+      "help": "Specify what kind of source release (bundle or text file)"
+     }
+    ],[
      ['--revision-source',],
      {"action": "store",
       "dest": "revision_source",
       "type": "choice",
       "choices": VALID_REVISION_SOURCES,
       "default": "hgweb",
-      "help": "Specify where we get the revision from"
+      "help": "Specify where we get the revision from (for --source-type text)"
      }
     ],[
      ['--template',],
@@ -95,10 +104,13 @@ class SourceRelease(ReleaseMixin, TransferMixin, BuildbotMixin, MercurialScript)
         )
         c = self.config
         dirs = self.query_abs_dirs()
-        if os.path.isabs(c['template']):
-            self.template = c['template']
+        if c['source_type'] == "text":
+            if os.path.isabs(c['template']):
+                self.template = c['template']
+            else:
+                self.template = os.path.join(dirs['abs_work_dir'], c['template'])
         else:
-            self.template = os.path.join(dirs['abs_work_dir'], c['template'])
+            pass
 
 # helper methods {{{1
 
@@ -124,17 +136,23 @@ class SourceRelease(ReleaseMixin, TransferMixin, BuildbotMixin, MercurialScript)
         self.vcs_checkout_repos(repos, parent_dir=dirs['abs_work_dir'],
                                 tag_override=c.get('tag_override'))
 
-    def create_source(self):
+    def create_bundle(self):
+        pass
+
+    def create_source_text(self):
         c = self.config
         rc = self.query_release_config()
-        if c['source_type'] == "bundle":
-            pass
-        else:
-            pass
         if c['revision_source'] == "hgweb":
             source_info = self.parse_hgweb()
         else:
             pass
+
+    def create_source(self):
+        c = self.config
+        if c['source_type'] == "bundle":
+            return self.create_source_bundle()
+        else:
+            return self.create_source_text()
 
     def upload(self):
         pass
