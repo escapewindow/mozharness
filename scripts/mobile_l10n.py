@@ -15,12 +15,18 @@ import os
 import re
 import sys
 
+try:
+    import simplejson as json
+except ImportError:
+    import json
+
 # load modules from parent dir
 sys.path.insert(1, os.path.dirname(sys.path[0]))
 
 from mozharness.base.errors import BaseErrorList, MakefileErrorList
 from mozharness.base.log import OutputParser
 from mozharness.base.transfer import TransferMixin
+from mozharness.mozilla.buildbot import BuildbotMixin
 from mozharness.mozilla.release import ReleaseMixin
 from mozharness.mozilla.signing import MobileSigningMixin
 from mozharness.base.vcs.vcsbase import MercurialScript
@@ -30,7 +36,7 @@ from mozharness.mozilla.l10n.locales import LocalesMixin
 
 # MobileSingleLocale {{{1
 class MobileSingleLocale(LocalesMixin, ReleaseMixin, MobileSigningMixin,
-                         TransferMixin, MercurialScript):
+                         TransferMixin, BuildbotMixin, MercurialScript):
     config_options = [[
      ['--locale',],
      {"action": "extend",
@@ -113,6 +119,7 @@ class MobileSingleLocale(LocalesMixin, ReleaseMixin, MobileSigningMixin,
         self.upload_env = None
         self.version = None
         self.upload_urls = {}
+        self.locales_property = {}
 
     # Helper methods {{{2
     def query_repack_env(self):
@@ -244,6 +251,25 @@ class MobileSingleLocale(LocalesMixin, ReleaseMixin, MobileSigningMixin,
         self.error("Can't determine the upload url for %s!" % locale)
         self.error("You either need to run --upload-repacks before --create-nightly-snippets, or specify the 'snippet_base_url' in self.config!")
 
+    def add_failure(self, locale, message, **kwargs):
+        self.locales_property[locale] = "Failed"
+        prop_key = "%s_failure" % locale
+        prop_value = self.query_buildbot_property(prop_key)
+        if prop_value:
+            prop_value = "%s  %s" % (prop_value, message)
+        else:
+            prop_value = message
+        self.set_buildbot_property(prop_key, prop_value, write_to_file=True)
+        MercurialScript.add_failure(self, locale, message=message, **kwargs)
+
+    def summary(self):
+        MercurialScript.summary(self)
+        # TODO we probably want to make this configurable on/off
+        locales = self.query_locales()
+        for locale in locales:
+            self.locales_property.setdefault(locale, "Success")
+        self.set_buildbot_property("locales", json.dumps(self.locales_property), write_to_file=True)
+
     # Actions {{{2
     def pull(self):
         c = self.config
@@ -272,6 +298,23 @@ class MobileSingleLocale(LocalesMixin, ReleaseMixin, MobileSigningMixin,
                                   c['objdir'])
             self.rmtree(objdir)
 
+    def _setup_configure(self):
+        c = self.config
+        dirs = self.query_abs_dirs()
+        env = self.query_repack_env()
+        make = self.query_exe("make")
+        self.run_command([make, "-f", "client.mk", "configure"],
+                         cwd=dirs['abs_mozilla_dir'],
+                         env=env,
+                         error_list=MakefileErrorList,
+                         halt_on_failure=True)
+        for make_dir in c.get('make_dirs', []):
+            self.run_command([make],
+                             cwd=os.path.join(dirs['abs_objdir'], make_dir),
+                             env=env,
+                             error_list=MakefileErrorList,
+                             halt_on_failure=True)
+
     def setup(self):
         c = self.config
         dirs = self.query_abs_dirs()
@@ -284,17 +327,7 @@ class MobileSingleLocale(LocalesMixin, ReleaseMixin, MobileSigningMixin,
         make = self.query_exe("make")
         self.run_command([cat, mozconfig_path])
         env = self.query_repack_env()
-        self.run_command([make, "-f", "client.mk", "configure"],
-                         cwd=dirs['abs_mozilla_dir'],
-                         env=env,
-                         error_list=MakefileErrorList,
-                         halt_on_failure=True)
-        for make_dir in c.get('make_dirs', []):
-            self.run_command([make],
-                             cwd=os.path.join(dirs['abs_objdir'], make_dir),
-                             env=env,
-                             error_list=MakefileErrorList,
-                             halt_on_failure=True)
+        self._setup_configure()
         self.run_command([make, "wget-en-US"],
                          cwd=dirs['abs_locales_dir'],
                          env=env,
@@ -314,6 +347,8 @@ class MobileSingleLocale(LocalesMixin, ReleaseMixin, MobileSigningMixin,
                          env=env,
                          error_list=BaseErrorList,
                          halt_on_failure=True)
+        # Configure again since the hg update may have invalidated it.
+        self._setup_configure()
 
     def repack(self):
         # TODO per-locale logs and reporting.
@@ -361,13 +396,17 @@ class MobileSingleLocale(LocalesMixin, ReleaseMixin, MobileSigningMixin,
         version = self.query_version()
         upload_env = self.query_upload_env()
         success_count = total_count = 0
+        buildnum = None
+        if c.get('release_config_file'):
+            rc = self.query_release_config()
+            buildnum = rc['buildnum']
         for locale in locales:
             if self.query_failure(locale):
                 self.warning("Skipping previously failed locale %s." % locale)
                 continue
             total_count += 1
             if c.get('base_post_upload_cmd'):
-                upload_env['POST_UPLOAD_CMD'] = c['base_post_upload_cmd'] % {'version': version, 'locale': locale}
+                upload_env['POST_UPLOAD_CMD'] = c['base_post_upload_cmd'] % {'version': version, 'locale': locale, 'buildnum': str(buildnum)}
             output = self.get_output_from_command(
                 # Ugly hack to avoid |make upload| stderr from showing up
                 # as get_output_from_command errors
