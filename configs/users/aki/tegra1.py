@@ -1,7 +1,6 @@
-import os
 config = {
     "log_name": "talos",
-    "base_work_dir": os.path.join(os.getcwd(), "tegra_bwd"),
+    "base_work_dir": "/src/talosrunner/tegra_bwd",
 
     "installer_url": "http://ftp.mozilla.org/pub/mozilla.org/mobile/nightly/latest-mozilla-central-android/fennec-15.0a1.en-US.android-arm.apk",
     "pypi_url": "http://people.mozilla.com/~jhammel/pypi/",
