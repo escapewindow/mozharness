@@ -94,7 +94,6 @@ class PepTest(TestingMixin, MercurialScript):
         if self.abs_dirs:
             return self.abs_dirs
         abs_dirs = super(PepTest, self).query_abs_dirs()
-        c = self.config
         dirs = {}
         dirs['abs_test_install_dir'] = os.path.join(
             abs_dirs['abs_work_dir'], 'tests')
@@ -104,12 +103,6 @@ class PepTest(TestingMixin, MercurialScript):
             dirs['abs_test_install_dir'], "mozbase")
         dirs['abs_peptest_dir'] = os.path.join(
             dirs['abs_test_install_dir'], "peptest")
-        if os.path.isabs(c['virtualenv_path']):
-            dirs['abs_virtualenv_dir'] = c['virtualenv_path']
-        else:
-            dirs['abs_virtualenv_dir'] = os.path.join(
-                abs_dirs['abs_work_dir'],
-                c['virtualenv_path'])
         for key in dirs.keys():
             if key not in abs_dirs:
                 abs_dirs[key] = dirs[key]
@@ -196,6 +189,8 @@ class PepTest(TestingMixin, MercurialScript):
         if (self.config.get('log_level') in
                            ['debug', 'info', 'warning', 'error']):
             cmd.extend(['--log-level', self.config['log_level'].upper()])
+        if self.config.get('iterations'):
+            cmd.extend(self._build_arg('--iterations', self.config.get('iterations')))
 
         code = self.run_command(cmd, error_list=error_list)
         # get status and set summary
