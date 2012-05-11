@@ -46,6 +46,7 @@ class ReleaseMixin():
             self.release_config['aus_server'] = rc['ausHost']
             self.release_config['aus_user'] = rc['ausUser']
             self.release_config['aus_ssh_key'] = c.get('aus_ssh_key', '~/.ssh/%s' % rc['ausSshKey'])
+            self.release_config['release_dict'] = rc
         else:
             self.info("No release config file; using default config.")
             for key in ('version', 'buildnum', 'old_version', 'old_buildnum',

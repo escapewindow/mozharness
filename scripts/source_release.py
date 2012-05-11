@@ -17,6 +17,7 @@ import sys
 # load modules from parent dir
 sys.path.insert(1, os.path.dirname(sys.path[0]))
 
+from mozharness.base.log import FATAL
 from mozharness.base.transfer import TransferMixin
 from mozharness.base.vcs.vcsbase import MercurialScript
 from mozharness.mozilla.buildbot import BuildbotMixin
@@ -110,12 +111,13 @@ class SourceRelease(ReleaseMixin, TransferMixin, BuildbotMixin, MercurialScript)
             else:
                 self.template = os.path.join(dirs['abs_work_dir'], c['template'])
         else:
+            # TODO write bundle
             pass
 
 # helper methods {{{1
 
-    def parse_hgweb(self):
-        pass
+    def parse_hgweb(self, url):
+        return 'XXX'
 
 # actions {{{1
     # clobber is defined in BaseScript
@@ -136,16 +138,29 @@ class SourceRelease(ReleaseMixin, TransferMixin, BuildbotMixin, MercurialScript)
         self.vcs_checkout_repos(repos, parent_dir=dirs['abs_work_dir'],
                                 tag_override=c.get('tag_override'))
 
-    def create_bundle(self):
+    def create_source_bundle(self):
         pass
 
     def create_source_text(self):
         c = self.config
         rc = self.query_release_config()
-        if c['revision_source'] == "hgweb":
-            source_info = self.parse_hgweb()
-        else:
-            pass
+        dirs = self.query_abs_dirs()
+        template = self.read_from_file(self.template)
+        self.info(template)
+        for repo_nick in c['source_repo_nicks']:
+            repo_dict = rc['release_dict']['sourceRepositories'][repo_nick]
+            replace_dict = {'BRANCH': repo_dict['path']}
+            if c['revision_source'] == "hgweb":
+                tag = '%s_RELEASE' % rc['release_dict']['baseTag']
+                url = '%s/%s' % (c['hgweb_server'], repo_dict['path'])
+                replace_dict['REVISION'] = self.parse_hgweb(url)
+            else:
+                replace_dict['REVISION'] = repo_dict['revision']
+            file_path = os.path.join(dirs['abs_upload_dir'], '%s-%s.txt' % (rc['release_dict']['productName'], rc['version']))
+            self.info(str(replace_dict))
+            contents = template % replace_dict
+            self.write_to_file(file_path, contents, create_parent_dir=True,
+                               error_level=FATAL)
 
     def create_source(self):
         c = self.config

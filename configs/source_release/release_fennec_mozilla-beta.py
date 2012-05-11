@@ -14,8 +14,10 @@ config = {
         "dest": "buildbot-configs"
     }],
     'vcs_share_base': HG_SHARE_BASE_DIR,
-    'source_repo_nicks': ['mozilla'],
+    'source_repo_nicks': ['mobile'],
     'source_type': 'bundle',
+    'revision_source': 'hgweb',
+    'hgweb_server': 'https://hg.mozilla.org',
 
 #    "upload_env": {
 #        "UPLOAD_USER": STAGE_USER,
