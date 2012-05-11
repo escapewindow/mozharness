@@ -117,7 +117,21 @@ class SourceRelease(ReleaseMixin, TransferMixin, BuildbotMixin, MercurialScript)
 # helper methods {{{1
 
     def parse_hgweb(self, url):
-        return 'XXX'
+        dirs = self.query_abs_dirs()
+        tmp_path = os.path.join(dirs['abs_work_dir'], 'hgweb.html')
+        self.mkdir_p(dirs['abs_work_dir'])
+        wget = self.query_exe('wget')
+        if self.run_command([wget, url, '-O', tmp_path]):
+            self.fatal("Can't wget %s!" % url)
+        contents = self.read_from_file(tmp_path)
+        m = re.compile(' \d+:([0-9a-f]{12})')
+        for line in contents.splitlines():
+            r = m.search(contents)
+            if r:
+                revision = r.groups()[0]
+                self.info("Found revision %s" % revision)
+                return revision
+        self.fatal("Can't find revision in %s!" % url)
 
 # actions {{{1
     # clobber is defined in BaseScript
@@ -152,11 +166,11 @@ class SourceRelease(ReleaseMixin, TransferMixin, BuildbotMixin, MercurialScript)
             replace_dict = {'BRANCH': repo_dict['path']}
             if c['revision_source'] == "hgweb":
                 tag = '%s_RELEASE' % rc['release_dict']['baseTag']
-                url = '%s/%s' % (c['hgweb_server'], repo_dict['path'])
+                url = '%s/%s/rev/%s_RELEASE' % (c['hgweb_server'], repo_dict['path'], rc['release_dict']['baseTag'])
                 replace_dict['REVISION'] = self.parse_hgweb(url)
             else:
                 replace_dict['REVISION'] = repo_dict['revision']
-            file_path = os.path.join(dirs['abs_upload_dir'], '%s-%s.txt' % (rc['release_dict']['productName'], rc['version']))
+            file_path = os.path.join(dirs['abs_upload_dir'], 'source', '%s-%s.txt' % (rc['release_dict']['productName'], rc['version']))
             self.info(str(replace_dict))
             contents = template % replace_dict
             self.write_to_file(file_path, contents, create_parent_dir=True,

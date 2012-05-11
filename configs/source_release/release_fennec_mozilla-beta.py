@@ -17,7 +17,7 @@ config = {
     'source_repo_nicks': ['mobile'],
     'source_type': 'bundle',
     'revision_source': 'hgweb',
-    'hgweb_server': 'https://hg.mozilla.org',
+    'hgweb_server': 'http://hg.mozilla.org',
 
 #    "upload_env": {
 #        "UPLOAD_USER": STAGE_USER,

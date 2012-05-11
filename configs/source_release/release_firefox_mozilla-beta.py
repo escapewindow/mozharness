@@ -15,7 +15,7 @@ config = {
     'source_repo_nicks': ['mozilla'],
     'source_type': 'text',
     'revision_source': 'hgweb',
-    'hgweb_server': 'https://hg.mozilla.org',
+    'hgweb_server': 'http://hg.mozilla.org',
     'configure_env': {
         'MOZ_OBJDIR': 'objdir',
         'MOZ_PKG_PRETTYNAMES': '1',
