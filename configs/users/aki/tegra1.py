@@ -2,7 +2,7 @@ config = {
     "log_name": "talos",
     "base_work_dir": "/src/talosrunner/tegra_bwd",
 
-    "installer_url": "http://ftp.mozilla.org/pub/mozilla.org/mobile/nightly/latest-mozilla-central-android/fennec-15.0a1.en-US.android-arm.apk",
+    "installer_url": "http://ftp.mozilla.org/pub/mozilla.org/mobile/nightly/latest-mozilla-central-android/en-US/fennec-16.0a1.en-US.android-arm.apk",
     "pypi_url": "http://build.mozilla.org/talos/findlinks/",
     "find_links": ["http://build.mozilla.org/talos/findlinks/"],
     "device_name": "tegra-224",
