@@ -11,14 +11,11 @@ import os
 import shutil
 import sys
 sys.path.insert(1, os.path.dirname(sys.path[0]))
-from mozharness.base.script import BaseScript
-from mozharness.base.vcs.mercurial import MercurialVCS
+from mozharness.base.vcs.vcsbase import MercurialScript
+from mozharness.mozilla.buildbot import TBPL_SUCCESS, TBPL_WARNING
 from mozharness.mozilla.testing.talos import Talos
 
-# globals
-repo = 'http://hg.mozilla.org/projects/addon-sdk' # addon-sdk repository
-
-class JetPerf(Talos, MercurialVCS):
+class JetPerf(Talos, MercurialScript):
     """
     - Download the latest Add-on SDK
     - Download the test add-on sources
@@ -28,12 +25,6 @@ class JetPerf(Talos, MercurialVCS):
     """
 
     config_options = copy.deepcopy(Talos.config_options) + [
-        [["--repo"],
-         {'action': 'store',
-          'dest': 'repo',
-          'default': repo,
-          'help': 'url of (hg) jetpack addon-sdk repository'
-          }],
         [["--addon"],
          {'action': 'extend',
           'dest': 'addon-directories',
@@ -60,13 +51,25 @@ class JetPerf(Talos, MercurialVCS):
                        'create-virtualenv',
                        'install',
                        'test',
-                       'baseline']
+                       'baseline',
+                       'report-tbpl-status'
+                       ]
+
+    default_repos = [{
+            "repo": 'http://hg.mozilla.org/projects/addon-sdk',
+            "revision": "default",
+            "dest": "addon-sdk"
+            },{
+            "repo": 'http://hg.mozilla.org/projects/addon-sdk-jetperf-tests/',
+            "revision": "default",
+            "dest": "addons_clone"
+            }]
 
     def __init__(self, require_config_file=False):
 
         # initialize parent class
         Talos.__init__(self,
-                       config={'tests': ['ts']},
+                       config={'tests': ['ts'], 'repos': self.default_repos},
                        all_actions=self.actions,
                        default_actions=self.default_actions,
                        require_config_file=require_config_file)
@@ -74,14 +77,20 @@ class JetPerf(Talos, MercurialVCS):
         # set instance defaults
         self.addon_sdk = os.path.join(self.workdir, 'addon-sdk')
         self.addonsdir = os.path.join(self.workdir, 'addons')
+        self.test_addons_clone = os.path.join(self.workdir, 'addons_clone')
 
         # ensure we have tests
         self.preflight_generate_config()
 
-    def pull(self):
-        """clone the jetpack repository"""
+    def results_filename(self):
+        """return the results file path from self.results_url"""
+        if not self.results_url.startswith('file://'):
+            return None
+        return self.results_url[len('file://'):]
 
-        MercurialVCS.clone(self, self.config['repo'], self.addon_sdk)
+    def pull(self):
+        """clone the needed repositories"""
+        self.vcs_checkout_repos(self.config['repos'])
 
     def cfx(self):
         """returns path to cfx"""
@@ -89,6 +98,17 @@ class JetPerf(Talos, MercurialVCS):
         if not os.path.exists(path):
             return None
         return path
+
+    def addons_from_directory(self, directory):
+        """scans a directory for jetpack addon sources and returns a list"""
+
+        self.info("Scanning %s for addon directories" % directory)
+        retval = [os.path.join(directory, i) for i in os.listdir(directory)
+                  if not i.startswith('.')] # ignore dotfiles
+        retval = [addon for addon in retval
+                  if os.path.isdir(addon)] # directories only
+        self.info("Found %s addon directories" % str(retval))
+        return retval
 
     def build(self):
         """Build each test add-on with the add-ons SDK"""
@@ -98,10 +118,13 @@ class JetPerf(Talos, MercurialVCS):
             # clone the addon-sdk if needed
             self.fatal("%s not found; make sure you clone the addon-sdk repo first" % cfx)
 
-        # TODO: pull from hg if specified
+        # get addons
         addons = self.config['addon-directories']
+        if os.path.exists(self.test_addons_clone):
+            addons.extend(self.addons_from_directory(self.test_addons_clone))
         if not addons:
             self.error("No addons supplied")
+        self.info("Building addons: %s" % str(addons))
 
         # ensure the addons are unique
         basenames = set([os.path.basename(addon) for addon in addons])
@@ -179,7 +202,7 @@ class JetPerf(Talos, MercurialVCS):
                 continue
             if len(_xpis) > 1:
                 self.warning("More than one addon found in %s: %s" % (path, _xpis))
-            xpis.extend([os.path.join(directory, xpi) for xpi in _xpis])
+            xpis.extend([os.path.join(self.addonsdir, directory, xpi) for xpi in _xpis])
         if not xpis:
             self.fatal("No addons found in %s" % self.addonsdir)
 
@@ -190,8 +213,8 @@ class JetPerf(Talos, MercurialVCS):
         self.run_talos('jetperf', *args)
 
         # print the results file location if it is a file
-        if self.results_url.startswith('file://'):
-            filename = self.results_url[len('file://'):]
+        filename = self.results_filename()
+        if filename:
             if not os.path.exists(filename):
                 self.fatal("Results file not found: %s" % filename)
 
@@ -200,7 +223,6 @@ class JetPerf(Talos, MercurialVCS):
 
     def baseline(self):
         """run baseline ts tests"""
-        args = []
         filename = self.baseline_results_filename()
         if os.path.exists(filename):
             self.rmtree(filename)
@@ -208,6 +230,20 @@ class JetPerf(Talos, MercurialVCS):
         if not os.path.exists(filename):
             self.fatal("Results file not found: %s" % filename)
 
+    def report_tbpl_status(self):
+        tbpl_status = TBPL_SUCCESS
+        missing = []
+        if 'test' in self.actions:
+            filename = self.results_filename()
+            if filename and not os.path.exists(filename):
+                missing.append(filename)
+        if 'baseline' in self.actions:
+            if not os.path.exists(self.baseline_results_filename()):
+                missing.append(filename)
+        if missing:
+            tbpl_status = TBPL_WARNING
+            self.warning('Missing results files: %s' % ', '.join(missing))
+        self.buildbot_status(tbpl_status)
 
 def main(args=sys.argv[1:]):
     """CLI entry point"""

@@ -149,6 +149,7 @@ You can set this by:
                                     parent_dir=dirs['abs_work_dir'],
                                     error_level=FATAL)
         self.installer_path = os.path.realpath(source)
+        self.set_buildbot_property("build_url", self.installer_url, write_to_file=True)
 
     def download_and_extract(self):
         """
@@ -164,7 +165,10 @@ You can set this by:
 
     def preflight_install(self):
         if not self.installer_path:
-            self.fatal("""installer_path isn't set!
+            if self.config.get('installer_path'):
+                self.installer_path = self.config['installer_path']
+            else:
+                self.fatal("""installer_path isn't set!
 
 You can set this by:
 
@@ -178,13 +182,19 @@ Did you run with --create-virtualenv? Is mozinstall in virtualenv_modules?""")
     def install(self):
         """ Dependent on mozinstall """
         # install the application
-        mozinstall = self.query_python_path("mozinstall")
+        cmd = self.query_exe("mozinstall", default=self.query_python_path("mozinstall"), return_type="list")
+        # Remove the below when we no longer need to support mozinstall 0.3
+        self.info("Detecting whether we're running mozinstall >=1.0...")
+        output = self.get_output_from_command(cmd + ['-h'])
+        if '--source' in output:
+            cmd.append('--source')
+        # End remove
         dirs = self.query_abs_dirs()
         target_dir = dirs.get('abs_app_install_dir',
                               os.path.join(dirs['abs_work_dir'],
                              'application'))
         self.mkdir_p(target_dir)
-        cmd = [mozinstall, '--source', self.installer_path]
-        cmd.extend(['--destination', target_dir])
+        cmd.extend([self.installer_path,
+                    '--destination', target_dir])
         # TODO we'll need some error checking here
         self.binary_path = self.get_output_from_command(cmd)
