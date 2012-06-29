@@ -1,11 +1,11 @@
-BRANCH = "mozilla-release"
+BRANCH = "mozilla-beta"
 MOZ_UPDATE_CHANNEL = "release"
 MOZILLA_DIR = BRANCH
 JAVA_HOME = "/tools/jdk6"
 JARSIGNER = "tools/release/signing/mozpass.py"
 OBJDIR = "obj-l10n"
 EN_US_BINARY_URL = "http://ftp.mozilla.org/pub/mozilla.org/mobile/candidates/%(version)s-candidates/build%(buildnum)d/unsigned/android/en-US"
-#STAGE_SERVER = "dev-stage01.build.sjc1.mozilla.com"
+#STAGE_SERVER = "dev-stage01.srv.releng.scl3.mozilla.com"
 STAGE_SERVER = "stage.mozilla.org"
 STAGE_USER = "ffxbld"
 STAGE_SSH_KEY = "~/.ssh/ffxbld_dsa"
@@ -19,7 +19,7 @@ config = {
     "locales_platform": "android",
     "ignore_locales": ["en-US"],
     "repos": [{
-        "repo": "http://hg.mozilla.org/releases/mozilla-release",
+        "repo": "http://hg.mozilla.org/releases/mozilla-beta",
         "revision": "default",
         "dest": MOZILLA_DIR,
     },{

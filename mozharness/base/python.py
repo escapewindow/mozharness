@@ -32,6 +32,12 @@ virtualenv_config_options = [[
   "dest": "pypi_url",
   "help": "Base URL of Python Package Index (default http://pypi.python.org/simple/)"
   }
+],
+[["--find-links"],
+{"action": "extend",
+ "dest": "find_links",
+ "help": "URL to look for packages at"
+}
 ]]
 
 class VirtualenvMixin(object):
@@ -129,7 +135,7 @@ class VirtualenvMixin(object):
                      level=error_level)
             return True
 
-    def install_module(self, module, module_url=None):
+    def install_module(self, module, module_url=None, install_method=None):
         """
         Install module via pip.
 
@@ -140,18 +146,30 @@ class VirtualenvMixin(object):
         c = self.config
         dirs = self.query_abs_dirs()
         venv_path = self.query_virtualenv_path()
-        pip = self.query_python_path("pip")
         self.info("Installing %s into virtualenv %s" % (module, venv_path))
         if not module_url:
             module_url = module
-        command = [pip, "install"]
-        pypi_url = c.get("pypi_url")
-        if pypi_url:
-            command += ["--pypi-url", pypi_url]
-        virtualenv_cache_dir = c.get("virtualenv_cache_dir")
-        if virtualenv_cache_dir:
-            self.mkdir_p(virtualenv_cache_dir)
-            command += ["--download-cache", virtualenv_cache_dir]
+        if install_method in (None, 'pip'):
+            pip = self.query_python_path("pip")
+            command = [pip, "install"]
+            pypi_url = c.get("pypi_url")
+            if pypi_url:
+                command += ["--pypi-url", pypi_url]
+            virtualenv_cache_dir = c.get("virtualenv_cache_dir")
+            if virtualenv_cache_dir:
+                self.mkdir_p(virtualenv_cache_dir)
+                command += ["--download-cache", virtualenv_cache_dir]
+        elif install_method == 'easy_install':
+            # Allow easy_install to be overridden by
+            # self.config['exes']['easy_install']
+            command = self.query_exe('easy_install', default=self.query_python_path('easy_install'), return_type="list")
+        else:
+            self.fatal("install_module() doesn't understand an install_method of %s!" % install_method)
+
+        # Add --find-links pages to look at
+        for link in c.get('find_links', []):
+            command.extend(["--find-links", link])
+
         # Allow for errors while building modules, but require a
         # return status of 0.
         if self.run_command(command + [module_url],
@@ -227,7 +245,11 @@ class VirtualenvMixin(object):
             if isinstance(module, dict):
                 (module, module_url) = module.items()[0]
             module_url = self.config.get('%s_url' % module, module_url)
-            self.install_module(module, module_url)
+            install_method = 'pip'
+            if module in ('pywin32',):
+                install_method = 'easy_install'
+            self.install_module(module, module_url,
+                                install_method=install_method)
         self.info("Done creating virtualenv %s." % venv_path)
 
 
