@@ -11,27 +11,34 @@
 import os
 import pprint
 import sys
-try:
-    import simplejson as json
-except ImportError:
-    import json
 
 sys.path.insert(1, os.path.dirname(sys.path[0]))
 
+from mozharness.base.python import VirtualenvMixin, virtualenv_config_options
 from mozharness.base.script import BaseScript
 from mozharness.mozilla.testing.mozpool import MozpoolMixin
 
 # MozpoolTest {{{1
-class MozpoolTest(MozpoolMixin, BaseScript):
+class MozpoolTest(VirtualenvMixin, MozpoolMixin, BaseScript):
     def __init__(self, require_config_file=False):
-        BaseScript.__init__(self,
-                            all_actions=['run-tests',
-                                         ],
-                            require_config_file=require_config_file)
-        self.mozpool_api_url = "http://localhost:8080"
+        BaseScript.__init__(
+            self, config_options=virtualenv_config_options,
+            all_actions=[
+                'create-virtualenv',
+                'run-tests',
+            ],
+            default_actions=[
+                'run-tests',
+            ],
+            config={
+                'virtualenv_modules': ['requests'],
+                'mozpool_api_url': "http://localhost:8080",
+            },
+            require_config_file=require_config_file)
 
     def run_tests(self):
-        pprint.pprint(self.query_full_device_list())
+        mph = self.query_mozpool_handler()
+        pprint.pprint(mph.query_full_device_list())
 
 # __main__ {{{1
 if __name__ == '__main__':
