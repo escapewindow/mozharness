@@ -20,9 +20,16 @@ from mozharness.mozilla.testing.mozpool import MozpoolMixin
 
 # MozpoolTest {{{1
 class MozpoolTest(VirtualenvMixin, MozpoolMixin, BaseScript):
+    config_options = virtualenv_config_options + [[
+        ["--mozpool-api-url"],
+        {"action": "store",
+         "dest": "mozpool_api_url",
+         "help": "Specify the URL of the mozpool api"
+        }
+    ]]
     def __init__(self, require_config_file=False):
         BaseScript.__init__(
-            self, config_options=virtualenv_config_options,
+            self, config_options=self.config_options,
             all_actions=[
                 'create-virtualenv',
                 'run-tests',
@@ -33,12 +40,22 @@ class MozpoolTest(VirtualenvMixin, MozpoolMixin, BaseScript):
             config={
                 'virtualenv_modules': ['requests'],
                 'mozpool_api_url': "http://localhost:8080",
+                'global_retries': 1,
             },
-            require_config_file=require_config_file)
+            require_config_file=require_config_file
+        )
 
     def run_tests(self):
         mph = self.query_mozpool_handler()
-        pprint.pprint(mph.query_full_device_list())
+        self.info("query_all_device_list()")
+        self.info(pprint.pformat(mph.query_all_device_list()))
+        self.info("query_all_device_details()")
+        self.info(pprint.pformat(mph.query_all_device_details()))
+        self.info("query_device_status('panda-0209')")
+        self.info(pprint.pformat(mph.query_device_status("panda-0209")))
+        self.info("query_device_status('ed-209')")
+        self.info(pprint.pformat(mph.query_device_status("ed-209")))
+
 
 # __main__ {{{1
 if __name__ == '__main__':

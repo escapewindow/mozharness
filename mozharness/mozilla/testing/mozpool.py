@@ -8,6 +8,7 @@
 '''
 
 import sys
+import time
 
 try:
     import simplejson as json
@@ -16,6 +17,22 @@ except ImportError:
 
 from mozharness.base.log import LogMixin, DEBUG, WARNING, FATAL
 from mozharness.base.script import ShellMixin, OSMixin
+
+# TODO do something with r.status_code?
+# 200 OK
+# 201 Created
+# 202 Accepted
+# 300 Multiple Choices
+# 301 Moved Permanently
+# 302 Found
+# 304 Not Modified
+# 400 Bad Request
+# 401 Unauthorized
+# 403 Forbidden
+# 404 Not Found
+# 500 Server Error
+# 501 Not Implemented
+# 503 Service Unavailable
 
 
 
@@ -43,7 +60,8 @@ class MozpoolHandler(ShellMixin, OSMixin, LogMixin):
             self.fatal("Can't instantiate MozpoolHandler until requests python package is installed! (VirtualenvMixin?)")
 
     def url_get(self, url, auth=None, params=None, num_retries=None,
-                decode_json=False, verbose_level=DEBUG, **kwargs):
+                decode_json=True, error_level=FATAL, verbose_level=DEBUG,
+                **kwargs):
         """Generic get output from a url method; this can probably be
         moved into mozharness.base.script
         """
@@ -57,11 +75,12 @@ class MozpoolHandler(ShellMixin, OSMixin, LogMixin):
         try_num = 0
         while try_num <= num_retries:
             try_num += 1
-            error_level = WARNING
+            log_level = WARNING
             if try_num == num_retries:
-                error_level = FATAL
+                log_level = error_level
             try:
                 r = requests.get(url, **kwargs)
+                self.info("Status code: %s" % str(r.status_code))
                 if verbose_level:
                     self.log(r.text, level=verbose_level)
                 if decode_json:
@@ -69,12 +88,16 @@ class MozpoolHandler(ShellMixin, OSMixin, LogMixin):
                     if j is not None:
                         return j
                     else:
-                        self.log("Try %d: Can't decode json from %s!" % (try_num, url), level=error_level)
+                        self.log("Try %d: Can't decode json from %s!" % (try_num, url), level=log_level)
                 else:
                     return r.text
             except requests.exceptions.RequestException, e:
                 self.log("Try %d: Can't get %s: %s!" % (try_num, url, str(e)),
-                         level=error_level)
+                         level=log_level)
+            if try_num <= num_retries:
+                sleep_time = 2 * try_num
+                self.info("Sleeping %d..." % sleep_time)
+                time.sleep(sleep_time)
 
     def partial_url_get(self, partial_url, **kwargs):
         return self.url_get(self.mozpool_api_url + partial_url, **kwargs)
@@ -90,11 +113,35 @@ class MozpoolHandler(ShellMixin, OSMixin, LogMixin):
             self.log("Can't decode json: Unknown error!" % str(e), level=error_level)
 
     # TODO we could do some caching and more error checking
-    def query_full_device_list(self):
-        return self.partial_url_get("/api/device/list/", decode_json=True).get("devices")
+    def query_all_device_list(self, **kwargs):
+        return self.partial_url_get("/api/device/list/", **kwargs).get("devices")
 
-    def query_full_device_details(self):
-        return self.partial_url_get("/api/device/list?details=1", decode_json=True).get("devices")
+    def query_all_device_details(self, **kwargs):
+        return self.partial_url_get("/api/device/list?details=1", **kwargs).get("devices")
+
+    def query_device_status(self, device, error_level=WARNING, **kwargs):
+        """ Defaults to WARNING because we may be asking about a device
+        that doesn't exist and don't necessarily want to FATAL when we keep
+        getting 500s.
+
+        I imagine we may want to tweak these error levels later.
+        """
+        return self.partial_url_get("/api/device/%s/status/" % device,
+                                    error_level=error_level, **kwargs)
+
+    def query_device_details(self, device, error_level=WARNING, **kwargs):
+        devices = self.query_all_device_details(**kwargs)
+        if isinstance(devices, dict):
+            if device not in devices:
+                self.log("Couldn't find %s in device list!" % device,
+                         level=error_level)
+                return
+            else:
+                return devices[device]
+        else:
+            # We shouldn't get here if query_all_device_details() FATALs...
+            self.log("Invalid response from query_all_device_details()!",
+                     level=error_level)
 
 
 
