@@ -59,6 +59,7 @@ class MozpoolHandler(ShellMixin, OSMixin, LogMixin):
         except ImportError:
             self.fatal("Can't instantiate MozpoolHandler until requests python package is installed! (VirtualenvMixin?)")
 
+    # Helper methods {{{2
     def url_get(self, url, auth=None, params=None, num_retries=None,
                 decode_json=True, error_level=FATAL, verbose_level=DEBUG,
                 **kwargs):
@@ -113,6 +114,7 @@ class MozpoolHandler(ShellMixin, OSMixin, LogMixin):
             self.log("Can't decode json: Unknown error!" % str(e), level=error_level)
 
     # TODO we could do some caching and more error checking
+    # Device queries {{{2
     def query_all_device_list(self, **kwargs):
         return self.partial_url_get("/api/device/list/", **kwargs).get("devices")
 
