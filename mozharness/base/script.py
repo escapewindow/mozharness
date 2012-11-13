@@ -141,6 +141,26 @@ class OSMixin(object):
         else:
             return parsed.netloc
 
+    def get_text_from_url(self, url, timeout=60, num_retries=None,
+                          error_level=FATAL):
+        """Generic get output from a url method
+        """
+        if num_retries is None:
+            num_retries = self.config.get("global_retries", 0)
+        try_num = 0
+        while try_num <= num_retries:
+            try_num += 1
+            try:
+                resp = urllib2.urlopen(url, timeout=timeout)
+                return resp.read()
+            except urllib2.HTTPError, e:
+                self.error("Try %d: HTTP Error: %s %s" % (try_num, str(e.code), url))
+            except urllib2.URLError, e:
+                self.error("Try %d: URL Error: %s" % (try_num, url))
+            sleep_time = 2 * try_num
+            self.info("Sleeping %d seconds..." % sleep_time)
+            time.sleep(sleep_time)
+
     # http://www.techniqal.com/blog/2008/07/31/python-file-read-write-with-urllib2/
     # TODO thinking about creating a transfer object.
     def download_file(self, url, file_name=None, parent_dir=None,
