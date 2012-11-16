@@ -55,6 +55,11 @@ class MozpoolTest(VirtualenvMixin, MozpoolMixin, BaseScript):
         self.info(pprint.pformat(mph.query_device_status("panda-0209")))
         self.info("query_device_status('ed-209')")
         self.info(pprint.pformat(mph.query_device_status("ed-209")))
+        self.info("request_device('ed-209')")
+        self.info(pprint.pformat(mph.request_device("ed-209", "me", "imageX", "2d")))
+        self.info("request_device('any')")
+        device_blob = mph.request_device("any", "me", "imageX", "1s")
+        self.info(pprint.pformat(device_blob))
 
 
 # __main__ {{{1
