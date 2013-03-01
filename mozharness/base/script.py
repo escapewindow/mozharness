@@ -707,7 +707,7 @@ class BaseScript(ShellMixin, OSMixin, LogMixin, object):
                                     dest=os.path.join('logs', log_file),
                                     short_desc='%s log' % log_name,
                                     long_desc='%s log' % log_name,
-                                    rotate=True)
+                                    max_backups=self.config.get("log_max_rotate", 0))
 
     def run(self):
         """Default run method.
@@ -852,8 +852,7 @@ class BaseScript(ShellMixin, OSMixin, LogMixin, object):
 
     def copy_to_upload_dir(self, target, dest=None, short_desc="unknown",
                            long_desc="unknown", log_level=DEBUG,
-                           error_level=ERROR, rotate=False,
-                           max_backups=None):
+                           error_level=ERROR, max_backups=None):
         """Copy target file to upload_dir/dest.
 
         Potentially update a manifest in the future if we go that route.
@@ -883,11 +882,9 @@ class BaseScript(ShellMixin, OSMixin, LogMixin, object):
             if os.path.isdir(dest):
                 self.log("%s exists and is a directory!" % dest, level=error_level)
                 return -1
-            if rotate:
+            if max_backups:
                 # Probably a better way to do this
                 oldest_backup = 0
-                if max_backups is None:
-                    max_backups = int(self.config.get("log_max_rotate", 10))
                 backup_regex = re.compile("^%s\.(\d+)$" % dest_file)
                 for filename in os.listdir(dest_dir):
                     r = backup_regex.match(filename)
