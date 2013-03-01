@@ -886,6 +886,8 @@ class BaseScript(ShellMixin, OSMixin, LogMixin, object):
             if rotate:
                 # Probably a better way to do this
                 oldest_backup = 0
+                if max_backups is None:
+                    max_backups = int(self.config.get("log_max_rotate", 10))
                 backup_regex = re.compile("^%s\.(\d+)$" % dest_file)
                 for filename in os.listdir(dest_dir):
                     r = backup_regex.match(filename)
@@ -894,11 +896,11 @@ class BaseScript(ShellMixin, OSMixin, LogMixin, object):
                 for backup_num in range(oldest_backup, 0, -1):
                     # TODO more error checking?
                     if backup_num >= max_backups:
-                        self.rmtree(os.path.join(dest_dir, dest_file, str(backup_num)),
+                        self.rmtree(os.path.join(dest_dir, "%s.%d" % (dest_file, backup_num)),
                                     log_level=log_level)
                     else:
-                        self.move(os.path.join(dest_dir, dest_file, '.%d' % backup_num),
-                                  os.path.join(dest_dir, dest_file, '.%d' % backup_num + 1),
+                        self.move(os.path.join(dest_dir, "%s.%d" % (dest_file, backup_num)),
+                                  os.path.join(dest_dir, "%s.%d" % (dest_file, backup_num + 1)),
                                   log_level=log_level)
                 if self.move(dest, "%s.1" % dest, log_level=log_level):
                     self.log("Unable to move %s!" % dest, level=error_level)
