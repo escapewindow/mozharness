@@ -314,7 +314,7 @@ class BaseConfig(object):
                 raise SystemExit(-1)
         else:
             config = {}
-            for cf in self.config_files:
+            for cf in options.config_files:
                 config.update(parse_config_file(cf))
             self.set_config(config)
         for key in defaults.keys():

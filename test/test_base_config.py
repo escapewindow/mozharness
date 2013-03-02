@@ -57,6 +57,26 @@ class TestParseConfigFile(unittest.TestCase):
     def test_malformed_python(self):
         self.assertRaises(SyntaxError, config.parse_config_file, "test/test_malformed.py")
 
+    def test_multiple_config_files_override_string(self):
+        c = config.BaseConfig(initial_config_file='test/test.py')
+        c.parse_args(['--cfg', 'test/test_override.py,test/test_override2.py'])
+        self.assertEqual(c._config['override_string'], 'yay')
+
+    def test_multiple_config_files_override_list(self):
+        c = config.BaseConfig(initial_config_file='test/test.py')
+        c.parse_args(['--cfg', 'test/test_override.py,test/test_override2.py'])
+        self.assertEqual(c._config['override_list'], ['yay', 'worked'])
+
+    def test_multiple_config_files_override_dict(self):
+        c = config.BaseConfig(initial_config_file='test/test.py')
+        c.parse_args(['--cfg', 'test/test_override.py,test/test_override2.py'])
+        self.assertEqual(c._config['override_dict'], {'yay': 'worked'})
+
+    def test_multiple_config_files_keep_string(self):
+        c = config.BaseConfig(initial_config_file='test/test.py')
+        c.parse_args(['--cfg', 'test/test_override.py,test/test_override2.py'])
+        self.assertEqual(c._config['keep_string'], "don't change me")
+
 
 class TestReadOnlyDict(unittest.TestCase):
     control_dict = {
