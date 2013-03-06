@@ -1,7 +1,6 @@
 import os
 import platform
 import shutil
-import subprocess
 import sys
 import tempfile
 import unittest
@@ -212,7 +211,7 @@ class TestHg(unittest.TestCase):
         # Hide the wanted error
         m.config = {'log_to_console': False}
         # Try and pull in changes from the new repo
-        self.assertRaises(subprocess.CalledProcessError, m.pull, repo2, self.wc, update_dest=False)
+        self.assertRaises(errors.VCSException, m.pull, repo2, self.wc, update_dest=False)
 
     def test_share_unrelated(self):
         m = get_mercurial_vcs_obj()

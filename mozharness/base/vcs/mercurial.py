@@ -290,8 +290,8 @@ class MercurialVCS(ShellMixin, OSMixin, LogMixin, object):
         if push_new_branches and self.hg_ver() >= (1, 6, 0):
             cmd.append('--new-branch')
         cmd.append(remote)
-        return self.run_command(cmd, cwd=src, error_list=HgErrorList,
-                                throw_exception=True)
+        if self.run_command(cmd, cwd=src, error_list=HgErrorList):
+            raise VCSException("Unable to push %s to %s!" % (src, remote))
 
     # hg share methods {{{2
     def query_can_share(self):
@@ -368,7 +368,7 @@ class MercurialVCS(ShellMixin, OSMixin, LogMixin, object):
             if os.path.exists(shared_repo):
                 try:
                     self.pull(repo, shared_repo)
-                except subprocess.CalledProcessError:
+                except VCSException:
                     self.warning("Error pulling changes into %s from %s; clobbering" % (shared_repo, repo))
                     self.exception(level='debug')
                     self.clone(repo, shared_repo)
@@ -382,7 +382,7 @@ class MercurialVCS(ShellMixin, OSMixin, LogMixin, object):
                 try:
                     self.info("Trying to share %s to %s" % (shared_repo, dest))
                     return self.share(shared_repo, dest, branch=branch, revision=revision)
-                except subprocess.CalledProcessError:
+                except VCSException:
                     if not c.get('allow_unshared_local_clones'):
                         # Re-raise the exception so it gets caught below.
                         # We'll then clobber dest, and clone from original
@@ -396,7 +396,7 @@ class MercurialVCS(ShellMixin, OSMixin, LogMixin, object):
                 # OS supports it
                 self.clone(shared_repo, dest, update_dest=False)
                 return self.update(dest, branch=branch, revision=revision)
-        except subprocess.CalledProcessError:
+        except (subprocess.CalledProcessError, VCSException):
             # Need better fallback
             self.error("Error updating %s from shared_repo (%s): " % (dest, shared_repo))
             self.exception(level='error')
@@ -407,9 +407,9 @@ class MercurialVCS(ShellMixin, OSMixin, LogMixin, object):
         with "source" using Mercurial's share extension
         """
         self.info("Sharing %s to %s." % (source, dest))
-        self.run_command(self.hg + ['share', '-U', source, dest],
-                         error_list=HgErrorList,
-                         throw_exception=True)
+        if self.run_command(self.hg + ['share', '-U', source, dest],
+                            error_list=HgErrorList):
+            raise VCSException("Unable to share %s to %s!" % (source, dest))
         return self.update(dest, branch=branch, revision=revision)
 
     # End hg share methods 2}}}
@@ -449,7 +449,7 @@ class MercurialVCS(ShellMixin, OSMixin, LogMixin, object):
             try:
                 self.pull(repo, dest)
                 return self.update(dest, branch=branch, revision=revision)
-            except subprocess.CalledProcessError:
+            except VCSException:
                 self.warning("Error pulling changes into %s from %s; clobbering" % (dest, repo))
                 self.exception(level='debug')
                 self.rmtree(dest)
@@ -481,7 +481,7 @@ class MercurialVCS(ShellMixin, OSMixin, LogMixin, object):
                           ssh_username=ssh_username,
                           ssh_key=ssh_key)
                 return
-            except subprocess.CalledProcessError, e:
+            except VCSException, e:
                 self.debug("Hit error when trying to push: %s" % str(e))
                 if n == max_attempts:
                     self.debug("Tried %d times, giving up" % max_attempts)
