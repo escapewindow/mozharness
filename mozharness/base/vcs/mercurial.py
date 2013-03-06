@@ -31,6 +31,7 @@ HG_OPTIONS = ['--config', 'ui.merge=internal:merge']
 # build/tools/scripts to MercurialVCS -- generic tagging logic belongs here.
 REVISION, BRANCH = 0, 1
 
+
 def make_hg_url(hg_host, repo_path, protocol='http', revision=None,
                 filename=None):
     """Helper function.
@@ -48,6 +49,7 @@ def make_hg_url(hg_host, repo_path, protocol='http', revision=None,
     else:
         assert revision
         return '/'.join([p.strip('/') for p in [repo, 'raw-file', revision, filename]])
+
 
 class MercurialVCS(ShellMixin, OSMixin, LogMixin, object):
     # For the most part, scripts import mercurial, update,
@@ -73,7 +75,7 @@ class MercurialVCS(ShellMixin, OSMixin, LogMixin, object):
         #  ssh_key: ssh_key,
         # }
         self.vcs_config = vcs_config
-        self.hg = [self.query_exe('hg')] + HG_OPTIONS
+        self.hg = self.query_exe('hg', return_type="list") + HG_OPTIONS
 
     def _make_absolute(self, repo):
         if repo.startswith("file://"):
@@ -82,7 +84,6 @@ class MercurialVCS(ShellMixin, OSMixin, LogMixin, object):
         elif "://" not in repo:
             repo = os.path.abspath(repo)
         return repo
-
 
     def get_repo_name(self, repo):
         return repo.rstrip('/').split('/')[-1]
@@ -143,7 +144,7 @@ class MercurialVCS(ShellMixin, OSMixin, LogMixin, object):
         if revision is not None:
             cmd = self.hg + ['update', '-C', '-r', revision]
             if self.run_command(cmd, cwd=dest, error_list=HgErrorList):
-                raise VCSException, "Unable to update %s to %s!" % (dest, revision)
+                raise VCSException("Unable to update %s to %s!" % (dest, revision))
         else:
             # Check & switch branch
             local_branch = self.get_branch_from_path(dest)
@@ -155,7 +156,7 @@ class MercurialVCS(ShellMixin, OSMixin, LogMixin, object):
                 cmd.append(branch)
 
             if self.run_command(cmd, cwd=dest, error_list=HgErrorList):
-                raise VCSException, "Unable to update %s!" % dest
+                raise VCSException("Unable to update %s!" % dest)
         return self.get_revision_from_path(dest)
 
     def clone(self, repo, dest, branch=None, revision=None, update_dest=True):
@@ -175,7 +176,7 @@ class MercurialVCS(ShellMixin, OSMixin, LogMixin, object):
             msg += " to revision %s" % revision
         self.info("%s." % msg)
         parent_dest = os.path.dirname(dest)
-        if not os.path.exists(parent_dest):
+        if parent_dest and not os.path.exists(parent_dest):
             self.mkdir_p(parent_dest)
         if os.path.exists(dest):
             self.info("Removing %s before clone." % dest)
@@ -194,7 +195,8 @@ class MercurialVCS(ShellMixin, OSMixin, LogMixin, object):
                 cmd.extend(['-b', branch])
 
         cmd.extend([repo, dest])
-        self.run_command(cmd, error_list=HgErrorList)
+        if self.run_command(cmd, error_list=HgErrorList):
+            raise VCSException("Unable to clone %s to %s!" % (repo, dest))
 
         if update_dest:
             return self.update(dest, branch, revision)
@@ -242,8 +244,8 @@ class MercurialVCS(ShellMixin, OSMixin, LogMixin, object):
         cmd = self.hg + ['pull']
         cmd.extend(self.common_args(**kwargs))
         cmd.append(repo)
-        self.run_command(cmd, cwd=dest, error_list=HgErrorList,
-                         throw_exception=True)
+        if self.run_command(cmd, cwd=dest, error_list=HgErrorList):
+            raise VCSException("Unable to pull in %s!" % dest)
 
         if update_dest:
             branch = self.vcs_config.get('branch')
@@ -334,7 +336,7 @@ class MercurialVCS(ShellMixin, OSMixin, LogMixin, object):
         revision = c.get('revision')
         branch = c.get('branch')
         if not self.query_can_share():
-            raise VCSException, "%s called when sharing is not allowed!" % __name__
+            raise VCSException("%s called when sharing is not allowed!" % __name__)
 
         # If the working directory already exists and isn't using share
         # when we want to use share, clobber.
@@ -400,7 +402,6 @@ class MercurialVCS(ShellMixin, OSMixin, LogMixin, object):
             self.exception(level='error')
             self.rmtree(dest)
 
-
     def share(self, source, dest, branch=None, revision=None):
         """Creates a new working directory in "dest" that shares history
         with "source" using Mercurial's share extension
@@ -457,8 +458,6 @@ class MercurialVCS(ShellMixin, OSMixin, LogMixin, object):
         self.clone(repo, dest)
         return self.update(dest, branch=branch, revision=revision)
 
-
-
     def apply_and_push(self, localrepo, remote, changer, max_attempts=10,
                        ssh_username=None, ssh_key=None):
         """This function calls `changer' to make changes to the repo, and
@@ -471,7 +470,7 @@ class MercurialVCS(ShellMixin, OSMixin, LogMixin, object):
         assert callable(changer)
         branch = self.get_branch_from_path(localrepo)
         changer(localrepo, 1)
-        for n in range(1, max_attempts+1):
+        for n in range(1, max_attempts + 1):
             try:
                 new_revs = self.out(src=localrepo, remote=remote,
                                     ssh_username=ssh_username,
@@ -504,8 +503,7 @@ class MercurialVCS(ShellMixin, OSMixin, LogMixin, object):
                     for r in reversed(new_revs):
                         self.run_command(self.hg + ['strip', '-n', r[REVISION]],
                                          cwd=localrepo, error_list=HgErrorList)
-                    changer(localrepo, n+1)
-
+                    changer(localrepo, n + 1)
 
     def cleanOutgoingRevs(self, reponame, remote, username, sshKey):
         # TODO retry
@@ -515,7 +513,6 @@ class MercurialVCS(ShellMixin, OSMixin, LogMixin, object):
         for r in reversed(outgoingRevs):
             self.run_command(self.hg + ['strip', '-n', r[REVISION]],
                              cwd=reponame, error_list=HgErrorList)
-
 
 
 # __main__ {{{1

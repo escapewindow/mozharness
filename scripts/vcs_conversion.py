@@ -14,11 +14,11 @@ import sys
 
 sys.path.insert(1, os.path.dirname(sys.path[0]))
 
-from mozharness.base.script import BaseScript
+from mozharness.base.vcs.vcsbase import VCSScript
 
 
 # VCSConversionScript {{{1
-class VCSConversionScript(BaseScript):
+class VCSConversionScript(VCSScript):
     config_options = [[
         ["--test-file", ],
         {"action": "extend",
@@ -28,14 +28,14 @@ class VCSConversionScript(BaseScript):
     ]]
 
     def __init__(self, require_config_file=False):
-        BaseScript.__init__(
+        VCSScript.__init__(
             self,
             config_options=self.config_options,
             all_actions=[
-                'foo',
+                'pull',
             ],
             default_actions=[
-                'foo',
+                'pull',
             ],
             require_config_file=require_config_file
         )
