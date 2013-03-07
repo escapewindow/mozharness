@@ -13,7 +13,7 @@ bar
 baz'''
 
 
-class CleanupObj(script.OSMixin, log.LogMixin):
+class CleanupObj(script.ScriptMixin, log.LogMixin):
     def __init__(self):
         super(CleanupObj, self).__init__()
         self.log_obj = None

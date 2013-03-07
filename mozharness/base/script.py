@@ -32,12 +32,19 @@ from mozharness.base.log import SimpleFileLogger, MultiFileLogger, \
     LogMixin, OutputParser, DEBUG, INFO, ERROR, WARNING, FATAL
 
 
-# OSMixin {{{1
-class OSMixin(object):
-    """Filesystem commands and the like.
+# ScriptMixin {{{1
+class ScriptMixin(object):
+    """This mixin contains simple filesystem commands and the like.
 
-    Depends on LogMixin, ShellMixin, and a self.config of some sort.
+    It also contains some very special but very complex methods that,
+    together with logging and config, provide the base for all scripts
+    in this harness.
+
+    Depends on LogMixin and a self.config of some sort.
     """
+
+    env = None
+
     def mkdir_p(self, path, error_level=ERROR):
         """
         Returns None for success, not None for failure
@@ -289,7 +296,7 @@ class OSMixin(object):
         Write contents to file_path.
 
         This doesn't currently create the parent_dir or translate into
-        abs_path; that needs to be done beforehand, since OSMixin doesn't
+        abs_path; that needs to be done beforehand, since ScriptMixin doesn't
         necessarily have access to query_abs_dirs().
 
         Returns file_path if successful, None if not.
@@ -361,18 +368,6 @@ class OSMixin(object):
                 if is_exe(exe_file):
                     return exe_file
         return None
-
-
-# ShellMixin {{{1
-class ShellMixin(object):
-    """These are very special but very complex methods that, together with
-    logging and config, provide the base for all scripts in this harness.
-
-    This is currently dependent on LogMixin and OSMixin, and assumes that
-    there is a self.config of some sort.
-    """
-    def __init__(self):
-        self.env = None
 
     def query_env(self, partial_env=None, replace_dict=None,
                   set_self_env=None, log_level=DEBUG):
@@ -641,7 +636,7 @@ class ShellMixin(object):
 
 
 # BaseScript {{{1
-class BaseScript(ShellMixin, OSMixin, LogMixin, object):
+class BaseScript(ScriptMixin, LogMixin, object):
     def __init__(self, config_options=None, default_log_level="info", **kwargs):
         super(BaseScript, self).__init__()
         self.return_code = 0
