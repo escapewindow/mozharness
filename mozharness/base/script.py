@@ -45,6 +45,7 @@ class ScriptMixin(object):
 
     env = None
 
+    # Simple filesystem commands {{{2
     def mkdir_p(self, path, error_level=ERROR):
         """
         Returns None for success, not None for failure
@@ -368,6 +369,75 @@ class ScriptMixin(object):
                 if is_exe(exe_file):
                     return exe_file
         return None
+
+    # More complex commands {{{2
+    def retry(self, action, attempts=None, sleeptime=60, max_sleeptime=5 * 60,
+              retry_exceptions=(Exception, ), good_statuses=None, cleanup=None,
+              error_level=ERROR, error_message="%(action)s failed after %(attempts)d tries!",
+              args=(), kwargs={}):
+        """ Generic retry command.
+            Ported from tools util.retry.
+
+            Call `action' a maximum of `attempts' times until it succeeds,
+            defaulting to self.config.get('global_retries', 5).
+
+            `sleeptime' is the number of seconds to wait between attempts,
+            defaulting to 60 and doubling each retry attempt, to a maximum of
+            `max_sleeptime'.
+
+            `retry_exceptions' is a tuple of Exceptions that should be caught.
+            If exceptions other than those listed in `retry_exceptions' are
+            raised from `action', they will be raised immediately.
+
+            `good_statuses' is a tuple of return values which, if specified,
+            will result in retrying if the return value isn't listed.
+
+            If `cleanup' is provided and callable it will be called immediately
+            after an Exception is caught.  No arguments will be passed to it.
+            If your cleanup function requires arguments it is recommended that
+            you wrap it in an argumentless function.
+
+            `args' and `kwargs' are a tuple and dict of arguments to pass onto
+            to `callable'.
+            """
+        if not callable(action):
+            self.fatal("retry() called with an uncallable method %s!" % action)
+        if cleanup and not callable(cleanup):
+            self.fatal("retry() called with an uncallable cleanup method %s!" % cleanup)
+        if not attempts:
+            attempts = self.config.get("global_retries", 5)
+        if max_sleeptime < sleeptime:
+            self.debug("max_sleeptime %d less than sleeptime %d" % (
+                       max_sleeptime, sleeptime))
+        n = 0
+        while n <= attempts:
+            retry = False
+            n += 1
+            try:
+                self.info("retry: Calling %s with args: %s, kwargs: %s, attempt #%d" %
+                          (action, str(args), str(kwargs), n))
+                status = action(*args, **kwargs)
+                if good_statuses and status not in good_statuses:
+                    retry = True
+            except retry_exceptions, e:
+                retry = True
+                error_message = "%s\nCaught exception: %s" % (error_message, str(e))
+
+            if not retry:
+                return status
+            else:
+                if cleanup:
+                    cleanup()
+                if n == attempts:
+                    self.log(error_message, level=error_level)
+                    return -1
+                if sleeptime > 0:
+                    self.info("retry: Failed, sleeping %d seconds before retrying" %
+                              sleeptime)
+                    time.sleep(sleeptime)
+                    sleeptime = sleeptime * 2
+                    if sleeptime > max_sleeptime:
+                        sleeptime = max_sleeptime
 
     def query_env(self, partial_env=None, replace_dict=None,
                   set_self_env=None, log_level=DEBUG):
