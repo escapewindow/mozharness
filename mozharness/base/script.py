@@ -61,39 +61,40 @@ class ScriptMixin(object):
         else:
             self.debug("mkdir_p: %s Already exists." % path)
 
-    def rmtree(self, path, num_retries=None, log_level=INFO,
-               error_level=ERROR, exit_code=-1):
+    def rmtree(self, path, log_level=INFO, error_level=ERROR,
+               exit_code=-1):
         """
         Returns None for success, not None for failure
         """
         self.log("rmtree: %s" % path, level=log_level)
-        if num_retries is None:
-            num_retries = self.config.get('global_retries', 5)
-        try_num = 0
         if os.path.exists(path):
-            while try_num <= num_retries:
-                if os.path.isdir(path):
-                    if self._is_windows():
-                        # bug 789520: using rmdir /s /q instead of
-                        # self._rmdir_recursive
-                        self.run_command('rmdir /S /Q "%s"' % path)
-                    else:
-                        shutil.rmtree(path)
+            error_message = "Unable to remove %s!" % path
+            if os.path.isdir(path):
+                if self._is_windows():
+                    # bug 789520: using rmdir /s /q instead of
+                    # self._rmdir_recursive
+                    return self.retry(
+                        self.run_command,
+                        error_level=error_level,
+                        error_message=error_message,
+                        args=('rmdir /S /Q "%s"' % path, ),
+                    )
                 else:
-                    os.remove(path)
-                try_num += 1
-                if os.path.exists(path):
-                    self.warning("Failed to remove %s on try %d." % (path, try_num))
-                    if try_num <= num_retries:
-                        sleep_time = try_num * 2
-                        self.info("Sleeping %d seconds..." % sleep_time)
-                        time.sleep(sleep_time)
-                else:
-                    break
+                    return self.retry(
+                        shutil.rmtree,
+                        error_level=error_level,
+                        error_message=error_message,
+                        retry_exceptions=(OSError, ),
+                        args=(path, ),
+                    )
             else:
-                self.log('Unable to remove %s!' % path, level=error_level,
-                         exit_code=exit_code)
-                return -1
+                return self.retry(
+                    os.remove,
+                    error_level=error_level,
+                    error_message=error_message,
+                    retry_exceptions=(OSError, ),
+                    args=(path, ),
+                )
         else:
             self.debug("%s doesn't exist." % path)
 
