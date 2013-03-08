@@ -29,7 +29,7 @@ except ImportError:
 
 from mozharness.base.config import BaseConfig
 from mozharness.base.log import SimpleFileLogger, MultiFileLogger, \
-    LogMixin, OutputParser, DEBUG, INFO, ERROR, WARNING, FATAL
+    LogMixin, OutputParser, DEBUG, INFO, ERROR, FATAL
 
 
 # ScriptMixin {{{1
@@ -151,11 +151,41 @@ class ScriptMixin(object):
         else:
             return parsed.netloc
 
+    def _download_file(self, url, file_name):
+        """ Helper script for download_file()
+            """
+        try:
+            f = urllib2.urlopen(url)
+            local_file = open(file_name, 'wb')
+            while True:
+                block = f.read(1024 ** 2)
+                if not block:
+                    break
+                local_file.write(block)
+            local_file.close()
+            return file_name
+        except urllib2.HTTPError, e:
+            self.warning("Server returned status %s %s for %s" % (str(e.code), str(e), url))
+            raise
+        except urllib2.URLError, e:
+            self.warning("URL Error: %s" % url)
+            remote_host = urlparse.urlsplit(url)[1]
+            if remote_host:
+                nslookup = self.query_exe('nslookup')
+                error_list = [{
+                    'substr': "server can't find %s" % remote_host,
+                    'level': ERROR,
+                    'explanation': "Either %s is an invalid hostname, or DNS is busted." % remote_host,
+                }]
+                self.run_command([nslookup, remote_host],
+                                 error_list=error_list)
+            raise
+
     # http://www.techniqal.com/blog/2008/07/31/python-file-read-write-with-urllib2/
     # TODO thinking about creating a transfer object.
     def download_file(self, url, file_name=None, parent_dir=None,
                       create_parent_dir=True, error_level=ERROR,
-                      num_retries=None, exit_code=-1):
+                      exit_code=-1):
         """Python wget.
         """
         if not file_name:
@@ -169,47 +199,16 @@ class ScriptMixin(object):
             file_name = os.path.join(parent_dir, file_name)
             if create_parent_dir:
                 self.mkdir_p(parent_dir, error_level=error_level)
-        if num_retries is None:
-            num_retries = self.config.get("global_retries", 5)
         self.info("Downloading %s to %s" % (url, file_name))
-        try_num = 0
-        while try_num <= num_retries:
-            try_num += 1
-            level = WARNING
-            if try_num > num_retries:
-                level = error_level
-            try:
-                f = urllib2.urlopen(url)
-                local_file = open(file_name, 'wb')
-                while True:
-                    block = f.read(1024 ** 2)
-                    if not block:
-                        break
-                    local_file.write(block)
-                local_file.close()
-                return file_name
-            except urllib2.HTTPError, e:
-                self.log("Try %d: Server returned status %s %s for %s" % (try_num, str(e.code), str(e), url),
-                         level=level, exit_code=exit_code)
-            except urllib2.URLError, e:
-                if try_num > num_retries:
-                    remote_host = urlparse.urlsplit(url)[1]
-                    if not remote_host:
-                        return
-                    nslookup = self.query_exe('nslookup')
-                    error_list = [{
-                        'substr': "server can't find %s" % remote_host,
-                        'level': ERROR,
-                        'explanation': "Either %s is an invalid hostname, or DNS is busted." % remote_host,
-                    }]
-                    self.run_command([nslookup, remote_host],
-                                     error_list=error_list)
-                self.log("Try %d: URL Error: %s" % (try_num, url), level=level,
-                         exit_code=exit_code)
-            if try_num <= num_retries:
-                sleep_time = try_num * 20
-                self.info("Sleeping %d seconds..." % sleep_time)
-                time.sleep(sleep_time)
+        status = self.retry(
+            self._download_file,
+            args=(url, file_name),
+            failure_status=None,
+            retry_exceptions=(urllib2.HTTPError, urllib2.URLError),
+            error_message="Can't download from %s to %s!" % (url, file_name),
+            error_level=error_level,
+        )
+        return status
 
     def move(self, src, dest, log_level=INFO, error_level=ERROR,
              exit_code=-1):
@@ -375,7 +374,7 @@ class ScriptMixin(object):
     def retry(self, action, attempts=None, sleeptime=60, max_sleeptime=5 * 60,
               retry_exceptions=(Exception, ), good_statuses=None, cleanup=None,
               error_level=ERROR, error_message="%(action)s failed after %(attempts)d tries!",
-              args=(), kwargs={}):
+              failure_status=-1, args=(), kwargs={}):
         """ Generic retry command.
             Ported from tools util.retry.
 
@@ -431,7 +430,7 @@ class ScriptMixin(object):
                     cleanup()
                 if n == attempts:
                     self.log(error_message, level=error_level)
-                    return -1
+                    return failure_status
                 if sleeptime > 0:
                     self.info("retry: Failed, sleeping %d seconds before retrying" %
                               sleeptime)
