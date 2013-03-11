@@ -10,7 +10,6 @@
 from copy import deepcopy
 import os
 import sys
-import time
 
 sys.path.insert(1, os.path.dirname(os.path.dirname(os.path.dirname(sys.path[0]))))
 
@@ -43,50 +42,44 @@ class VCSMixin(object):
             dest = dest.replace('.git', '')
         return dest
 
-    def _vcs_checkout_with_update(self, vcs_obj, num_retries, error_level, **kwargs):
-        try_num = 0
-        while try_num <= num_retries:
-            try:
-                got_revision = vcs_obj.ensure_repo_and_revision()
-                if got_revision:
-                    return got_revision
-            except VCSException, e:
-                try_num += 1
-                self.warning("Try %d: Can't checkout %s: %s!" % (try_num, kwargs['repo'], str(e)))
-                if try_num <= num_retries:
-                    self.rmtree(kwargs['dest'])
-                    sleep_time = try_num * 2
-                    self.info("Sleeping %d..." % sleep_time)
-                    time.sleep(sleep_time)
-        else:
-            self.log("Can't checkout %s after %d tries!" % (kwargs['repo'], try_num), level=error_level)
+    def _vcs_checkout_with_update(self, vcs_obj, error_level, **kwargs):
+        return self.retry(
+            self._get_revision,
+            error_level=error_level,
+            error_message="Can't checkout %s!" % kwargs['repo'],
+            args=(vcs_obj, kwargs['dest']),
+        )
 
-    def _vcs_checkout_bare(self, vcs_obj, num_retries, error_level, **kwargs):
-        try_num = 0
-        while try_num <= num_retries:
-            try:
-                if os.path.exists(kwargs['dest']):
-                    return vcs_obj.pull(kwargs['repo'], kwargs['dest'], update_dest=False)
-                else:
-                    return vcs_obj.clone(kwargs['repo'], kwargs['dest'], update_dest=False)
-            except VCSException, e:
-                try_num += 1
-                self.warning("Try %d: Can't bare checkout %s: %s!" % (try_num, kwargs['repo'], str(e)))
-                if try_num <= num_retries:
-                    self.rmtree(kwargs['dest'])
-                    sleep_time = try_num * 2
-                    self.info("Sleeping %d..." % sleep_time)
-                    time.sleep(sleep_time)
+    def _vcs_checkout_bare(self, vcs_obj, error_level, **kwargs):
+        if os.path.exists(kwargs['dest']):
+            command = vcs_obj.pull
+            error_message = "Can't pull %s in %s!" % (kwargs['repo'], kwargs['dest'])
         else:
-            self.log("Can't bare checkout %s after %d tries!" % (kwargs['repo'], try_num), level=error_level)
+            command = vcs_obj.clone
+            error_message = "Can't clone %s to %s!" % (kwargs['repo'], kwargs['dest'])
+        return self.retry(
+            command,
+            args=(kwargs['repo'], kwargs['dest']),
+            kwargs={'update_dest': False},
+            error_level=error_level,
+            error_message=error_message,
+            retry_exceptions=(VCSException, ),
+        )
 
-    def vcs_checkout(self, vcs=None, num_retries=None, error_level=FATAL,
+    def _get_revision(self, vcs_obj, dest):
+        try:
+            got_revision = vcs_obj.ensure_repo_and_revision()
+            if got_revision:
+                return got_revision
+        except VCSException:
+            self.rmtree(dest)
+            raise
+
+    def vcs_checkout(self, vcs=None, error_level=FATAL,
                      bare_checkout=False, **kwargs):
         """ Check out a single repo.
         """
         c = self.config
-        if num_retries is None:
-            num_retries = self.config.get("global_retries", 10)
         if not vcs:
             if c.get('default_vcs'):
                 vcs = c['default_vcs']
@@ -110,9 +103,9 @@ class VCSMixin(object):
             vcs_config=kwargs,
         )
         if bare_checkout:
-            return self._vcs_checkout_bare(vcs_obj, num_retries, error_level, **kwargs)
+            return self._vcs_checkout_bare(vcs_obj, error_level, **kwargs)
         else:
-            return self._vcs_checkout_with_update(vcs_obj, num_retries, error_level, **kwargs)
+            return self._vcs_checkout_with_update(vcs_obj, error_level, **kwargs)
 
     def vcs_checkout_repos(self, repo_list, parent_dir=None,
                            tag_override=None, **kwargs):
@@ -142,15 +135,14 @@ class VCSScript(VCSMixin, BaseScript):
     def __init__(self, **kwargs):
         super(VCSScript, self).__init__(**kwargs)
 
-    def pull(self, num_retries=None, repos=None):
+    def pull(self, repos=None):
         repos = repos or self.config.get('repos')
         if not repos:
             self.info("Pull has nothing to do!")
             return
         dirs = self.query_abs_dirs()
         return self.vcs_checkout_repos(self.config['repos'],
-                                       parent_dir=dirs['abs_work_dir'],
-                                       num_retries=num_retries)
+                                       parent_dir=dirs['abs_work_dir'])
 
 
 # Specific VCS stubs {{{1
