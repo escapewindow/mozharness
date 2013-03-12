@@ -21,17 +21,9 @@ from mozharness.base.vcs.vcsbase import VCSMixin
 
 # GithubScript {{{1
 class GithubScript(VCSMixin, BaseScript):
-#    config_options = [[
-#        ["--test-file", ],
-#        {"action": "extend",
-#         "dest": "test_files",
-#         "help": "Specify which config files to test"
-#         }
-#    ]]
 
     def __init__(self, require_config_file=False):
         super(GithubScript, self).__init__(
-            #config_options=self.config_options,
             all_actions=[
                 'clobber',
                 'create-stage-mirror',
@@ -47,6 +39,8 @@ class GithubScript(VCSMixin, BaseScript):
                 'create-work-mirror',
                 'create-test-target',
                 'update-stage-mirror',
+                'update-work-mirror',
+                'push',
             ],
             require_config_file=require_config_file
         )
@@ -68,8 +62,8 @@ class GithubScript(VCSMixin, BaseScript):
             source_dest = self.query_repo_dest(repo_config, 'source_dest')
             git = self.query_exe('git', return_type='list')
             if not os.path.exists(source_dest):
-                self._init_git_repo(source_dest, additional_args=['--bare'])
-                if repo_config["workflow_type"] == "github":
+                if repo_config.get("branches"):
+                    self._init_git_repo(source_dest, additional_args=['--bare'])
                     self.run_command(
                         git + ['config', '--add', 'remote.origin.url', repo_config['repo']],
                         cwd=source_dest,
@@ -83,6 +77,8 @@ class GithubScript(VCSMixin, BaseScript):
                             args=(cmd),
                             kwargs={'cwd': source_dest},
                         )
+                else:
+                    self.fatal("No branches specified for %s; not written yet!" % repo_config['repo'])
             else:
                 self.info("%s already exists; skipping." % source_dest)
 
@@ -103,18 +99,34 @@ class GithubScript(VCSMixin, BaseScript):
             target_dest = self.query_repo_dest(repo_config, 'target_dest')
             if not os.path.exists(target_dest):
                 self.info("Creating local target repo %s." % target_dest)
-                self._init_git_repo(target_dest)
+                self._init_git_repo(target_dest, additional_args=['--bare'])
 
-    def update_stage_mirror(self):
+    def _update_mirror(self, dest_type="source_dest"):
         git = self.query_exe("git", return_type="list")
         for repo_config in self.config['repos']:
-            source_dest = self.query_repo_dest(repo_config, 'source_dest')
+            dest = self.query_repo_dest(repo_config, dest_type)
             cmd = git + ['fetch', '--force']
             self.retry(
                 self.run_command,
                 args=(cmd, ),
-                kwargs={'cwd': source_dest},
+                kwargs={'cwd': dest},
             )
+            # TODO on failure, nuke and re-create stage mirror, not work mirror
+            # TODO I'm pulling tags as well as branches; limit?
+
+    def update_stage_mirror(self):
+        self._update_mirror()
+
+    def update_work_mirror(self):
+        self._update_mirror(dest_type="work_dest")
+
+    def push(self):
+        git = self.query_exe('git', return_type='list')
+        for repo_config in self.config['repos']:
+            work_dest = self.query_repo_dest(repo_config, 'work_dest')
+            target_dest = self.query_repo_dest(repo_config, 'target_dest')
+            self.run_command(git + ['push', '--force', '--mirror', target_dest],
+                             cwd=work_dest)
 
 # __main__ {{{1
 if __name__ == '__main__':
