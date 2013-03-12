@@ -7,9 +7,8 @@ config = {
         "target_dest": "gh-mh-target",
         "bare_checkout": True,
         "branches": {
-            # TODO be able to pull branch origin/X and push to branch remote/Y
             "master": "master",
-            "vcs_checkout": "vcs_mirror",
+            "vcs_conversion": "vcs_mirror",
         },
         "vcs": "git",
         "workflow_type": "github",

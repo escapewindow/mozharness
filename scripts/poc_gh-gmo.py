@@ -44,16 +44,18 @@ class GithubScript(VCSMixin, BaseScript):
             default_actions=[
                 'clobber',
                 'create-stage-mirror',
+                'create-work-mirror',
                 'create-test-target',
+                'update-stage-mirror',
             ],
             require_config_file=require_config_file
         )
 
-    def _init_git_repo(self, path, bare=False):
+    def _init_git_repo(self, path, git_cmd="init", additional_args=None):
         git = self.query_exe("git", return_type="list")
-        cmd = git + ["init"]
-        if bare:
-            cmd.append("--bare")
+        cmd = git + [git_cmd]
+        if additional_args:
+            cmd.extend(additional_args)
         cmd.append(path)
         return self.retry(self.run_command, args=(cmd, ), error_level=FATAL, error_message="Can't set up %s!" % path)
 
@@ -64,23 +66,36 @@ class GithubScript(VCSMixin, BaseScript):
     def create_stage_mirror(self):
         for repo_config in self.config['repos']:
             source_dest = self.query_repo_dest(repo_config, 'source_dest')
-            target_dest = self.query_repo_dest(repo_config, 'target_dest')
             git = self.query_exe('git', return_type='list')
             if not os.path.exists(source_dest):
-                self._init_git_repo(source_dest, bare=True)
+                self._init_git_repo(source_dest, additional_args=['--bare'])
                 if repo_config["workflow_type"] == "github":
                     self.run_command(
-                        git + ['config', '--add', 'remote.origin.url', target_dest],
+                        git + ['config', '--add', 'remote.origin.url', repo_config['repo']],
                         cwd=source_dest,
                     )
-                    for branch in repo_config['branches'].keys():
-                        self.run_command(
-                            git + ['config', '--add', 'remote.origin.fetch',
-                                   '+refs/heads/nightly:refs/heads/%s' % branch],
-                            cwd=source_dest,
+                    for branch_source in repo_config['branches'].keys():
+                        branch_target = repo_config['branches'][branch_source]
+                        cmd = git + ['config', '--add', 'remote.origin.fetch',
+                                     '+refs/heads/%s:refs/heads/%s' % (branch_source, branch_target)],
+                        self.retry(
+                            self.run_command,
+                            args=(cmd),
+                            kwargs={'cwd': source_dest},
                         )
             else:
                 self.info("%s already exists; skipping." % source_dest)
+
+    def create_work_mirror(self):
+        git = self.query_exe("git", return_type="list")
+        for repo_config in self.config['repos']:
+            work_dest = self.query_repo_dest(repo_config, 'work_dest')
+            source_dest = self.query_repo_dest(repo_config, 'source_dest')
+            if not os.path.exists(work_dest):
+                # clone --mirror for now, which may or may not work.
+                self.run_command(git + ["clone", "--mirror", source_dest, work_dest])
+            else:
+                self.info("%s already exists; skipping." % work_dest)
 
     def create_test_target(self):
         for repo_config in self.config['repos']:
@@ -91,13 +106,15 @@ class GithubScript(VCSMixin, BaseScript):
                 self._init_git_repo(target_dest)
 
     def update_stage_mirror(self):
-        pass
-#            cmd = git + ['fetch']
-#            self.retry(
-#                self.run_command,
-#                args=(cmd, ),
-#                kwargs={'cwd': source_dest},
-#            )
+        git = self.query_exe("git", return_type="list")
+        for repo_config in self.config['repos']:
+            source_dest = self.query_repo_dest(repo_config, 'source_dest')
+            cmd = git + ['fetch', '--force']
+            self.retry(
+                self.run_command,
+                args=(cmd, ),
+                kwargs={'cwd': source_dest},
+            )
 
 # __main__ {{{1
 if __name__ == '__main__':

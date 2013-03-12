@@ -419,9 +419,10 @@ class ScriptMixin(object):
                 status = action(*args, **kwargs)
                 if good_statuses and status not in good_statuses:
                     retry = True
+                    self.warning("Status %s not in good_statuses %s!" % (status, str(good_statuses)))
             except retry_exceptions, e:
                 retry = True
-                error_message = "%s\nCaught exception: %s" % (error_message, str(e))
+                self.warning("Caught exception: %s" % str(e))
 
             if not retry:
                 return status
