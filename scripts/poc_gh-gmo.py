@@ -21,26 +21,29 @@ from mozharness.base.vcs.vcsbase import VCSMixin
 
 # GithubScript {{{1
 class GithubScript(VCSMixin, BaseScript):
-    config_options = [[
-        ["--test-file", ],
-        {"action": "extend",
-         "dest": "test_files",
-         "help": "Specify which config files to test"
-         }
-    ]]
+#    config_options = [[
+#        ["--test-file", ],
+#        {"action": "extend",
+#         "dest": "test_files",
+#         "help": "Specify which config files to test"
+#         }
+#    ]]
 
     def __init__(self, require_config_file=False):
         super(GithubScript, self).__init__(
-            config_options=self.config_options,
+            #config_options=self.config_options,
             all_actions=[
                 'clobber',
+                'create-stage-mirror',
+                'create-work-mirror',
+                'create-test-target',
                 'update-stage-mirror',
                 'update-work-mirror',
-                'create-test-target',
+                'push',
             ],
             default_actions=[
                 'clobber',
-                'update-stage-mirror',
+                'create-stage-mirror',
                 'create-test-target',
             ],
             require_config_file=require_config_file
@@ -58,15 +61,7 @@ class GithubScript(VCSMixin, BaseScript):
         dirs = self.query_abs_dirs()
         return os.path.join(dirs['abs_work_dir'], repo_config[dest_type])
 
-    def create_test_target(self):
-        for repo_config in self.config['repos']:
-            # for testing only: create local git repos to push to
-            target_dest = self.query_repo_dest(repo_config, 'target_dest')
-            if not os.path.exists(target_dest):
-                self.info("Creating local target repo %s." % target_dest)
-                self._init_git_repo(target_dest)
-
-    def update_stage_mirror(self):
+    def create_stage_mirror(self):
         for repo_config in self.config['repos']:
             source_dest = self.query_repo_dest(repo_config, 'source_dest')
             target_dest = self.query_repo_dest(repo_config, 'target_dest')
@@ -86,6 +81,23 @@ class GithubScript(VCSMixin, BaseScript):
                         )
             else:
                 self.info("%s already exists; skipping." % source_dest)
+
+    def create_test_target(self):
+        for repo_config in self.config['repos']:
+            # for testing only: create local git repos to push to
+            target_dest = self.query_repo_dest(repo_config, 'target_dest')
+            if not os.path.exists(target_dest):
+                self.info("Creating local target repo %s." % target_dest)
+                self._init_git_repo(target_dest)
+
+    def update_stage_mirror(self):
+        pass
+#            cmd = git + ['fetch']
+#            self.retry(
+#                self.run_command,
+#                args=(cmd, ),
+#                kwargs={'cwd': source_dest},
+#            )
 
 # __main__ {{{1
 if __name__ == '__main__':
