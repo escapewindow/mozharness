@@ -4,8 +4,13 @@ config = {
         "repo": "https://github.com/escapewindow/mozharness.git",
         "source_dest": "gh-mh-src/.git",
         "work_dest": "gh-mh-wrk/.git",
-        "target_dest": "gh-mh-target/.git",
+        "target_dest": "gh-mh-target",
         "bare_checkout": True,
+        "branches": {
+            # TODO be able to pull branch origin/X and push to branch remote/Y
+            "master": "master",
+            "vcs_checkout": "vcs_mirror",
+        },
         "vcs": "git",
         "workflow_type": "github",
     }],
