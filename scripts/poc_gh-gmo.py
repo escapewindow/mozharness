@@ -14,13 +14,12 @@ import sys
 
 sys.path.insert(1, os.path.dirname(sys.path[0]))
 
-from mozharness.base.log import FATAL
 from mozharness.base.script import BaseScript
-from mozharness.base.vcs.vcsbase import VCSMixin
+from mozharness.base.vcs.vcsbase import VCSMixin, VCSConversionMixin
 
 
 # GithubScript {{{1
-class GithubScript(VCSMixin, BaseScript):
+class GithubScript(VCSMixin, VCSConversionMixin, BaseScript):
 
     def __init__(self, require_config_file=False):
         super(GithubScript, self).__init__(
@@ -45,25 +44,13 @@ class GithubScript(VCSMixin, BaseScript):
             require_config_file=require_config_file
         )
 
-    def _init_git_repo(self, path, git_cmd="init", additional_args=None):
-        git = self.query_exe("git", return_type="list")
-        cmd = git + [git_cmd]
-        if additional_args:
-            cmd.extend(additional_args)
-        cmd.append(path)
-        return self.retry(self.run_command, args=(cmd, ), error_level=FATAL, error_message="Can't set up %s!" % path)
-
-    def query_repo_dest(self, repo_config, dest_type):
-        dirs = self.query_abs_dirs()
-        return os.path.join(dirs['abs_work_dir'], repo_config[dest_type])
-
     def create_stage_mirror(self):
         for repo_config in self.config['repos']:
             source_dest = self.query_repo_dest(repo_config, 'source_dest')
             git = self.query_exe('git', return_type='list')
             if not os.path.exists(source_dest):
                 if repo_config.get("branches"):
-                    self._init_git_repo(source_dest, additional_args=['--bare'])
+                    self.init_git_repo(source_dest, additional_args=['--bare'])
                     self.run_command(
                         git + ['config', '--add', 'remote.origin.url', repo_config['repo']],
                         cwd=source_dest,
@@ -99,7 +86,7 @@ class GithubScript(VCSMixin, BaseScript):
             target_dest = self.query_repo_dest(repo_config, 'target_dest')
             if not os.path.exists(target_dest):
                 self.info("Creating local target repo %s." % target_dest)
-                self._init_git_repo(target_dest, additional_args=['--bare'])
+                self.init_git_repo(target_dest, additional_args=['--bare'])
 
     def _update_mirror(self, dest_type="source_dest"):
         git = self.query_exe("git", return_type="list")

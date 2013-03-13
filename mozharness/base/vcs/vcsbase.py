@@ -154,6 +154,25 @@ class MercurialScript(VCSScript):
     default_vcs = 'hg'
 
 
+# VCSConversionMixin {{{1
+class VCSConversionMixin(object):
+    """ Shared methods for VCS conversions.
+        """
+
+    def init_git_repo(self, path, additional_args=None):
+        git = self.query_exe("git", return_type="list")
+        cmd = git + ['init']
+        # generally for --bare
+        if additional_args:
+            cmd.extend(additional_args)
+        cmd.append(path)
+        return self.retry(self.run_command, args=(cmd, ), error_level=FATAL, error_message="Can't set up %s!" % path)
+
+    def query_repo_dest(self, repo_config, dest_type):
+        dirs = self.query_abs_dirs()
+        short_dest_type = dest_type.replace('_dest', '')
+        return os.path.join(dirs['abs_work_dir'], repo_config.get(dest_type, short_dest_type))
+
 # __main__ {{{1
 if __name__ == '__main__':
     pass
