@@ -50,6 +50,7 @@ def make_hg_url(hg_host, repo_path, protocol='http', revision=None,
         assert revision
         return '/'.join([p.strip('/') for p in [repo, 'raw-file', revision, filename]])
 
+
 class MercurialVCS(ScriptMixin, LogMixin, object):
     # For the most part, scripts import mercurial, update,
     # hgtool uses mercurial, share, out
@@ -244,7 +245,7 @@ class MercurialVCS(ScriptMixin, LogMixin, object):
         cmd.extend(self.common_args(**kwargs))
         cmd.append(repo)
         if self.run_command(cmd, cwd=dest, error_list=HgErrorList):
-            raise VCSException("Unable to pull in %s!" % dest)
+            raise VCSException("Can't pull in %s!" % dest)
 
         if update_dest:
             branch = self.vcs_config.get('branch')
@@ -289,8 +290,11 @@ class MercurialVCS(ScriptMixin, LogMixin, object):
         if push_new_branches and self.hg_ver() >= (1, 6, 0):
             cmd.append('--new-branch')
         cmd.append(remote)
-        if self.run_command(cmd, cwd=src, error_list=HgErrorList):
-            raise VCSException("Unable to push %s to %s!" % (src, remote))
+        status = self.run_command(cmd, cwd=src, error_list=HgErrorList, success_codes=(0, 1),
+                                  return_type="num_errors")
+        if status:
+            raise VCSException("Can't push %s to %s!" % (src, remote))
+        return status
 
     # hg share methods {{{2
     def query_can_share(self):
@@ -355,47 +359,50 @@ class MercurialVCS(ScriptMixin, LogMixin, object):
         dest_shared_path = os.path.join(dest, '.hg', 'sharedpath')
         if os.path.exists(dest_shared_path):
             # Make sure that the sharedpath points to shared_repo
-            dest_shared_path_data = os.path.normpath(open(dest_shared_path).read())
-            norm_shared_repo = os.path.normpath(os.path.join(shared_repo, '.hg'))
+            dest_shared_path_data = os.path.realpath(open(dest_shared_path).read())
+            norm_shared_repo = os.path.realpath(os.path.join(shared_repo, '.hg'))
             if dest_shared_path_data != norm_shared_repo:
                 # Clobber!
                 self.info("We're currently shared from %s, but are being requested to pull from %s (%s); clobbering" % (dest_shared_path_data, repo, norm_shared_repo))
                 self.rmtree(dest)
 
-        try:
-            self.info("Updating shared repo")
-            if os.path.exists(shared_repo):
-                try:
-                    self.pull(repo, shared_repo)
-                except VCSException:
-                    self.warning("Error pulling changes into %s from %s; clobbering" % (shared_repo, repo))
-                    self.exception(level='debug')
-                    self.clone(repo, shared_repo)
-            else:
+        self.info("Updating shared repo")
+        if os.path.exists(shared_repo):
+            try:
+                self.pull(repo, shared_repo)
+            except VCSException:
+                self.warning("Error pulling changes into %s from %s; clobbering" % (shared_repo, repo))
+                self.exception(level='debug')
                 self.clone(repo, shared_repo)
+        else:
+            self.clone(repo, shared_repo)
 
-            if os.path.exists(dest):
+        if os.path.exists(dest):
+            try:
                 self.pull(shared_repo, dest)
-                return self.update(dest, branch=branch, revision=revision)
-            else:
-                try:
-                    self.info("Trying to share %s to %s" % (shared_repo, dest))
-                    return self.share(shared_repo, dest, branch=branch, revision=revision)
-                except VCSException:
-                    if not c.get('allow_unshared_local_clones'):
-                        # Re-raise the exception so it gets caught below.
-                        # We'll then clobber dest, and clone from original
-                        # repo
-                        raise
+                status = self.update(dest, branch=branch, revision=revision)
+                return status
+            except VCSException:
+                self.rmtree(dest)
+        try:
+            self.info("Trying to share %s to %s" % (shared_repo, dest))
+            return self.share(shared_repo, dest, branch=branch, revision=revision)
+        except VCSException:
+            if not c.get('allow_unshared_local_clones'):
+                # Re-raise the exception so it gets caught below.
+                # We'll then clobber dest, and clone from original
+                # repo
+                raise
 
-                self.warning("Error calling hg share from %s to %s; falling back to normal clone from shared repo" % (shared_repo, dest))
-                # Do a full local clone first, and then update to the
-                # revision we want
-                # This lets us use hardlinks for the local clone if the
-                # OS supports it
-                self.clone(shared_repo, dest, update_dest=False)
-                return self.update(dest, branch=branch, revision=revision)
-        except (subprocess.CalledProcessError, VCSException):
+        self.warning("Error calling hg share from %s to %s; falling back to normal clone from shared repo" % (shared_repo, dest))
+        # Do a full local clone first, and then update to the
+        # revision we want
+        # This lets us use hardlinks for the local clone if the
+        # OS supports it
+        try:
+            self.clone(shared_repo, dest, update_dest=False)
+            return self.update(dest, branch=branch, revision=revision)
+        except VCSException:
             # Need better fallback
             self.error("Error updating %s from shared_repo (%s): " % (dest, shared_repo))
             self.exception(level='error')

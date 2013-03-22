@@ -13,7 +13,7 @@ import socket
 import sys
 
 from time import sleep
-from mozharness.mozilla.buildbot import TBPL_RETRY
+from mozharness.mozilla.buildbot import TBPL_RETRY, TBPL_EXCEPTION
 
 #TODO - adjust these values
 MAX_RETRIES = 20
@@ -61,7 +61,7 @@ class MozpoolMixin(object):
         mph = self.query_mozpool_handler(self.mozpool_device)
         for retry in self._retry_sleep(
                 error_message="INFRA-ERROR: Could not request device '%s'" % self.mozpool_device,
-                tbpl_status=TBPL_RETRY):
+                tbpl_status=TBPL_EXCEPTION):
             try:
                 image = 'b2g'
                 response = mph.request_device(self.mozpool_device, image, assignee=self.mozpool_assignee, \
@@ -100,7 +100,7 @@ class MozpoolMixin(object):
         mph = self.query_mozpool_handler(self.mozpool_device)
         for retry in self._retry_sleep(sleep_time=RETRY_INTERVAL, max_retries=MAX_RETRIES,
                 error_message="INFRA-ERROR: Request did not become ready in time",
-                tbpl_status=TBPL_RETRY):
+                tbpl_status=TBPL_EXCEPTION):
             response = mph.query_request_status(self.request_url)
             state = response['state']
             if state == 'ready':
