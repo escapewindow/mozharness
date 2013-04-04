@@ -15,12 +15,10 @@ config = {
     },
 
     "virtualenv_modules": [
-        "python-devel",
-        "dulwich==0.8.5",
-        "http://scl3-production-puppet.srv.releng.scl3.mozilla.com/production/python-packages/hg_git-0.3.2-moz2.tar.gz",
+        "http://puppetagain.pub.build.mozilla.org/data/python/packages/hg_git-0.3.2-moz2.tar.gz",
         "mercurial==2.2.1",
-        "argparse==1.2.1",
     ],
+    "find_links": ["http://puppetagain.pub.build.mozilla.org/data/python/packages/", ],
 
     ## .ssh/config
     #Host git.m.o
