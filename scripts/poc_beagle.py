@@ -59,13 +59,13 @@ class HgGitScript(VCSMixin, VCSConversionMixin, VirtualenvMixin, BaseScript):
 
     def create_stage_mirror(self):
         hg = self.query_exe('hg', return_type='list')
-        dirs = self.query_abs_dirs()
+#        dirs = self.query_abs_dirs()
         for repo_config in self.config['repos']:
             source_dest = self.query_repo_dest(repo_config, 'source_dest')
             if not os.path.exists(source_dest):
                 self.retry(
                     self.run_command,
-                    args=(hg + ['clone', '--noupdate', repo_config['repo'], source_dest]),
+                    args=(hg + ['clone', '--noupdate', repo_config['repo'], source_dest], ),
 #                    kwargs={
 #                        'idle_timeout': 15 * 60,
 #                        'cwd': dirs['abs_work_dir'],
