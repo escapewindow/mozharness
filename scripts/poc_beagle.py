@@ -17,11 +17,11 @@ sys.path.insert(1, os.path.dirname(sys.path[0]))
 from mozharness.base.log import FATAL
 from mozharness.base.python import VirtualenvMixin, virtualenv_config_options
 from mozharness.base.script import BaseScript
-from mozharness.base.vcs.vcsbase import VCSMixin
+from mozharness.base.vcs.vcsbase import VCSMixin, VCSConversionMixin
 
 
 # HgGitScript {{{1
-class HgGitScript(VCSMixin, VirtualenvMixin, BaseScript):
+class HgGitScript(VCSMixin, VCSConversionMixin, VirtualenvMixin, BaseScript):
 
     def __init__(self, require_config_file=True):
         super(HgGitScript, self).__init__(
@@ -57,7 +57,6 @@ class HgGitScript(VCSMixin, VirtualenvMixin, BaseScript):
         cmd.append(path)
         return self.retry(self.run_command, args=(cmd, ), error_level=FATAL, error_message="Can't set up %s!" % path)
 
-# aki
     def create_stage_mirror(self):
         hg = self.query_exe('hg', return_type='list')
         dirs = self.query_abs_dirs()
@@ -72,26 +71,10 @@ class HgGitScript(VCSMixin, VirtualenvMixin, BaseScript):
                         'cwd': dirs['abs_work_dir'],
                     }
                 )
-#                if repo_config.get("branches"):
-#                    self._init_git_repo(source_dest, additional_args=['--bare'])
-#                    self.run_command(
-#                        git + ['config', '--add', 'remote.origin.url', repo_config['repo']],
-#                        cwd=source_dest,
-#                    )
-#                    for branch_source in repo_config['branches'].keys():
-#                        branch_target = repo_config['branches'][branch_source]
-#                        cmd = git + ['config', '--add', 'remote.origin.fetch',
-#                                     '+refs/heads/%s:refs/heads/%s' % (branch_source, branch_target)],
-#                        self.retry(
-#                            self.run_command,
-#                            args=(cmd),
-#                            kwargs={'cwd': source_dest},
-#                        )
-#                else:
-#                    self.fatal("No branches specified for %s; not written yet!" % repo_config['repo'])
             else:
                 self.info("%s already exists; skipping." % source_dest)
 
+# aki
     def create_work_mirror(self):
         git = self.query_exe("git", return_type="list")
         for repo_config in self.config['repos']:
