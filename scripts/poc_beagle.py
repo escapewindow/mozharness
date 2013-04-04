@@ -23,11 +23,12 @@ from mozharness.base.vcs.vcsbase import VCSMixin
 # HgGitScript {{{1
 class HgGitScript(VCSMixin, VirtualenvMixin, BaseScript):
 
-    def __init__(self, require_config_file=False):
+    def __init__(self, require_config_file=True):
         super(HgGitScript, self).__init__(
             config_options=virtualenv_config_options,
             all_actions=[
                 'clobber',
+                'create-virtualenv',
                 'create-stage-mirror',
                 'create-work-mirror',
                 'create-test-target',
@@ -37,6 +38,7 @@ class HgGitScript(VCSMixin, VirtualenvMixin, BaseScript):
             ],
             default_actions=[
                 'clobber',
+                'create-virtualenv',
                 #'create-stage-mirror',
                 #'create-work-mirror',
                 #'create-test-target',
