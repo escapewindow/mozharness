@@ -21,7 +21,6 @@ config = {
         "mercurial==2.2.1",
         "argparse==1.2.1",
     ],
-    "find_links": ["http://repos/python/packages"],
 
     ## .ssh/config
     #Host git.m.o
