@@ -39,7 +39,7 @@ class HgGitScript(VCSMixin, VirtualenvMixin, BaseScript):
             default_actions=[
                 'clobber',
                 'create-virtualenv',
-                #'create-stage-mirror',
+                'create-stage-mirror',
                 #'create-work-mirror',
                 #'create-test-target',
                 #'update-stage-mirror',
@@ -59,27 +59,36 @@ class HgGitScript(VCSMixin, VirtualenvMixin, BaseScript):
 
 # aki
     def create_stage_mirror(self):
+        hg = self.query_exe('hg', return_type='list')
+        dirs = self.query_abs_dirs()
         for repo_config in self.config['repos']:
             source_dest = self.query_repo_dest(repo_config, 'source_dest')
-            git = self.query_exe('git', return_type='list')
             if not os.path.exists(source_dest):
-                if repo_config.get("branches"):
-                    self._init_git_repo(source_dest, additional_args=['--bare'])
-                    self.run_command(
-                        git + ['config', '--add', 'remote.origin.url', repo_config['repo']],
-                        cwd=source_dest,
-                    )
-                    for branch_source in repo_config['branches'].keys():
-                        branch_target = repo_config['branches'][branch_source]
-                        cmd = git + ['config', '--add', 'remote.origin.fetch',
-                                     '+refs/heads/%s:refs/heads/%s' % (branch_source, branch_target)],
-                        self.retry(
-                            self.run_command,
-                            args=(cmd),
-                            kwargs={'cwd': source_dest},
-                        )
-                else:
-                    self.fatal("No branches specified for %s; not written yet!" % repo_config['repo'])
+                self.retry(
+                    self.run_command,
+                    args=(hg + ['clone', '--noupdate', repo_config['repo'], source_dest]),
+                    kwargs={
+                        'idle_timeout': 15 * 60,
+                        'cwd': dirs['abs_work_dir'],
+                    }
+                )
+#                if repo_config.get("branches"):
+#                    self._init_git_repo(source_dest, additional_args=['--bare'])
+#                    self.run_command(
+#                        git + ['config', '--add', 'remote.origin.url', repo_config['repo']],
+#                        cwd=source_dest,
+#                    )
+#                    for branch_source in repo_config['branches'].keys():
+#                        branch_target = repo_config['branches'][branch_source]
+#                        cmd = git + ['config', '--add', 'remote.origin.fetch',
+#                                     '+refs/heads/%s:refs/heads/%s' % (branch_source, branch_target)],
+#                        self.retry(
+#                            self.run_command,
+#                            args=(cmd),
+#                            kwargs={'cwd': source_dest},
+#                        )
+#                else:
+#                    self.fatal("No branches specified for %s; not written yet!" % repo_config['repo'])
             else:
                 self.info("%s already exists; skipping." % source_dest)
 

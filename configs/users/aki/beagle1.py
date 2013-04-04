@@ -3,9 +3,15 @@ config = {
     "repos": [{
         "repo": "https://hg.mozilla.org/mozilla-central",
         "revision": "default",
-        "dest": "mozilla-central",
+        "source_dest": "stage_source/mozilla-central",
+        "work_dest": "mozilla-central",
+        "target_dest": "target/mozilla-central",
         "bare_checkout": True,
-        "vcs": "hg"
+        "vcs": "hg",
+        "branches": {
+            "default": "master",
+        },
+        "workflow_type": "hg-git",
     }],
 
     "exes": {
@@ -18,7 +24,7 @@ config = {
         "http://puppetagain.pub.build.mozilla.org/data/python/packages/hg_git-0.3.2-moz2.tar.gz",
         "mercurial==2.2.1",
     ],
-    "find_links": ["http://puppetagain.pub.build.mozilla.org/data/python/packages/", ],
+#    "find_links": ["http://puppetagain.pub.build.mozilla.org/data/python/packages/", ],
 
     ## .ssh/config
     #Host git.m.o
