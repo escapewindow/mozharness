@@ -67,7 +67,7 @@ class HgGitScript(VCSMixin, VCSConversionMixin, VirtualenvMixin, BaseScript):
                     self.run_command,
                     args=(hg + ['clone', '--noupdate', repo_config['repo'], source_dest]),
                     kwargs={
-                        'idle_timeout': 15 * 60,
+#                        'idle_timeout': 15 * 60,
                         'cwd': dirs['abs_work_dir'],
                     }
                 )
