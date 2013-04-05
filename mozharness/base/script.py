@@ -75,6 +75,7 @@ class ScriptMixin(object):
                     # self._rmdir_recursive
                     return self.retry(
                         self.run_command,
+                        log_level=log_level,
                         error_level=error_level,
                         error_message=error_message,
                         args=('rmdir /S /Q "%s"' % path, ),
@@ -82,6 +83,7 @@ class ScriptMixin(object):
                 else:
                     return self.retry(
                         shutil.rmtree,
+                        log_level=log_level,
                         error_level=error_level,
                         error_message=error_message,
                         retry_exceptions=(OSError, ),
@@ -90,6 +92,7 @@ class ScriptMixin(object):
             else:
                 return self.retry(
                     os.remove,
+                    log_level=log_level,
                     error_level=error_level,
                     error_message=error_message,
                     retry_exceptions=(OSError, ),
@@ -373,7 +376,8 @@ class ScriptMixin(object):
     # More complex commands {{{2
     def retry(self, action, attempts=None, sleeptime=60, max_sleeptime=5 * 60,
               retry_exceptions=(Exception, ), good_statuses=None, cleanup=None,
-              error_level=ERROR, error_message="%(action)s failed after %(attempts)d tries!",
+              log_level=INFO, error_level=ERROR,
+              error_message="%(action)s failed after %(attempts)d tries!",
               failure_status=-1, args=(), kwargs={}):
         """ Generic retry command.
             Ported from tools util.retry.
@@ -414,8 +418,9 @@ class ScriptMixin(object):
             retry = False
             n += 1
             try:
-                self.info("retry: Calling %s with args: %s, kwargs: %s, attempt #%d" %
-                          (action, str(args), str(kwargs), n))
+                self.log("retry: Calling %s with args: %s, kwargs: %s, attempt #%d" %
+                         (action, str(args), str(kwargs), n),
+                         level=log_level)
                 status = action(*args, **kwargs)
                 if good_statuses and status not in good_statuses:
                     retry = True
