@@ -38,7 +38,7 @@ class HgGitScript(VCSMixin, VCSConversionMixin, VirtualenvMixin, BaseScript):
             ],
             default_actions=[
 #                'clobber',
-                'create-virtualenv',
+#                'create-virtualenv',
                 'create-stage-mirror',
                 'create-work-mirror',
                 #'create-test-target',
