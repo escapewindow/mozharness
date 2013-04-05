@@ -37,10 +37,10 @@ class HgGitScript(VCSMixin, VCSConversionMixin, VirtualenvMixin, BaseScript):
                 'push',
             ],
             default_actions=[
-                'clobber',
+#                'clobber',
                 'create-virtualenv',
                 'create-stage-mirror',
-                #'create-work-mirror',
+                'create-work-mirror',
                 #'create-test-target',
                 #'update-stage-mirror',
                 #'update-work-mirror',
@@ -59,32 +59,31 @@ class HgGitScript(VCSMixin, VCSConversionMixin, VirtualenvMixin, BaseScript):
 
     def create_stage_mirror(self):
         hg = self.query_exe('hg', return_type='list')
-#        dirs = self.query_abs_dirs()
+        dirs = self.query_abs_dirs()
         for repo_config in self.config['repos']:
             source_dest = self.query_repo_dest(repo_config, 'source_dest')
             if not os.path.exists(source_dest):
                 self.retry(
                     self.run_command,
                     args=(hg + ['clone', '--noupdate', repo_config['repo'], source_dest], ),
-#                    kwargs={
+                    kwargs={
 #                        'idle_timeout': 15 * 60,
-#                        'cwd': dirs['abs_work_dir'],
-#                    }
+                        'cwd': dirs['abs_work_dir'],
+                    }
                 )
             else:
                 self.info("%s already exists; skipping." % source_dest)
 
 # aki
     def create_work_mirror(self):
-        git = self.query_exe("git", return_type="list")
+        hg = self.query_exe("hg", return_type="list")
         for repo_config in self.config['repos']:
             work_dest = self.query_repo_dest(repo_config, 'work_dest')
             source_dest = self.query_repo_dest(repo_config, 'source_dest')
             if not os.path.exists(work_dest):
-                # clone --mirror for now, which may or may not work.
-                self.run_command(git + ["clone", "--mirror", source_dest, work_dest])
-            else:
-                self.info("%s already exists; skipping." % work_dest)
+                self.run_command(hg + ["init", work_dest])
+            self.run_command(hg + ["pull", source_dest],
+                             cwd=work_dest)
 
     def create_test_target(self):
         for repo_config in self.config['repos']:
