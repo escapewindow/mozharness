@@ -12,7 +12,17 @@ config = {
         "branches": {
             "default": "master",
         },
-        "workflow_type": "hg-git",
+    }, {
+        "repo": "https://hg.mozilla.org/releases/mozilla-b2g18",
+        "revision": "default",
+        "source_dest": "stage_source/mozilla-b2g18",
+        "work_dest": "conversion/gecko",
+        "target_dest": "target/gecko",  # git
+        "bare_checkout": True,
+        "vcs": "hg",
+        "branches": {
+            "default": "b2g18",
+        },
     }],
 
     "exes": {
