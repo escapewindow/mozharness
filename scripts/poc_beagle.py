@@ -37,8 +37,8 @@ class HgGitScript(VCSMixin, VCSConversionMixin, VirtualenvMixin, BaseScript):
                 'push',
             ],
             default_actions=[
-#                'clobber',
-#                'create-virtualenv',
+                'clobber',
+                'create-virtualenv',
                 'create-stage-mirror',
                 'create-work-mirror',
                 #'create-test-target',
@@ -74,9 +74,9 @@ class HgGitScript(VCSMixin, VCSConversionMixin, VirtualenvMixin, BaseScript):
             else:
                 self.info("%s already exists; skipping." % source_dest)
 
-# aki
     def create_work_mirror(self):
         hg = self.query_exe("hg", return_type="list")
+        git = self.query_exe("git", return_type="list")
         for repo_config in self.config['repos']:
             work_dest = self.query_repo_dest(repo_config, 'work_dest')
             source_dest = self.query_repo_dest(repo_config, 'source_dest')
@@ -84,6 +84,21 @@ class HgGitScript(VCSMixin, VCSConversionMixin, VirtualenvMixin, BaseScript):
                 self.run_command(hg + ["init", work_dest])
             self.run_command(hg + ["pull", source_dest],
                              cwd=work_dest)
+            # Create .git for conversion, if it doesn't exist
+            git_dir = os.path.exists(os.path.join(work_dest, '.git'))
+            if not git_dir:
+                self.run_command(git + ['init'], cwd=work_dest)
+                self.run_command(git + ['--git-dir', git_dir, 'config', 'gc.auto', '0'], cwd=work_dest)
+            # Update .hg/hgrc, if not already updated
+            hgrc = os.path.join(work_dest, '.hg', 'hgrc')
+            contents = self.read_from_file(hgrc)
+            if 'hggit=' not in contents:
+                hgrc_update = """[extensions]
+hggit=
+[git]
+intree=1
+"""
+                self.write_to_file(hgrc, hgrc_update, open_mode='a')
 
     def create_test_target(self):
         for repo_config in self.config['repos']:
