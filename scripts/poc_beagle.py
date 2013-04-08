@@ -109,7 +109,7 @@ intree=1
                 if not os.path.exists(target_dest):
                     self.info("Creating local target repo %s." % target_dest)
                     if target_config.get("vcs", "git") == "git":
-                        self._init_git_repo(target_dest, additional_args=['--bare'])
+                        self.init_git_repo(target_dest, additional_args=['--bare'])
 
     def _update_mirror(self, dest_type="source_dest"):
         git = self.query_exe("git", return_type="list")
