@@ -34,7 +34,12 @@ class HgGitScript(VCSMixin, VCSConversionMixin, VirtualenvMixin, BaseScript):
                 'create-test-target',
                 'update-stage-mirror',
                 'update-work-mirror',
+                'convert-work-mirror',
+                'prepend-cvs',
+                'create-map-file',
+                'verify',
                 'push',
+                'notify',
             ],
             default_actions=[
                 'clobber',
