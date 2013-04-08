@@ -91,7 +91,9 @@ class HgGitScript(VCSMixin, VCSConversionMixin, VirtualenvMixin, BaseScript):
                 self.run_command(git + ['--git-dir', git_dir, 'config', 'gc.auto', '0'], cwd=work_dest)
             # Update .hg/hgrc, if not already updated
             hgrc = os.path.join(work_dest, '.hg', 'hgrc')
-            contents = self.read_from_file(hgrc)
+            contents = ''
+            if os.path.exists(hgrc):
+                contents = self.read_from_file(hgrc)
             if 'hggit=' not in contents:
                 hgrc_update = """[extensions]
 hggit=
