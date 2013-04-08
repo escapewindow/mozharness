@@ -6,7 +6,10 @@ config = {
         "revision": "default",
         "source_dest": "stage_source/mozilla-central",
         "work_dest": "conversion/mozilla-central",
-        "target_dest": "target/mozilla-central",
+        "targets": [{
+            "target_dest": "target/mozilla-central/.git",
+            "vcs": "git",
+        }],
         "bare_checkout": True,
         "vcs": "hg",
         "branches": {
@@ -17,7 +20,10 @@ config = {
         "revision": "default",
         "source_dest": "stage_source/mozilla-b2g18",
         "work_dest": "conversion/gecko",
-        "target_dest": "target/gecko",  # git
+        "targets": [{
+            "target_dest": "target/mozilla-central/.git",
+            "vcs": "git",
+        }],
         "bare_checkout": True,
         "vcs": "hg",
         "branches": {

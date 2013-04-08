@@ -41,7 +41,7 @@ class HgGitScript(VCSMixin, VCSConversionMixin, VirtualenvMixin, BaseScript):
                 'create-virtualenv',
                 'create-stage-mirror',
                 'create-work-mirror',
-                #'create-test-target',
+                'create-test-target',
                 #'update-stage-mirror',
                 #'update-work-mirror',
                 #'push',
@@ -104,11 +104,12 @@ intree=1
 
     def create_test_target(self):
         for repo_config in self.config['repos']:
-            # for testing only: create local git repos to push to
-            target_dest = self.query_repo_dest(repo_config, 'target_dest')
-            if not os.path.exists(target_dest):
-                self.info("Creating local target repo %s." % target_dest)
-                self._init_git_repo(target_dest, additional_args=['--bare'])
+            for target_config in repo_config['targets']:
+                target_dest = target_config['target_dest']
+                if not os.path.exists(target_dest):
+                    self.info("Creating local target repo %s." % target_dest)
+                    if target_config.get("vcs", "git") == "git":
+                        self._init_git_repo(target_dest, additional_args=['--bare'])
 
     def _update_mirror(self, dest_type="source_dest"):
         git = self.query_exe("git", return_type="list")
