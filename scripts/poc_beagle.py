@@ -85,8 +85,8 @@ class HgGitScript(VCSMixin, VCSConversionMixin, VirtualenvMixin, BaseScript):
             self.run_command(hg + ["pull", source_dest],
                              cwd=work_dest)
             # Create .git for conversion, if it doesn't exist
-            git_dir = os.path.exists(os.path.join(work_dest, '.git'))
-            if not git_dir:
+            git_dir = os.path.join(work_dest, '.git')
+            if not os.path.exists(git_dir):
                 self.run_command(git + ['init'], cwd=work_dest)
                 self.run_command(git + ['--git-dir', git_dir, 'config', 'gc.auto', '0'], cwd=work_dest)
             # Update .hg/hgrc, if not already updated
