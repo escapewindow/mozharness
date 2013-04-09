@@ -156,7 +156,7 @@ intree=1
                 output = self.get_output_from_command(hg + ['id', '-r', branch], cwd=source)
                 if output:
                     rev = output.split(' ')[0]
-                self.run_command(hg + ['pull', '-r', rev], cwd=dest)
+                self.run_command(hg + ['pull', '-r', rev, source], cwd=dest)
         # TODO error checking
 
     def push(self):
