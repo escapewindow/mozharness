@@ -153,7 +153,7 @@ intree=1
             source = os.path.join(dirs['abs_work_dir'], repo_config['source_dest'])
             dest = os.path.join(dirs['abs_work_dir'], repo_config['work_dest'])
             for (branch, target_branch) in repo_config['branches'].items():
-                output = self.get_output_from_command(hg + ['id', '-r', 'branch'], cwd=source)
+                output = self.get_output_from_command(hg + ['id', '-r', branch], cwd=source)
                 if output:
                     rev = output.split(' ')[0]
                 self.run_command(hg + ['pull', '-r', rev], cwd=dest)
