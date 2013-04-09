@@ -116,9 +116,10 @@ intree=1
                 # TODO git
 
     def create_test_target(self):
+        dirs = self.query_abs_dirs()
         for repo_config in self.config['repos']:
             for target_config in repo_config['targets']:
-                target_dest = target_config['target_dest']
+                target_dest = os.path.join(dirs['abs_work_dir'], target_config['target_dest'])
                 if not os.path.exists(target_dest):
                     self.info("Creating local target repo %s." % target_dest)
                     if target_config.get("vcs", "git") == "git":
@@ -158,7 +159,8 @@ intree=1
                     rev = output.split(' ')[0]
                 self.run_command(hg + ['pull', '-r', rev, source], cwd=dest)
                 self.run_command(hg + ['bookmark', '-f', '-r', rev, target_branch], cwd=dest)
-        # TODO error checking
+                self.run_command(hg + ['gexport'], cwd=dest)
+        # TODO error checking, idle timeouts
 
     def push(self):
         git = self.query_exe('git', return_type='list')
