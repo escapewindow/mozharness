@@ -138,13 +138,26 @@ intree=1
             self.retry(
                 self.run_command,
                 args=(cmd, ),
-                kwargs={'cwd': dest},
+                kwargs={
+                    #'idle_timeout': 15 * 60,
+                    'cwd': dest,
+                },
             )
             # TODO on failure, nuke and re-create stage mirror, not work mirror
             # TODO I'm pulling tags as well as branches; limit?
 
     def update_work_mirror(self):
-        pass
+        hg = self.query_exe("hg", return_type="list")
+        dirs = self.query_abs_dirs()
+        for repo_config in self.config['repos']:
+            source = os.path.join(dirs['abs_work_dir'], repo_config['source_dest'])
+            dest = os.path.join(dirs['abs_work_dir'], repo_config['work_dest'])
+            for branch, target_branch in repo_config['branches']:
+                output = self.get_output_from_command(hg + ['id', '-r', 'branch'], cwd=source)
+                if output:
+                    rev = output.split(' ')[0]
+                self.run_command(hg + ['pull', '-r', rev], cwd=dest)
+        # TODO error checking
 
     def push(self):
         git = self.query_exe('git', return_type='list')
