@@ -157,6 +157,7 @@ intree=1
                 if output:
                     rev = output.split(' ')[0]
                 self.run_command(hg + ['pull', '-r', rev, source], cwd=dest)
+                self.run_command(hg + ['bookmark', '-f', '-r', rev, target_branch], cwd=dest)
         # TODO error checking
 
     def push(self):
