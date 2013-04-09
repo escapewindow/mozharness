@@ -68,14 +68,18 @@ class HgGitScript(VCSMixin, VCSConversionMixin, VirtualenvMixin, BaseScript):
         for repo_config in self.config['repos']:
             source_dest = self.query_repo_dest(repo_config, 'source_dest')
             if not os.path.exists(source_dest):
-                self.retry(
-                    self.run_command,
-                    args=(hg + ['clone', '--noupdate', repo_config['repo'], source_dest], ),
-                    kwargs={
-#                        'idle_timeout': 15 * 60,
-                        'cwd': dirs['abs_work_dir'],
-                    }
-                )
+                if repo_config.get('vcs', 'hg') == 'hg':
+                    self.retry(
+                        self.run_command,
+                        args=(hg + ['clone', '--noupdate', repo_config['repo'], source_dest], ),
+                        kwargs={
+#                            'idle_timeout': 15 * 60,
+                            'cwd': dirs['abs_work_dir'],
+                        }
+                    )
+                else:
+                    # TODO git
+                    self.fatal("Don't know how to deal with vcs %s!" % repo_config['vcs'])
             else:
                 self.info("%s already exists; skipping." % source_dest)
 
@@ -85,27 +89,31 @@ class HgGitScript(VCSMixin, VCSConversionMixin, VirtualenvMixin, BaseScript):
         for repo_config in self.config['repos']:
             work_dest = self.query_repo_dest(repo_config, 'work_dest')
             source_dest = self.query_repo_dest(repo_config, 'source_dest')
-            if not os.path.exists(work_dest):
-                self.run_command(hg + ["init", work_dest])
-            self.run_command(hg + ["pull", source_dest],
-                             cwd=work_dest)
-            # Create .git for conversion, if it doesn't exist
-            git_dir = os.path.join(work_dest, '.git')
-            if not os.path.exists(git_dir):
-                self.run_command(git + ['init'], cwd=work_dest)
-                self.run_command(git + ['--git-dir', git_dir, 'config', 'gc.auto', '0'], cwd=work_dest)
-            # Update .hg/hgrc, if not already updated
-            hgrc = os.path.join(work_dest, '.hg', 'hgrc')
-            contents = ''
-            if os.path.exists(hgrc):
-                contents = self.read_from_file(hgrc)
-            if 'hggit=' not in contents:
-                hgrc_update = """[extensions]
+            if repo_config.get('vcs', 'hg') == 'hg':
+                if not os.path.exists(work_dest):
+                    self.run_command(hg + ["init", work_dest])
+                self.run_command(hg + ["pull", source_dest],
+                                 cwd=work_dest)
+                # Create .git for conversion, if it doesn't exist
+                git_dir = os.path.join(work_dest, '.git')
+                if not os.path.exists(git_dir):
+                    self.run_command(git + ['init'], cwd=work_dest)
+                    self.run_command(git + ['--git-dir', git_dir, 'config', 'gc.auto', '0'], cwd=work_dest)
+                # Update .hg/hgrc, if not already updated
+                hgrc = os.path.join(work_dest, '.hg', 'hgrc')
+                contents = ''
+                if os.path.exists(hgrc):
+                    contents = self.read_from_file(hgrc)
+                if 'hggit=' not in contents:
+                    hgrc_update = """[extensions]
 hggit=
 [git]
 intree=1
 """
-                self.write_to_file(hgrc, hgrc_update, open_mode='a')
+                    self.write_to_file(hgrc, hgrc_update, open_mode='a')
+            else:
+                self.fatal("Don't know how to deal with vcs %s!" % repo_config['vcs'])
+                # TODO git
 
     def create_test_target(self):
         for repo_config in self.config['repos']:
@@ -115,12 +123,17 @@ intree=1
                     self.info("Creating local target repo %s." % target_dest)
                     if target_config.get("vcs", "git") == "git":
                         self.init_git_repo(target_dest, additional_args=['--bare'])
+                    else:
+                        self.fatal("Don't know how to deal with vcs %s!" % target_config['vcs'])
+                        # TODO hg
+                else:
+                    self.debug("%s exists; skipping." % target_dest)
 
-    def _update_mirror(self, dest_type="source_dest"):
-        git = self.query_exe("git", return_type="list")
+    def update_stage_mirror(self):
+        hg = self.query_exe("hg", return_type="list")
         for repo_config in self.config['repos']:
-            dest = self.query_repo_dest(repo_config, dest_type)
-            cmd = git + ['fetch', '--force']
+            dest = repo_config['source_dest']
+            cmd = hg + ['pull']
             self.retry(
                 self.run_command,
                 args=(cmd, ),
@@ -129,11 +142,8 @@ intree=1
             # TODO on failure, nuke and re-create stage mirror, not work mirror
             # TODO I'm pulling tags as well as branches; limit?
 
-    def update_stage_mirror(self):
-        self._update_mirror()
-
     def update_work_mirror(self):
-        self._update_mirror(dest_type="work_dest")
+        pass
 
     def push(self):
         git = self.query_exe('git', return_type='list')
