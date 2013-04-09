@@ -131,8 +131,9 @@ intree=1
 
     def update_stage_mirror(self):
         hg = self.query_exe("hg", return_type="list")
+        dirs = self.query_abs_dirs()
         for repo_config in self.config['repos']:
-            dest = repo_config['source_dest']
+            dest = os.path.join(dirs['abs_work_dir'], repo_config['source_dest'])
             cmd = hg + ['pull']
             self.retry(
                 self.run_command,
