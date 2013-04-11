@@ -15,10 +15,12 @@ import sys
 sys.path.insert(1, os.path.dirname(sys.path[0]))
 
 from mozharness.base.vcs.vcsbase import MercurialScript
+from mozharness.mozilla.purge import PurgeMixin
+from mozharness.mozilla.buildbot import BuildbotMixin
 
 
 # GeckoBuild {{{1
-class GeckoBuild(MercurialScript):
+class GeckoBuild(PurgeMixin, BuildbotMixin, MercurialScript):
     config_options = []
 
     def __init__(self, require_config_file=False):

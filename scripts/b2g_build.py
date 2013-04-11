@@ -42,8 +42,8 @@ B2GMakefileErrorList = MakefileErrorList + [
 B2GMakefileErrorList.insert(0, {'substr': r'/bin/bash: java: command not found', 'level': WARNING})
 
 
-class B2GBuild(LocalesMixin, MockMixin, BaseScript, VCSMixin, TooltoolMixin, TransferMixin,
-               BuildbotMixin, PurgeMixin, GaiaLocalesMixin, SigningMixin):
+class B2GBuild(LocalesMixin, MockMixin, PurgeMixin, BaseScript, VCSMixin, TooltoolMixin, TransferMixin,
+               BuildbotMixin, GaiaLocalesMixin, SigningMixin):
     config_options = [
         [["--repo"], {
             "dest": "repo",
