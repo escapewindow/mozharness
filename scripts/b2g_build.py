@@ -340,29 +340,6 @@ class B2GBuild(LocalesMixin, MockMixin, BaseScript, VCSMixin, TooltoolMixin, Tra
         return env
 
     # Actions {{{2
-    def clobber(self):
-        c = self.config
-        if c.get('is_automation'):
-            # Nightly builds always clobber
-            do_clobber = False
-            if self.query_is_nightly():
-                self.info("Clobbering because we're a nightly build")
-                do_clobber = True
-            if c.get('force_clobber'):
-                self.info("Clobbering because our config forced us to")
-                do_clobber = True
-            if do_clobber:
-                super(B2GBuild, self).clobber()
-            else:
-                # Delete the upload dir so we don't upload previous stuff by accident
-                dirs = self.query_abs_dirs()
-                self.rmtree(dirs['abs_upload_dir'])
-                self.rmtree(dirs['testdata_dir'])
-            # run purge_builds / check clobberer
-            self.purge_builds()
-        else:
-            super(B2GBuild, self).clobber()
-
     def checkout_gecko(self):
         '''
         If you want a different revision of gecko to be used you can use the

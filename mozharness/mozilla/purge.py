@@ -21,7 +21,7 @@ from mozharness.base.log import ERROR
 
 # PurgeMixin {{{1
 # Depends on ScriptMixin for self.run_command,
-# and BuildbotMixin for self.buildbot_config
+# and BuildbotMixin for self.buildbot_config and query_is_nightly()
 class PurgeMixin(object):
     purge_tool = os.path.join(external_tools_path, 'purge_builds.py')
     clobber_tool = os.path.join(external_tools_path, 'clobberer.py')
@@ -100,3 +100,29 @@ class PurgeMixin(object):
         retval = self.run_command(cmd, cwd=os.path.dirname(self.buildbot_config['properties']['basedir']), error_list=error_list)
         if retval != 0:
             self.fatal("failed to clobber build", exit_code=2)
+
+    def clobber(self):
+        """ Mozilla clobberer-type clobber.
+            """
+        c = self.config
+        if c.get('is_automation'):
+            # Nightly builds always clobber
+            do_clobber = False
+            if self.query_is_nightly():
+                self.info("Clobbering because we're a nightly build")
+                do_clobber = True
+            if c.get('force_clobber'):
+                self.info("Clobbering because our config forced us to")
+                do_clobber = True
+            if do_clobber:
+                super(PurgeMixin, self).clobber()
+            else:
+                # Delete the upload dir so we don't upload previous stuff by
+                # accident
+                dirs = self.query_abs_dirs()
+                self.rmtree(dirs['abs_upload_dir'])
+                self.rmtree(dirs['testdata_dir'])
+            # run purge_builds / check clobberer
+            self.purge_builds()
+        else:
+            super(PurgeMixin, self).clobber()
