@@ -42,8 +42,8 @@ B2GMakefileErrorList = MakefileErrorList + [
 B2GMakefileErrorList.insert(0, {'substr': r'/bin/bash: java: command not found', 'level': WARNING})
 
 
-class B2GBuild(LocalesMixin, MockMixin, PurgeMixin, BaseScript, VCSMixin, TooltoolMixin, TransferMixin,
-               BuildbotMixin, GaiaLocalesMixin, SigningMixin):
+class B2GBuild(LocalesMixin, MockMixin, PurgeMixin, BaseScript, VCSMixin, TooltoolMixin,
+               TransferMixin, BuildbotMixin, GaiaLocalesMixin, SigningMixin):
     config_options = [
         [["--repo"], {
             "dest": "repo",
@@ -99,6 +99,10 @@ class B2GBuild(LocalesMixin, MockMixin, PurgeMixin, BaseScript, VCSMixin, Toolto
             "type": "string",
             "dest": "additional_source_tarballs",
             "help": "Additional source tarballs to extract",
+        }],
+        [["--update-channel"], {
+            "dest": "update_channel",
+            "help": "b2g update channel",
         }],
     ]
 
@@ -161,6 +165,7 @@ class B2GBuild(LocalesMixin, MockMixin, PurgeMixin, BaseScript, VCSMixin, Toolto
                                 'compare_locales_repo': 'http://hg.mozilla.org/build/compare-locales',
                                 'compare_locales_rev': 'RELEASE_AUTOMATION',
                                 'compare_locales_vcs': 'hgtool',
+                                'update_channel': 'nightly',
                             },
                             )
 
@@ -337,9 +342,22 @@ class B2GBuild(LocalesMixin, MockMixin, PurgeMixin, BaseScript, VCSMixin, Toolto
         if self.buildbot_config and 'buildid' in self.buildbot_config.get('properties', {}):
             env['MOZ_BUILD_DATE'] = self.buildbot_config['properties']['buildid']
 
+        if 'B2G_UPDATE_CHANNEL' not in env:
+            env['B2G_UPDATE_CHANNEL'] = self.config['update_channel']
+
         return env
 
     # Actions {{{2
+    def clobber(self):
+        dirs = self.query_abs_dirs()
+        PurgeMixin.clobber(
+            self,
+            always_clobber_dirs=[
+                dirs['abs_upload_dir'],
+                dirs['testdata_dir'],
+            ],
+        )
+
     def checkout_gecko(self):
         '''
         If you want a different revision of gecko to be used you can use the
@@ -964,11 +982,10 @@ class B2GBuild(LocalesMixin, MockMixin, PurgeMixin, BaseScript, VCSMixin, Toolto
     def make_socorro_json(self):
         self.info("Creating socorro.json...")
         dirs = self.query_abs_dirs()
-        manifest_config = self.config.get('manifest', {})
         socorro_dict = {
             'buildid': self.query_buildid(),
             'version': self.query_version(),
-            'update_channel': manifest_config.get('update_channel'),
+            'update_channel': self.config.get('update_channel'),
             #'beta_number': n/a until we build b2g beta releases
         }
         file_path = os.path.join(dirs['abs_work_dir'], 'socorro.json')

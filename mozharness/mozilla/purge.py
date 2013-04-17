@@ -21,7 +21,7 @@ from mozharness.base.log import ERROR
 
 # PurgeMixin {{{1
 # Depends on ScriptMixin for self.run_command,
-# and BuildbotMixin for self.buildbot_config and query_is_nightly()
+# and BuildbotMixin for self.buildbot_config and self.query_is_nightly()
 class PurgeMixin(object):
     purge_tool = os.path.join(external_tools_path, 'purge_builds.py')
     clobber_tool = os.path.join(external_tools_path, 'clobberer.py')
@@ -83,6 +83,7 @@ class PurgeMixin(object):
 
         # Add --dry-run if you don't want to do this for realz
         cmd = [self.clobber_tool]
+        # TODO configurable list
         cmd.extend(['-s', 'scripts'])
         cmd.extend(['-s', 'logs'])
         cmd.extend(['-s', 'buildprops.json'])
@@ -101,7 +102,7 @@ class PurgeMixin(object):
         if retval != 0:
             self.fatal("failed to clobber build", exit_code=2)
 
-    def clobber(self):
+    def clobber(self, always_clobber_dirs=None):
         """ Mozilla clobberer-type clobber.
             """
         c = self.config
@@ -119,9 +120,10 @@ class PurgeMixin(object):
             else:
                 # Delete the upload dir so we don't upload previous stuff by
                 # accident
-                dirs = self.query_abs_dirs()
-                self.rmtree(dirs['abs_upload_dir'])
-                self.rmtree(dirs['testdata_dir'])
+                if always_clobber_dirs is None:
+                    always_clobber_dirs = []
+                for path in always_clobber_dirs:
+                    self.rmtree(path)
             # run purge_builds / check clobberer
             self.purge_builds()
         else:
