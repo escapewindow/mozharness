@@ -15,12 +15,13 @@ import sys
 sys.path.insert(1, os.path.dirname(sys.path[0]))
 
 from mozharness.base.vcs.vcsbase import MercurialScript
-from mozharness.mozilla.purge import PurgeMixin
 from mozharness.mozilla.buildbot import BuildbotMixin
+from mozharness.mozilla.mock import MockMixin
+from mozharness.mozilla.purge import PurgeMixin
 
 
 # GeckoBuild {{{1
-class GeckoBuild(PurgeMixin, BuildbotMixin, MercurialScript):
+class GeckoBuild(PurgeMixin, BuildbotMixin, MercurialScript, MockMixin):
     config_options = []
 
     def __init__(self, require_config_file=False):
@@ -28,6 +29,7 @@ class GeckoBuild(PurgeMixin, BuildbotMixin, MercurialScript):
         MercurialScript.__init__(
             self, config_options=self.config_options,
             all_actions=[
+                'read-buildbot-config',
                 'clobber',
             ],
             default_actions=[
