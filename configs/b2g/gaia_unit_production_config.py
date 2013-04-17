@@ -1,11 +1,11 @@
-# This is a template config file for marionette production.
+# This is a template config file for b2g emulator unittest testing
 
 config = {
-    # marionette options
-    "test_type": "b2g",
-    "emulator": "arm",
+    # mozharness script options
+    "xre_url": "http://runtime-binaries.pvt.build.mozilla.org/tooltool/sha512/d4297e762649b174070a33d039fd062edd9f29a751650f0508327a6cf366b3a35fe24e7cd0f7b728d74f7d15399f9c1adc5b178e5803a3a66bfce7a8dcd62daa",
+
+    # mozharness configuration
     "tooltool_servers": ["http://runtime-binaries.pvt.build.mozilla.org/tooltool/"],
-    "test_manifest": "unit-tests.ini",
 
     "exes": {
         'python': '/tools/buildbot/bin/python',
@@ -21,12 +21,11 @@ config = {
     "default_actions": [
         'clobber',
         'read-buildbot-config',
+        'pull',
         'download-and-extract',
         'create-virtualenv',
         'install',
-        'run-marionette',
+        'make-gaia',
+        'run-tests',
     ],
-    "download_symbols": "ondemand",
-    "download_minidump_stackwalk": True,
 }
-
