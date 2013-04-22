@@ -15,20 +15,20 @@ config = {
         "branches": {
             "default": "master",
         },
-    }, {
-        "repo": "https://hg.mozilla.org/releases/mozilla-b2g18",
-        "revision": "default",
-        "source_dest": "stage_source/mozilla-b2g18",
-        "work_dest": "conversion/gecko",
-        "targets": [{
-            "target_dest": "target/mozilla-central/.git",
-            "vcs": "git",
-        }],
-        "bare_checkout": True,
-        "vcs": "hg",
-        "branches": {
-            "default": "b2g18",
-        },
+#    }, {
+#        "repo": "https://hg.mozilla.org/releases/mozilla-b2g18",
+#        "revision": "default",
+#        "source_dest": "stage_source/mozilla-b2g18",
+#        "work_dest": "conversion/gecko",
+#        "targets": [{
+#            "target_dest": "target/mozilla-central/.git",
+#            "vcs": "git",
+#        }],
+#        "bare_checkout": True,
+#        "vcs": "hg",
+#        "branches": {
+#            "default": "b2g18",
+#        },
     }],
 
     "exes": {
@@ -38,7 +38,7 @@ config = {
     },
 
     "virtualenv_modules": [
-        "http://puppetagain.pub.build.mozilla.org/data/python/packages/hg_git-0.3.2-moz2.tar.gz",
+        "http://puppetagain.pub.build.mozilla.org/data/python/packages/hg-git-0.4.0+.tar.gz",
         "mercurial==2.2.1",
     ],
 #    "find_links": ["http://puppetagain.pub.build.mozilla.org/data/python/packages/", ],
