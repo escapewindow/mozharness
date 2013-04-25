@@ -38,7 +38,7 @@ config = {
     },
 
     "virtualenv_modules": [
-        "http://puppetagain.pub.build.mozilla.org/data/python/packages/hg-git-0.4.0+.tar.gz",
+        "http://puppetagain.pub.build.mozilla.org/data/python/packages/hg-git-0.4.0-moz2.tar.gz",
         "mercurial==2.2.1",
     ],
 #    "find_links": ["http://puppetagain.pub.build.mozilla.org/data/python/packages/", ],
