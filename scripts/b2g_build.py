@@ -502,14 +502,21 @@ class B2GBuild(LocalesMixin, MockMixin, PurgeMixin, BaseScript, VCSMixin, Toolto
                 self.rmtree(os.path.join(repo_mirror_dir, '.repo'))
                 repo = os.path.join(dirs['work_dir'], 'repo')
                 self.run_command([repo, "init", "--repo-url", repo_repo, "-q", "--mirror", "-u", manifest_dir, "-m", self.config['target'] + '.xml', '-b', b2g_manifest_branch], cwd=repo_mirror_dir, halt_on_failure=True)
-                self.run_command([repo, "sync", "--quiet"], cwd=repo_mirror_dir, halt_on_failure=True)
+                # self.run_command([repo, "sync", "--quiet"], cwd=repo_mirror_dir, halt_on_failure=True)
+                # XXX Work around git failing to clone some repositories when
+                # running in quiet mode. It also fails when we run without a
+                # pty
+                # https://bugzilla.mozilla.org/show_bug.cgi?id=857158
+                self.run_command(['script', '-q', '-c', '%s sync' % repo], cwd=repo_mirror_dir, halt_on_failure=True)
 
                 # Now check it out into our local working directory
                 self.run_command([repo, "init", "--repo-url", repo_repo, "-q", "--reference", repo_mirror_dir, "-u", manifest_dir, "-m", self.config['target'] + '.xml', '-b', b2g_manifest_branch], cwd=dirs['work_dir'], halt_on_failure=True)
             else:
                 # Non-mirror mode
                 self.run_command([repo, "init", "--repo-url", repo_repo, "-q", "-u", manifest_dir, "-m", self.config['target'] + '.xml', '-b', b2g_manifest_branch], cwd=dirs['work_dir'], halt_on_failure=True)
-            self.run_command([repo, "sync", "--quiet"], cwd=dirs['work_dir'], halt_on_failure=True)
+            # self.run_command([repo, "sync", "--quiet"], cwd=dirs['work_dir'], halt_on_failure=True)
+            # XXX Same workaround for git
+            self.run_command(['script', '-q', '-c', '%s sync' % repo], cwd=dirs['work_dir'], halt_on_failure=True)
 
             # output our sources.xml, make a copy for update_sources_xml()
             self.run_command(["./gonk-misc/add-revision.py", "-o", "sources.xml", "--force", ".repo/manifest.xml"], cwd=dirs["work_dir"], halt_on_failure=True)
@@ -812,7 +819,7 @@ class B2GBuild(LocalesMixin, MockMixin, PurgeMixin, BaseScript, VCSMixin, Toolto
                 new_sources.append('  <!-- Mercurial-Information: <remote fetch="http://hg.mozilla.org/" name="hgmozillaorg"> -->')
                 new_sources.append('  <!-- Mercurial-Information: <project name="%s" path="gecko" remote="hgmozillaorg" revision="%s"/> -->' %
                                    (self.buildbot_config['properties']['repo_path'], self.buildbot_properties['gecko_revision']))
-                if 'gaia_revision' in self.buildbot_properties:
+                if gecko_config.get('config_version', 0) < 2 and 'gaia_revision' in self.buildbot_properties:
                     new_sources.append('  <!-- Mercurial-Information: <project name="%s" path="gaia" remote="hgmozillaorg" revision="%s"/> -->' %
                                        (gaia_config['repo'].replace('http://hg.mozilla.org/', ''), self.buildbot_properties['gaia_revision']))
 
@@ -820,16 +827,21 @@ class B2GBuild(LocalesMixin, MockMixin, PurgeMixin, BaseScript, VCSMixin, Toolto
                     url = manifest_config['translate_base_url']
                     gecko_git = self.query_translated_revision(url, 'gecko', self.buildbot_properties['gecko_revision'])
                     new_sources.append('  <project name="%s" path="gecko" remote="mozillaorg" revision="%s"/>' % ("https://git.mozilla.org/releases/gecko.git".replace(git_base_url, ''), gecko_git))
-                    if 'gaia_revision' in self.buildbot_properties:
-                        gaia_git = self.query_translated_revision(url, 'gaia', self.buildbot_properties['gaia_revision'])
-                        new_sources.append('  <project name="%s" path="gaia" remote="mozillaorg" revision="%s"/>' % ("https://git.mozilla.org/releases/gaia.git".replace(git_base_url, ''), gaia_git))
+                    # We don't need to use mapper for gaia after config version
+                    # 2, since that's when we switched to pulling gaia directly
+                    # from git
+                    if gecko_config.get('config_version', 0) < 2:
+                        if 'gaia_revision' in self.buildbot_properties:
+                            gaia_git = self.query_translated_revision(url, 'gaia', self.buildbot_properties['gaia_revision'])
+                            new_sources.append('  <project name="%s" path="gaia" remote="mozillaorg" revision="%s"/>' %
+                                               ("https://git.mozilla.org/releases/gaia.git".replace(git_base_url, ''), gaia_git))
 
-                    # Figure out when our gaia commit happened
-                    gaia_time = self.get_hg_commit_time(os.path.join(dirs['abs_work_dir'], 'gaia'), self.buildbot_properties['gaia_revision'])
+                        # Figure out when our gaia commit happened
+                        gaia_time = self.get_hg_commit_time(os.path.join(dirs['abs_work_dir'], 'gaia'), self.buildbot_properties['gaia_revision'])
 
-                    # Write the gaia commit information to 'gaia_commit_override.txt'
-                    gaia_override = os.path.join(dirs['abs_work_dir'], 'gaia', 'gaia_commit_override.txt')
-                    self.write_to_file(gaia_override, "%s\n%s\n" % (gaia_git, gaia_time))
+                        # Write the gaia commit information to 'gaia_commit_override.txt'
+                        gaia_override = os.path.join(dirs['abs_work_dir'], 'gaia', 'gaia_commit_override.txt')
+                        self.write_to_file(gaia_override, "%s\n%s\n" % (gaia_git, gaia_time))
                 new_sources.extend(self._generate_locale_manifest(git_base_url=git_base_url))
 
         self.write_to_file(sourcesfile, "\n".join(new_sources), verbose=False)
@@ -1053,6 +1065,15 @@ class B2GBuild(LocalesMixin, MockMixin, PurgeMixin, BaseScript, VCSMixin, Toolto
             finally:
                 self.debug("removing %s" % tmpdir)
                 self.rmtree(tmpdir)
+
+        # Copy gaia profile
+        if gecko_config.get('package_gaia', True):
+            zip_name = os.path.join(dirs['work_dir'], "gaia.zip")
+            self.info("creating %s" % zip_name)
+            cmd = ['zip', '-r', '-9', '-u', zip_name, 'gaia/profile']
+            if self.run_command(cmd, cwd=dirs['work_dir']) != 0:
+                self.fatal("problem zipping up gaia")
+            self.copy_to_upload_dir(zip_name)
 
         self.info("copying files to upload directory")
         files = []
