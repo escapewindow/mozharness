@@ -1,20 +1,18 @@
 import os
 config = {
     "log_name": "beagle",
-    "repos": [{
+    "initial_repos": [{
         "repo": "https://hg.mozilla.org/mozilla-central",
         "revision": "default",
         "source_dest": "stage_source/mozilla-central",
-        "work_dest": "conversion/mozilla-central",
-        "targets": [{
-            "target_dest": "target/mozilla-central/.git",
-            "vcs": "git",
-        }],
+        "work_dest": "initial_conversion/mozilla-central",
         "bare_checkout": True,
         "vcs": "hg",
         "branches": {
             "default": "master",
         },
+    }],
+#    "repos": [{
 #    }, {
 #        "repo": "https://hg.mozilla.org/releases/mozilla-b2g18",
 #        "revision": "default",
@@ -29,7 +27,7 @@ config = {
 #        "branches": {
 #            "default": "b2g18",
 #        },
-    }],
+#    }],
 
     "exes": {
         # bug 828140 - shut https warnings up.

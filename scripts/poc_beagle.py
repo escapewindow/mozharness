@@ -30,12 +30,14 @@ class HgGitScript(VCSMixin, VCSConversionMixin, VirtualenvMixin, BaseScript):
                 'clobber',
                 'create-virtualenv',
                 'create-stage-mirror',
+                'create-initial-conversion-mirror',
+                'initial-conversion',
+                'prepend-cvs',
                 'create-work-mirror',
                 'create-test-target',
                 'update-stage-mirror',
                 'update-work-mirror',
                 'convert-work-mirror',
-                'prepend-cvs',
                 'create-map-file',
                 'verify',
                 'push',
@@ -45,8 +47,9 @@ class HgGitScript(VCSMixin, VCSConversionMixin, VirtualenvMixin, BaseScript):
                 'clobber',
                 'create-virtualenv',
                 'create-stage-mirror',
-                'create-work-mirror',
-                'create-test-target',
+                'create-initial-conversion-mirror',
+                'initial-conversion',
+                'prepend-cvs',
                 #'update-stage-mirror',
                 #'update-work-mirror',
                 #'push',
@@ -65,7 +68,7 @@ class HgGitScript(VCSMixin, VCSConversionMixin, VirtualenvMixin, BaseScript):
     def create_stage_mirror(self):
         hg = self.query_exe('hg', return_type='list')
         dirs = self.query_abs_dirs()
-        for repo_config in self.config['repos']:
+        for repo_config in self.config['initial_repos']:
             source_dest = self.query_repo_dest(repo_config, 'source_dest')
             if not os.path.exists(source_dest):
                 if repo_config.get('vcs', 'hg') == 'hg':
@@ -83,10 +86,10 @@ class HgGitScript(VCSMixin, VCSConversionMixin, VirtualenvMixin, BaseScript):
             else:
                 self.info("%s already exists; skipping." % source_dest)
 
-    def create_work_mirror(self):
+    def create_initial_conversion_mirror(self):
         hg = self.query_exe("hg", return_type="list")
         git = self.query_exe("git", return_type="list")
-        for repo_config in self.config['repos']:
+        for repo_config in self.config['initial_repos']:
             work_dest = self.query_repo_dest(repo_config, 'work_dest')
             source_dest = self.query_repo_dest(repo_config, 'source_dest')
             if repo_config.get('vcs', 'hg') == 'hg':
@@ -114,6 +117,23 @@ intree=1
             else:
                 self.fatal("Don't know how to deal with vcs %s!" % repo_config['vcs'])
                 # TODO git
+
+    def initial_conversion(self):
+        hg = self.query_exe("hg", return_type="list")
+        dirs = self.query_abs_dirs()
+        for repo_config in self.config['initial_repos']:
+            source = os.path.join(dirs['abs_work_dir'], repo_config['source_dest'])
+            dest = os.path.join(dirs['abs_work_dir'], repo_config['work_dest'])
+            for (branch, target_branch) in repo_config['branches'].items():
+                output = self.get_output_from_command(hg + ['id', '-r', branch], cwd=source)
+                if output:
+                    rev = output.split(' ')[0]
+                self.run_command(hg + ['pull', '-r', rev, source], cwd=dest)
+                self.run_command(hg + ['bookmark', '-f', '-r', rev, target_branch], cwd=dest)
+                self.run_command(hg + ['-v', 'gexport'], cwd=dest)
+
+    def prepend_cvs(self):
+        pass
 
     def create_test_target(self):
         dirs = self.query_abs_dirs()
