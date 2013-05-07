@@ -10,17 +10,16 @@ CVS_MANIFEST = """[{
 
 config = {
     "log_name": "beagle",
-    "initial_repos": [{
+    "initial_repo": {
         "repo": "https://hg.mozilla.org/mozilla-central",
         "revision": "default",
-        "source_dest": "mozilla-central",
-        "work_dest": "mozilla-central",
+        "repo_name": "mozilla-central",
         "bare_checkout": True,
         "vcs": "hg",
         "branches": {
             "default": "master",
         },
-    }],
+    },
     "cvs_manifest": CVS_MANIFEST,
 #    "repos": [{
 #    }, {
