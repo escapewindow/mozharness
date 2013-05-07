@@ -93,7 +93,8 @@ class HgGitScript(VCSMixin, VCSConversionMixin, VirtualenvMixin, TooltoolMixin, 
 #                    'idle_timeout': 15 * 60,
                     'cwd': dirs['abs_work_dir'],
                     'error_list': HgErrorList,
-                }
+                },
+                error_level=FATAL,
             )
         else:
             self.info("%s already exists; skipping." % source_dest)
@@ -143,20 +144,34 @@ intree=1
                              error_list=HgErrorList)
             self.run_command(hg + ['bookmark', '-f', '-r', rev, target_branch], cwd=dest,
                              error_list=HgErrorList)
-            # TODO retry?
-            self.run_command(hg + ['-v', 'gexport'], cwd=dest,
-                             error_list=HgErrorList)
+            self.retry(
+                self.run_command,
+                args=(hg + ['-v', 'gexport']),
+                kwargs={
+#                    'idle_timeout': 15 * 60,
+                    'cwd': dest,
+                    'error_list': HgErrorList,
+                },
+                error_level=FATAL,
+            )
+            self.copy_to_upload_dir(os.path.join(dest, '.hg', 'git-mapfile'),
+                                    dest="pre-cvs-mapfile")
 
     def prepend_cvs(self):
         dirs = self.query_abs_dirs()
+        git = self.query_exe('git', return_type='list')
+        repo_config = self.config['initial_repo']
+        initial_conversion_dir = os.path.join(dirs['abs_initial_conversion'], repo_config['repo_name'])
+        conversion_dir = os.path.join(dirs['abs_conversion_dir'], repo_config['repo_name'])
         if not os.path.exists(dirs["abs_cvs_history"]):
             manifest_path = self.create_tooltool_manifest(self.config['cvs_manifest'])
             if self.tooltool_fetch(manifest_path, output_dir=dirs['abs_work_dir']):
                 self.fatal("Unable to download cvs history via tooltool!")
             self.run_command(["tar", "xjvf", "mozilla-cvs-history.tar.bz2"], cwd=dirs["abs_work_dir"],
                              error_list=TarErrorList, halt_on_failure=True)
-        repo_config = self.config['initial_repo']
-        conversion_dir = os.path.join(dirs['abs_conversion_dir'], repo_config['repo_name'])
+        self.run_command([git, "clone", os.path.join(initial_conversion_dir, '.git'), conversion_dir])
+        self.run_command('ln -s ' + os.path.join(dirs['abs_cvs_history'], 'objects', 'pack', '*') +
+                         ' .', cwd=os.path.join(dirs['conversion_dir'], '.git', 'objects', 'pack'))
 
     def create_test_target(self):
         # TODO get working with query_abs_dirs
