@@ -73,9 +73,9 @@ class HgGitScript(VCSMixin, VCSConversionMixin, VirtualenvMixin, TooltoolMixin, 
             return self.abs_dirs
         abs_dirs = super(HgGitScript, self).query_abs_dirs()
         abs_dirs['abs_cvs_history'] = os.path.join(abs_dirs['abs_work_dir'], 'mozilla-cvs-history')
-        abs_dirs['initial_conversion_dir'] = os.path.join(abs_dirs['abs_work_dir'], 'initial_conversion')
-        abs_dirs['source_dir'] = os.path.join(abs_dirs['abs_work_dir'], 'stage_source')
-        abs_dirs['conversion_dir'] = os.path.join(abs_dirs['abs_work_dir'], 'conversion')
+        abs_dirs['abs_initial_conversion_dir'] = os.path.join(abs_dirs['abs_work_dir'], 'initial_conversion')
+        abs_dirs['abs_source_dir'] = os.path.join(abs_dirs['abs_work_dir'], 'stage_source')
+        abs_dirs['abs_conversion_dir'] = os.path.join(abs_dirs['abs_work_dir'], 'conversion')
         self.abs_dirs = abs_dirs
         return self.abs_dirs
 
@@ -84,7 +84,7 @@ class HgGitScript(VCSMixin, VCSConversionMixin, VirtualenvMixin, TooltoolMixin, 
         hg = self.query_exe('hg', return_type='list')
         dirs = self.query_abs_dirs()
         for repo_config in self.config['initial_repos']:
-            source_dest = self.query_repo_dest(repo_config, 'source_dest')
+            source_dest = os.path.join(dirs['abs_source_dir'], self.query_repo_dest(repo_config, 'source_dest'))
             if not os.path.exists(source_dest):
                 if repo_config.get('vcs', 'hg') == 'hg':
                     self.retry(
@@ -93,6 +93,7 @@ class HgGitScript(VCSMixin, VCSConversionMixin, VirtualenvMixin, TooltoolMixin, 
                         kwargs={
 #                            'idle_timeout': 15 * 60,
                             'cwd': dirs['abs_work_dir'],
+                            'error_list': HgErrorList,
                         }
                     )
                 else:
@@ -104,14 +105,16 @@ class HgGitScript(VCSMixin, VCSConversionMixin, VirtualenvMixin, TooltoolMixin, 
     def create_initial_conversion_mirror(self):
         hg = self.query_exe("hg", return_type="list")
         git = self.query_exe("git", return_type="list")
+        dirs = self.query_abs_dirs()
         for repo_config in self.config['initial_repos']:
-            work_dest = self.query_repo_dest(repo_config, 'work_dest')
-            source_dest = self.query_repo_dest(repo_config, 'source_dest')
+            work_dest = os.path.join(dirs['abs_initial_conversion'], self.query_repo_dest(repo_config, 'work_dest'))
+            source_dest = os.path.join(dirs['abs_source_dir'], self.query_repo_dest(repo_config, 'source_dest'))
             if repo_config.get('vcs', 'hg') == 'hg':
                 if not os.path.exists(work_dest):
                     self.run_command(hg + ["init", work_dest])
                 self.run_command(hg + ["pull", source_dest],
-                                 cwd=work_dest)
+                                 cwd=work_dest,
+                                 error_list=HgErrorList)
                 # Create .git for conversion, if it doesn't exist
                 git_dir = os.path.join(work_dest, '.git')
                 if not os.path.exists(git_dir):
@@ -138,15 +141,19 @@ intree=1
         dirs = self.query_abs_dirs()
         # TODO more error checking
         for repo_config in self.config['initial_repos']:
-            source = os.path.join(dirs['abs_work_dir'], repo_config['source_dest'])
-            dest = os.path.join(dirs['abs_work_dir'], repo_config['work_dest'])
+            source = os.path.join(dirs['abs_source_dir'], self.query_repo_dest(repo_config, 'source_dest'))
+            dest = os.path.join(dirs['abs_initial_conversion'], self.query_repo_dest(repo_config, 'work_dest'))
             for (branch, target_branch) in repo_config['branches'].items():
                 output = self.get_output_from_command(hg + ['id', '-r', branch], cwd=source)
                 if output:
                     rev = output.split(' ')[0]
-                self.run_command(hg + ['pull', '-r', rev, source], cwd=dest)
-                self.run_command(hg + ['bookmark', '-f', '-r', rev, target_branch], cwd=dest)
-                self.run_command(hg + ['-v', 'gexport'], cwd=dest)
+                self.run_command(hg + ['pull', '-r', rev, source], cwd=dest,
+                                 error_list=HgErrorList)
+                self.run_command(hg + ['bookmark', '-f', '-r', rev, target_branch], cwd=dest,
+                                 error_list=HgErrorList)
+                # TODO retry?
+                self.run_command(hg + ['-v', 'gexport'], cwd=dest,
+                                 error_list=HgErrorList)
 
     def prepend_cvs(self):
         dirs = self.query_abs_dirs()

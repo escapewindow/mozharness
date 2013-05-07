@@ -13,7 +13,7 @@ config = {
     "initial_repos": [{
         "repo": "https://hg.mozilla.org/mozilla-central",
         "revision": "default",
-        "source_dest": "stage_source/mozilla-central",
+        "source_dest": "mozilla-central",
         "work_dest": "mozilla-central",
         "bare_checkout": True,
         "vcs": "hg",
