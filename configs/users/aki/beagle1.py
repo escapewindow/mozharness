@@ -10,6 +10,10 @@ CVS_MANIFEST = """[{
 
 config = {
     "log_name": "beagle",
+    "repos": [{
+        "repo": "https://hg.mozilla.org/users/hwine_mozilla.com/repo-sync-tools",
+        "vcs": "hg",
+    }],
     "initial_repo": {
         "repo": "https://hg.mozilla.org/mozilla-central",
         "revision": "default",
@@ -21,8 +25,7 @@ config = {
         },
     },
     "cvs_manifest": CVS_MANIFEST,
-#    "repos": [{
-#    }, {
+#    "conversion_repos": [{
 #        "repo": "https://hg.mozilla.org/releases/mozilla-b2g18",
 #        "revision": "default",
 #        "source_dest": "stage_source/mozilla-b2g18",

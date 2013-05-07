@@ -17,19 +17,19 @@ sys.path.insert(1, os.path.dirname(sys.path[0]))
 from mozharness.base.errors import HgErrorList, TarErrorList
 from mozharness.base.log import FATAL
 from mozharness.base.python import VirtualenvMixin, virtualenv_config_options
-from mozharness.base.script import BaseScript
-from mozharness.base.vcs.vcsbase import VCSMixin, VCSConversionMixin
+from mozharness.base.vcs.vcsbase import VCSScript, VCSConversionMixin
 from mozharness.mozilla.tooltool import TooltoolMixin
 
 
 # HgGitScript {{{1
-class HgGitScript(VCSMixin, VCSConversionMixin, VirtualenvMixin, TooltoolMixin, BaseScript):
+class HgGitScript(VCSConversionMixin, VirtualenvMixin, TooltoolMixin, VCSScript):
 
     def __init__(self, require_config_file=True):
         super(HgGitScript, self).__init__(
             config_options=virtualenv_config_options,
             all_actions=[
                 'clobber',
+                'pull',
                 'create-virtualenv',
                 'create-stage-mirror',
                 'create-initial-conversion-mirror',
@@ -47,6 +47,7 @@ class HgGitScript(VCSMixin, VCSConversionMixin, VirtualenvMixin, TooltoolMixin, 
             ],
             default_actions=[
                 'clobber',
+                'pull',
                 'create-virtualenv',
                 'create-stage-mirror',
                 'create-initial-conversion-mirror',
@@ -76,6 +77,7 @@ class HgGitScript(VCSMixin, VCSConversionMixin, VirtualenvMixin, TooltoolMixin, 
         abs_dirs['abs_initial_conversion_dir'] = os.path.join(abs_dirs['abs_work_dir'], 'initial_conversion')
         abs_dirs['abs_source_dir'] = os.path.join(abs_dirs['abs_work_dir'], 'stage_source')
         abs_dirs['abs_conversion_dir'] = os.path.join(abs_dirs['abs_work_dir'], 'conversion')
+        abs_dirs['abs_repo_sync_tools_dir'] = os.path.join(abs_dirs['abs_work_dir'], 'repo-sync-tools')
         self.abs_dirs = abs_dirs
         return self.abs_dirs
 
@@ -104,7 +106,7 @@ class HgGitScript(VCSMixin, VCSConversionMixin, VirtualenvMixin, TooltoolMixin, 
         git = self.query_exe("git", return_type="list")
         dirs = self.query_abs_dirs()
         repo_config = self.config['initial_repo']
-        work_dest = os.path.join(dirs['abs_initial_conversion'], repo_config['repo_name'])
+        work_dest = os.path.join(dirs['abs_initial_conversion_dir'], repo_config['repo_name'])
         source_dest = os.path.join(dirs['abs_source_dir'], repo_config['repo_name'])
         if not os.path.exists(work_dest):
             self.run_command(hg + ["init", work_dest])
@@ -135,7 +137,7 @@ intree=1
         # TODO more error checking
         repo_config = self.config['initial_repo']
         source = os.path.join(dirs['abs_source_dir'], repo_config['repo_name'])
-        dest = os.path.join(dirs['abs_initial_conversion'], repo_config['repo_name'])
+        dest = os.path.join(dirs['abs_initial_conversion_dir'], repo_config['repo_name'])
         for (branch, target_branch) in repo_config['branches'].items():
             output = self.get_output_from_command(hg + ['id', '-r', branch], cwd=source)
             if output:
@@ -179,7 +181,7 @@ intree=1
         dirs = self.query_abs_dirs()
         git = self.query_exe('git', return_type='list')
         repo_config = self.config['initial_repo']
-        initial_conversion_dir = os.path.join(dirs['abs_initial_conversion'], repo_config['repo_name'])
+        initial_conversion_dir = os.path.join(dirs['abs_initial_conversion_dir'], repo_config['repo_name'])
         conversion_dir = os.path.join(dirs['abs_conversion_dir'], repo_config['repo_name'])
         if not os.path.exists(dirs["abs_cvs_history_dir"]):
             manifest_path = self.create_tooltool_manifest(self.config['cvs_manifest'])
@@ -196,7 +198,14 @@ intree=1
                                           '2514a423aca5d1273a842918589e44038d046a51')
         self.write_to_file(os.path.join(conversion_dir, '.git', 'info', 'grafts'),
                            '2514a423aca5d1273a842918589e44038d046a51 3ec464b55782fb94dbbb9b5784aac141f3e3ac01')
-# TODO clone repo-sync-tools for git-filter-branch-keep-rewrites
+        # This script is modified from git-filter-branch from git.
+        # https://people.mozilla.com/~hwine/tmp/vcs2vcs/notes.html#initial-conversion
+        # We may need to update this script if we update git.
+        git_filter_branch = os.path.join(dirs['abs_repo_sync_tools_dir'], 'git-filter-branch-keep-rewrites')
+        self.run_command([git_filter_branch, '--', '3ec464b55782fb94dbbb9b5784aac141f3e3ac01..HEAD'],
+                         cwd=conversion_dir, halt_on_failure=True)
+        self.move(os.path.join(conversion_dir, '.git-rewrite'),
+                  os.path.join(dirs['abs_work_dir'], 'mc-git-rewrite'))
 
     def create_test_target(self):
         # TODO get working with query_abs_dirs
