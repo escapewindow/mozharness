@@ -72,7 +72,7 @@ class HgGitScript(VCSMixin, VCSConversionMixin, VirtualenvMixin, TooltoolMixin, 
         if self.abs_dirs:
             return self.abs_dirs
         abs_dirs = super(HgGitScript, self).query_abs_dirs()
-        abs_dirs['abs_cvs_history'] = os.path.join(abs_dirs['abs_work_dir'], 'mozilla-cvs-history')
+        abs_dirs['abs_cvs_history_dir'] = os.path.join(abs_dirs['abs_work_dir'], 'mozilla-cvs-history')
         abs_dirs['abs_initial_conversion_dir'] = os.path.join(abs_dirs['abs_work_dir'], 'initial_conversion')
         abs_dirs['abs_source_dir'] = os.path.join(abs_dirs['abs_work_dir'], 'stage_source')
         abs_dirs['abs_conversion_dir'] = os.path.join(abs_dirs['abs_work_dir'], 'conversion')
@@ -157,21 +157,46 @@ intree=1
             self.copy_to_upload_dir(os.path.join(dest, '.hg', 'git-mapfile'),
                                     dest="pre-cvs-mapfile")
 
+    def _check_initial_git_revisions(self, repo_path, expected_sha1, expected_sha2):
+        git = self.query_exe('git', return_type='list')
+        output = self.get_output_from_command(git + ['log', '--oneline', '--grep', '374866'],
+                                              cwd=repo_path)
+        # hardcode test
+        if not output:
+            self.fatal("No output from git log!")
+        rev = output.split(' ')[0]
+        if not rev.startswith(expected_sha1):
+            self.fatal("Output doesn't match expected sha %s for initial hg commit: %s" % (expected_sha1, str(output)))
+        output = self.get_output_from_command(git + ['log', '-n', '1', '%s^' % rev],
+                                              cwd=repo_path)
+        if not output:
+            self.fatal("No output from git log!")
+        rev = output.splitlines()[0].split(' ')[1]
+        if rev != expected_sha2:
+            self.fatal("Output rev %s doesn't show expected rev %s:\n\n%s" % (rev, expected_sha2, output))
+
     def prepend_cvs(self):
         dirs = self.query_abs_dirs()
         git = self.query_exe('git', return_type='list')
         repo_config = self.config['initial_repo']
         initial_conversion_dir = os.path.join(dirs['abs_initial_conversion'], repo_config['repo_name'])
         conversion_dir = os.path.join(dirs['abs_conversion_dir'], repo_config['repo_name'])
-        if not os.path.exists(dirs["abs_cvs_history"]):
+        if not os.path.exists(dirs["abs_cvs_history_dir"]):
             manifest_path = self.create_tooltool_manifest(self.config['cvs_manifest'])
             if self.tooltool_fetch(manifest_path, output_dir=dirs['abs_work_dir']):
                 self.fatal("Unable to download cvs history via tooltool!")
             self.run_command(["tar", "xjvf", "mozilla-cvs-history.tar.bz2"], cwd=dirs["abs_work_dir"],
                              error_list=TarErrorList, halt_on_failure=True)
         self.run_command([git, "clone", os.path.join(initial_conversion_dir, '.git'), conversion_dir])
-        self.run_command('ln -s ' + os.path.join(dirs['abs_cvs_history'], 'objects', 'pack', '*') +
+        self.run_command('ln -s ' + os.path.join(dirs['abs_cvs_history_dir'], 'objects', 'pack', '*') +
                          ' .', cwd=os.path.join(dirs['conversion_dir'], '.git', 'objects', 'pack'))
+        self._check_initial_git_revisions(dirs['abs_cvs_history_dir'], 'e230b03',
+                                          '3ec464b55782fb94dbbb9b5784aac141f3e3ac01')
+        self._check_initial_git_revisions(conversion_dir, '4b3fd9',
+                                          '2514a423aca5d1273a842918589e44038d046a51')
+        self.write_to_file(os.path.join(conversion_dir, '.git', 'info', 'grafts'),
+                           '2514a423aca5d1273a842918589e44038d046a51 3ec464b55782fb94dbbb9b5784aac141f3e3ac01')
+# TODO clone repo-sync-tools for git-filter-branch-keep-rewrites
 
     def create_test_target(self):
         # TODO get working with query_abs_dirs
