@@ -14,14 +14,16 @@ import sys
 
 sys.path.insert(1, os.path.dirname(sys.path[0]))
 
+from mozharness.base.errors import HgErrorList, TarErrorList
 from mozharness.base.log import FATAL
 from mozharness.base.python import VirtualenvMixin, virtualenv_config_options
 from mozharness.base.script import BaseScript
 from mozharness.base.vcs.vcsbase import VCSMixin, VCSConversionMixin
+from mozharness.mozilla.tooltool import TooltoolMixin
 
 
 # HgGitScript {{{1
-class HgGitScript(VCSMixin, VCSConversionMixin, VirtualenvMixin, BaseScript):
+class HgGitScript(VCSMixin, VCSConversionMixin, VirtualenvMixin, TooltoolMixin, BaseScript):
 
     def __init__(self, require_config_file=True):
         super(HgGitScript, self).__init__(
@@ -57,6 +59,7 @@ class HgGitScript(VCSMixin, VCSConversionMixin, VirtualenvMixin, BaseScript):
             require_config_file=require_config_file
         )
 
+    # Helper methods {{{1
     def _init_hg_repo(self, path, additional_args=None):
         hg = self.query_exe("hg", return_type="list")
         cmd = hg + ['init']
@@ -65,6 +68,18 @@ class HgGitScript(VCSMixin, VCSConversionMixin, VirtualenvMixin, BaseScript):
         cmd.append(path)
         return self.retry(self.run_command, args=(cmd, ), error_level=FATAL, error_message="Can't set up %s!" % path)
 
+    def query_abs_dirs(self):
+        if self.abs_dirs:
+            return self.abs_dirs
+        abs_dirs = super(HgGitScript, self).query_abs_dirs()
+        abs_dirs['abs_cvs_history'] = os.path.join(abs_dirs['abs_work_dir'], 'mozilla-cvs-history')
+        abs_dirs['initial_conversion_dir'] = os.path.join(abs_dirs['abs_work_dir'], 'initial_conversion')
+        abs_dirs['source_dir'] = os.path.join(abs_dirs['abs_work_dir'], 'stage_source')
+        abs_dirs['conversion_dir'] = os.path.join(abs_dirs['abs_work_dir'], 'conversion')
+        self.abs_dirs = abs_dirs
+        return self.abs_dirs
+
+    # Actions {{{1
     def create_stage_mirror(self):
         hg = self.query_exe('hg', return_type='list')
         dirs = self.query_abs_dirs()
@@ -121,6 +136,7 @@ intree=1
     def initial_conversion(self):
         hg = self.query_exe("hg", return_type="list")
         dirs = self.query_abs_dirs()
+        # TODO more error checking
         for repo_config in self.config['initial_repos']:
             source = os.path.join(dirs['abs_work_dir'], repo_config['source_dest'])
             dest = os.path.join(dirs['abs_work_dir'], repo_config['work_dest'])
@@ -133,7 +149,14 @@ intree=1
                 self.run_command(hg + ['-v', 'gexport'], cwd=dest)
 
     def prepend_cvs(self):
-        pass
+        dirs = self.query_abs_dirs()
+        if not os.path.exists(dirs["abs_cvs_history"]):
+            manifest_path = self.create_tooltool_manifest(self.config['cvs_manifest'])
+            if self.tooltool_fetch(manifest_path, output_dir=dirs['abs_work_dir']):
+                self.fatal("Unable to download cvs history via tooltool!")
+            self.run_command(["tar", "xjvf", "mozilla-cvs-history.tar.bz2"], cwd=dirs["abs_work_dir"],
+                             error_list=TarErrorList, halt_on_failure=True)
+        # TODO prepend
 
     def create_test_target(self):
         dirs = self.query_abs_dirs()

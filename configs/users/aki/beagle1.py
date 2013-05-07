@@ -1,17 +1,27 @@
 import os
+
+CVS_MANIFEST = """[{
+"size": 1301484692,
+"digest": "89df462d8d20f54402caaaa4e3c10aa54902a1d7196cdf86b7790b76e62d302ade3102dc3f7da4145dd832e6938b0472370ce6a321e0b3bcf0ad050937bd0e9a",
+"algorithm": "sha512",
+"filename": "mozilla-cvs-history.tar.bz2"
+}]
+"""
+
 config = {
     "log_name": "beagle",
     "initial_repos": [{
         "repo": "https://hg.mozilla.org/mozilla-central",
         "revision": "default",
         "source_dest": "stage_source/mozilla-central",
-        "work_dest": "initial_conversion/mozilla-central",
+        "work_dest": "mozilla-central",
         "bare_checkout": True,
         "vcs": "hg",
         "branches": {
             "default": "master",
         },
     }],
+    "cvs_manifest": CVS_MANIFEST,
 #    "repos": [{
 #    }, {
 #        "repo": "https://hg.mozilla.org/releases/mozilla-b2g18",
