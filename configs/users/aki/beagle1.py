@@ -46,7 +46,8 @@ config = {
     "exes": {
         # bug 828140 - shut https warnings up.
         # http://kiln.stackexchange.com/questions/2816/mercurial-certificate-warning-certificate-not-verified-web-cacerts
-        "hg": [os.path.join(os.getcwd(), 'build', 'venv', 'bin', 'hg'), '--config', 'web.cacerts=/etc/pki/tls/certs/ca-bundle.crt']
+        "hg": [os.path.join(os.getcwd(), 'build', 'venv', 'bin', 'hg'), '--config', 'web.cacerts=/etc/pki/tls/certs/ca-bundle.crt'],
+        "tooltool.py": os.path.join(os.getcwd(), 'mozharness', 'external_tools', 'tooltool.py'),
     },
 
     "virtualenv_modules": [
