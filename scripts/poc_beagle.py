@@ -148,10 +148,11 @@ intree=1
                              error_list=HgErrorList)
             self.retry(
                 self.run_command,
-                args=(hg + ['-v', 'gexport']),
+                args=(hg + ['-v', 'gexport'], ),
                 kwargs={
 #                    'idle_timeout': 15 * 60,
                     'cwd': dest,
+                    'error_list': HgErrorList,
                 },
                 error_level=FATAL,
             )
