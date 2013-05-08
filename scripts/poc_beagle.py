@@ -201,9 +201,10 @@ intree=1
         # This script is modified from git-filter-branch from git.
         # https://people.mozilla.com/~hwine/tmp/vcs2vcs/notes.html#initial-conversion
         # We may need to update this script if we update git.
+        env = self.query_env()
         git_filter_branch = os.path.join(dirs['abs_repo_sync_tools_dir'], 'git-filter-branch-keep-rewrites')
         self.run_command([git_filter_branch, '--', '3ec464b55782fb94dbbb9b5784aac141f3e3ac01..HEAD'],
-                         cwd=conversion_dir, halt_on_failure=True)
+                         env=env, cwd=conversion_dir, halt_on_failure=True)
         self.move(os.path.join(conversion_dir, '.git-rewrite'),
                   os.path.join(dirs['abs_work_dir'], 'mc-git-rewrite'))
 
