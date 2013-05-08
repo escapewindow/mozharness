@@ -152,7 +152,6 @@ intree=1
                 kwargs={
 #                    'idle_timeout': 15 * 60,
                     'cwd': dest,
-                    'error_list': HgErrorList,
                 },
                 error_level=FATAL,
             )
