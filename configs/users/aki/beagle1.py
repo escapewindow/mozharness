@@ -26,6 +26,7 @@ config = {
         },
     },
     "cvs_manifest": CVS_MANIFEST,
+    "tooltool_servers": ["http://runtime-binaries.pvt.build.mozilla.org/tooltool/"],
 #    "conversion_repos": [{
 #        "repo": "https://hg.mozilla.org/releases/mozilla-b2g18",
 #        "revision": "default",
