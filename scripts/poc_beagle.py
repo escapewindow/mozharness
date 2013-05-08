@@ -191,7 +191,7 @@ intree=1
                              error_list=TarErrorList, halt_on_failure=True)
         self.run_command(git + ["clone", os.path.join(initial_conversion_dir, '.git'), conversion_dir])
         self.run_command('ln -s ' + os.path.join(dirs['abs_cvs_history_dir'], 'objects', 'pack', '*') +
-                         ' .', cwd=os.path.join(dirs['conversion_dir'], '.git', 'objects', 'pack'))
+                         ' .', cwd=os.path.join(conversion_dir, '.git', 'objects', 'pack'))
         self._check_initial_git_revisions(dirs['abs_cvs_history_dir'], 'e230b03',
                                           '3ec464b55782fb94dbbb9b5784aac141f3e3ac01')
         self._check_initial_git_revisions(conversion_dir, '4b3fd9',
