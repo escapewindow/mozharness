@@ -185,8 +185,8 @@ intree=1
         conversion_dir = os.path.join(dirs['abs_conversion_dir'], repo_config['repo_name'])
         if not os.path.exists(dirs["abs_cvs_history_dir"]):
             manifest_path = self.create_tooltool_manifest(self.config['cvs_manifest'])
-            if self.tooltool_fetch(manifest_path, output_dir=dirs['abs_work_dir']):
-                self.fatal("Unable to download cvs history via tooltool!")
+#            if self.tooltool_fetch(manifest_path, output_dir=dirs['abs_work_dir']):
+#                self.fatal("Unable to download cvs history via tooltool!")
             self.run_command(["tar", "xjvf", "mozilla-cvs-history.tar.bz2"], cwd=dirs["abs_work_dir"],
                              error_list=TarErrorList, halt_on_failure=True)
         self.run_command([git, "clone", os.path.join(initial_conversion_dir, '.git'), conversion_dir])
