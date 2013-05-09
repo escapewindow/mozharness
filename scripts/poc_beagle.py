@@ -189,6 +189,8 @@ intree=1
             #    self.fatal("Unable to download cvs history via tooltool!")
             self.run_command(["tar", "xjvf", "mozilla-cvs-history.tar.bz2"], cwd=dirs["abs_work_dir"],
                              error_list=TarErrorList, halt_on_failure=True)
+        # We need to git checkout, or git thinks we've removed all the files
+        # without committing
         self.run_command(git + ["checkout"], cwd=conversion_dir)
         self.run_command('ln -s ' + os.path.join(dirs['abs_cvs_history_dir'], 'objects', 'pack', '*') +
                          ' .', cwd=os.path.join(conversion_dir, '.git', 'objects', 'pack'))
