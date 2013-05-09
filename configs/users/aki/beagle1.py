@@ -15,10 +15,15 @@ config = {
         "repo": "https://hg.mozilla.org/users/hwine_mozilla.com/repo-sync-tools",
         "vcs": "hg",
     }],
+    "conversion_dir": "beagle",
     "initial_repo": {
         "repo": "https://hg.mozilla.org/mozilla-central",
         "revision": "default",
         "repo_name": "mozilla-central",
+        "targets": [{
+            "target_dest": "target/mozilla-central/.git",
+            "vcs": "git",
+        }],
         "bare_checkout": True,
         "vcs": "hg",
         "branches": {
@@ -30,21 +35,20 @@ config = {
     "env": {
         "PATH": "%(PATH)s:/usr/libexec/git-core",
     },
-#    "conversion_repos": [{
-#        "repo": "https://hg.mozilla.org/releases/mozilla-b2g18",
-#        "revision": "default",
-#        "source_dest": "stage_source/mozilla-b2g18",
-#        "work_dest": "conversion/gecko",
-#        "targets": [{
-#            "target_dest": "target/mozilla-central/.git",
-#            "vcs": "git",
-#        }],
-#        "bare_checkout": True,
-#        "vcs": "hg",
-#        "branches": {
-#            "default": "b2g18",
-#        },
-#    }],
+    "conversion_repos": [{
+        "repo": "https://hg.mozilla.org/releases/mozilla-b2g18",
+        "revision": "default",
+        "repo_name": "mozilla-b2g18",
+        "targets": [{
+            "target_dest": "target/mozilla-central/.git",
+            "vcs": "git",
+        }],
+        "bare_checkout": True,
+        "vcs": "hg",
+        "branches": {
+            "default": "b2g18",
+        },
+    }],
 
     "exes": {
         # bug 828140 - shut https warnings up.

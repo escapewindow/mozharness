@@ -75,7 +75,7 @@ class HgGitScript(VCSConversionMixin, VirtualenvMixin, TooltoolMixin, VCSScript)
             return self.abs_dirs
         abs_dirs = super(HgGitScript, self).query_abs_dirs()
         abs_dirs['abs_cvs_history_dir'] = os.path.join(abs_dirs['abs_work_dir'], 'mozilla-cvs-history')
-        abs_dirs['abs_conversion_dir'] = os.path.join(abs_dirs['abs_work_dir'], 'conversion')
+        abs_dirs['abs_conversion_dir'] = os.path.join(abs_dirs['abs_work_dir'], 'conversion', self.config['conversion_dir'])
         abs_dirs['abs_source_dir'] = os.path.join(abs_dirs['abs_work_dir'], 'stage_source')
         abs_dirs['abs_repo_sync_tools_dir'] = os.path.join(abs_dirs['abs_work_dir'], 'repo-sync-tools')
         abs_dirs['abs_git_rewrite_dir'] = os.path.join(abs_dirs['abs_work_dir'], 'mc-git-rewrite')
@@ -107,7 +107,7 @@ class HgGitScript(VCSConversionMixin, VirtualenvMixin, TooltoolMixin, VCSScript)
         git = self.query_exe("git", return_type="list")
         dirs = self.query_abs_dirs()
         repo_config = self.config['initial_repo']
-        work_dest = os.path.join(dirs['abs_initial_conversion_dir'], repo_config['repo_name'])
+        work_dest = dirs['abs_conversion_dir']
         source_dest = os.path.join(dirs['abs_source_dir'], repo_config['repo_name'])
         if not os.path.exists(work_dest):
             self.run_command(hg + ["init", work_dest])
@@ -138,7 +138,7 @@ intree=1
         # TODO more error checking
         repo_config = self.config['initial_repo']
         source = os.path.join(dirs['abs_source_dir'], repo_config['repo_name'])
-        dest = os.path.join(dirs['abs_conversion_dir'], repo_config['repo_name'])
+        dest = dirs['abs_conversion_dir']
         for (branch, target_branch) in repo_config['branches'].items():
             output = self.get_output_from_command(hg + ['id', '-r', branch], cwd=source)
             if output:
@@ -181,8 +181,7 @@ intree=1
     def prepend_cvs(self):
         dirs = self.query_abs_dirs()
         git = self.query_exe('git', return_type='list')
-        repo_config = self.config['initial_repo']
-        conversion_dir = os.path.join(dirs['abs_conversion_dir'], repo_config['repo_name'])
+        conversion_dir = dirs['abs_conversion_dir']
         grafts_file = os.path.join(conversion_dir, '.git', 'info', 'grafts')
         if not os.path.exists(dirs["abs_cvs_history_dir"]):
             # TODO figure something else out here
@@ -220,7 +219,7 @@ intree=1
         self.info("Updating pre-cvs mapfile...")
         dirs = self.query_abs_dirs()
         orig_mapfile = os.path.join(dirs['abs_work_dir'], 'pre-cvs-mapfile')
-        conversion_dir = os.path.join(dirs['abs_conversion_dir'], self.config['initial_repo']['repo_name'])
+        conversion_dir = dirs['abs_conversion_dir']
         mapfile = os.path.join(dirs['abs_work_dir'], 'post-cvs-mapfile')
         mapdir = os.path.join(dirs['abs_git_rewrite_dir'], 'map')
         orig_mapfile_fh = open(orig_mapfile, "r")
