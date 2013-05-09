@@ -183,12 +183,13 @@ intree=1
         repo_config = self.config['initial_repo']
         initial_conversion_dir = os.path.join(dirs['abs_initial_conversion_dir'], repo_config['repo_name'])
         conversion_dir = os.path.join(dirs['abs_conversion_dir'], repo_config['repo_name'])
+        grafts_file = os.path.join(conversion_dir, '.git', 'info', 'grafts')
         if not os.path.exists(dirs["abs_cvs_history_dir"]):
-            manifest_path = self.create_tooltool_manifest(self.config['cvs_manifest'])
             # TODO figure something else out here
             # gd2 doesn't have access to tooltool :(
-#            if self.tooltool_fetch(manifest_path, output_dir=dirs['abs_work_dir']):
-#                self.fatal("Unable to download cvs history via tooltool!")
+            #manifest_path = self.create_tooltool_manifest(self.config['cvs_manifest'])
+            #if self.tooltool_fetch(manifest_path, output_dir=dirs['abs_work_dir']):
+            #    self.fatal("Unable to download cvs history via tooltool!")
             self.run_command(["tar", "xjvf", "mozilla-cvs-history.tar.bz2"], cwd=dirs["abs_work_dir"],
                              error_list=TarErrorList, halt_on_failure=True)
         self.run_command(git + ["clone", os.path.join(initial_conversion_dir, '.git'), conversion_dir])
@@ -198,7 +199,7 @@ intree=1
                                           '3ec464b55782fb94dbbb9b5784aac141f3e3ac01')
         self._check_initial_git_revisions(conversion_dir, '4b3fd9',
                                           '2514a423aca5d1273a842918589e44038d046a51')
-        self.write_to_file(os.path.join(conversion_dir, '.git', 'info', 'grafts'),
+        self.write_to_file(grafts_file,
                            '2514a423aca5d1273a842918589e44038d046a51 3ec464b55782fb94dbbb9b5784aac141f3e3ac01')
         # This script is modified from git-filter-branch from git.
         # https://people.mozilla.com/~hwine/tmp/vcs2vcs/notes.html#initial-conversion
@@ -209,6 +210,47 @@ intree=1
                          env=env, cwd=conversion_dir, halt_on_failure=True)
         self.move(os.path.join(conversion_dir, '.git-rewrite'),
                   os.path.join(dirs['abs_work_dir'], 'mc-git-rewrite'))
+        self.rmtree(grafts_file)
+
+    def preflight_create_work_mirror(self):
+        # Yuk, but not sure how to get around this elegantly, really.
+        # Each of the actions need to be run in order
+        dirs = self.query_abs_dirs()
+        conversion_dir = os.path.join(dirs['abs_conversion_dir'], self.config['initial_repo']['repo_name'])
+        if not os.path.exists(conversion_dir):
+            self.fatal("You need to run prepend-cvs before creating the work mirror!")
+
+#aki
+
+    def create_work_mirror(self):
+        hg = self.query_exe("hg", return_type="list")
+        git = self.query_exe("git", return_type="list")
+        dirs = self.query_abs_dirs()
+        repo_config = self.config['initial_repo']
+        work_dest = os.path.join(dirs['abs_initial_conversion_dir'], repo_config['repo_name'])
+        source_dest = os.path.join(dirs['abs_source_dir'], repo_config['repo_name'])
+        if not os.path.exists(work_dest):
+            self.run_command(hg + ["init", work_dest])
+        self.run_command(hg + ["pull", source_dest],
+                         cwd=work_dest,
+                         error_list=HgErrorList)
+        # Create .git for conversion, if it doesn't exist
+        git_dir = os.path.join(work_dest, '.git')
+        if not os.path.exists(git_dir):
+            self.run_command(git + ['init'], cwd=work_dest)
+            self.run_command(git + ['--git-dir', git_dir, 'config', 'gc.auto', '0'], cwd=work_dest)
+        # Update .hg/hgrc, if not already updated
+        hgrc = os.path.join(work_dest, '.hg', 'hgrc')
+        contents = ''
+        if os.path.exists(hgrc):
+            contents = self.read_from_file(hgrc)
+        if 'hggit=' not in contents:
+            hgrc_update = """[extensions]
+hggit=
+[git]
+intree=1
+"""
+            self.write_to_file(hgrc, hgrc_update, open_mode='a')
 
     def create_test_target(self):
         # TODO get working with query_abs_dirs
