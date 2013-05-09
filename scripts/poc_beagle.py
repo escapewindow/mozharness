@@ -76,6 +76,7 @@ class HgGitScript(VCSConversionMixin, VirtualenvMixin, TooltoolMixin, VCSScript)
         abs_dirs['abs_conversion_dir'] = os.path.join(abs_dirs['abs_work_dir'], 'conversion')
         abs_dirs['abs_source_dir'] = os.path.join(abs_dirs['abs_work_dir'], 'stage_source')
         abs_dirs['abs_repo_sync_tools_dir'] = os.path.join(abs_dirs['abs_work_dir'], 'repo-sync-tools')
+        abs_dirs['abs_git_rewrite_dir'] = os.path.join(abs_dirs['abs_work_dir'], 'mc-git-rewrite')
         self.abs_dirs = abs_dirs
         return self.abs_dirs
 
@@ -208,7 +209,7 @@ intree=1
         self.run_command([git_filter_branch, '--', '3ec464b55782fb94dbbb9b5784aac141f3e3ac01..HEAD'],
                          env=env, cwd=conversion_dir, halt_on_failure=True)
         self.move(os.path.join(conversion_dir, '.git-rewrite'),
-                  os.path.join(dirs['abs_work_dir'], 'mc-git-rewrite'))
+                  dirs['abs_git_rewrite_dir'])
         self.rmtree(grafts_file)
 
     def create_test_target(self):
