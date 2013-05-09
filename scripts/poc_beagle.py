@@ -32,10 +32,9 @@ class HgGitScript(VCSConversionMixin, VirtualenvMixin, TooltoolMixin, VCSScript)
                 'pull',
                 'create-virtualenv',
                 'create-stage-mirror',
-                'create-initial-conversion-mirror',
+                'create-work-mirror',
                 'initial-conversion',
                 'prepend-cvs',
-                'create-work-mirror',
                 'create-test-target',
                 'update-stage-mirror',
                 'update-work-mirror',
@@ -50,7 +49,7 @@ class HgGitScript(VCSConversionMixin, VirtualenvMixin, TooltoolMixin, VCSScript)
                 'pull',
                 'create-virtualenv',
                 'create-stage-mirror',
-                'create-initial-conversion-mirror',
+                'create-work-mirror',
                 'initial-conversion',
                 'prepend-cvs',
                 #'update-stage-mirror',
@@ -74,9 +73,8 @@ class HgGitScript(VCSConversionMixin, VirtualenvMixin, TooltoolMixin, VCSScript)
             return self.abs_dirs
         abs_dirs = super(HgGitScript, self).query_abs_dirs()
         abs_dirs['abs_cvs_history_dir'] = os.path.join(abs_dirs['abs_work_dir'], 'mozilla-cvs-history')
-        abs_dirs['abs_initial_conversion_dir'] = os.path.join(abs_dirs['abs_work_dir'], 'initial_conversion')
-        abs_dirs['abs_source_dir'] = os.path.join(abs_dirs['abs_work_dir'], 'stage_source')
         abs_dirs['abs_conversion_dir'] = os.path.join(abs_dirs['abs_work_dir'], 'conversion')
+        abs_dirs['abs_source_dir'] = os.path.join(abs_dirs['abs_work_dir'], 'stage_source')
         abs_dirs['abs_repo_sync_tools_dir'] = os.path.join(abs_dirs['abs_work_dir'], 'repo-sync-tools')
         self.abs_dirs = abs_dirs
         return self.abs_dirs
@@ -101,7 +99,7 @@ class HgGitScript(VCSConversionMixin, VirtualenvMixin, TooltoolMixin, VCSScript)
         else:
             self.info("%s already exists; skipping." % source_dest)
 
-    def create_initial_conversion_mirror(self):
+    def create_work_mirror(self):
         hg = self.query_exe("hg", return_type="list")
         git = self.query_exe("git", return_type="list")
         dirs = self.query_abs_dirs()
@@ -137,7 +135,7 @@ intree=1
         # TODO more error checking
         repo_config = self.config['initial_repo']
         source = os.path.join(dirs['abs_source_dir'], repo_config['repo_name'])
-        dest = os.path.join(dirs['abs_initial_conversion_dir'], repo_config['repo_name'])
+        dest = os.path.join(dirs['abs_conversion_dir'], repo_config['repo_name'])
         for (branch, target_branch) in repo_config['branches'].items():
             output = self.get_output_from_command(hg + ['id', '-r', branch], cwd=source)
             if output:
@@ -181,7 +179,6 @@ intree=1
         dirs = self.query_abs_dirs()
         git = self.query_exe('git', return_type='list')
         repo_config = self.config['initial_repo']
-        initial_conversion_dir = os.path.join(dirs['abs_initial_conversion_dir'], repo_config['repo_name'])
         conversion_dir = os.path.join(dirs['abs_conversion_dir'], repo_config['repo_name'])
         grafts_file = os.path.join(conversion_dir, '.git', 'info', 'grafts')
         if not os.path.exists(dirs["abs_cvs_history_dir"]):
@@ -192,7 +189,7 @@ intree=1
             #    self.fatal("Unable to download cvs history via tooltool!")
             self.run_command(["tar", "xjvf", "mozilla-cvs-history.tar.bz2"], cwd=dirs["abs_work_dir"],
                              error_list=TarErrorList, halt_on_failure=True)
-        self.run_command(git + ["clone", os.path.join(initial_conversion_dir, '.git'), conversion_dir])
+        self.run_command(git + ["checkout"], cwd=conversion_dir)
         self.run_command('ln -s ' + os.path.join(dirs['abs_cvs_history_dir'], 'objects', 'pack', '*') +
                          ' .', cwd=os.path.join(conversion_dir, '.git', 'objects', 'pack'))
         self._check_initial_git_revisions(dirs['abs_cvs_history_dir'], 'e230b03',
@@ -211,46 +208,6 @@ intree=1
         self.move(os.path.join(conversion_dir, '.git-rewrite'),
                   os.path.join(dirs['abs_work_dir'], 'mc-git-rewrite'))
         self.rmtree(grafts_file)
-
-    def preflight_create_work_mirror(self):
-        # Yuk, but not sure how to get around this elegantly, really.
-        # Each of the actions need to be run in order
-        dirs = self.query_abs_dirs()
-        conversion_dir = os.path.join(dirs['abs_conversion_dir'], self.config['initial_repo']['repo_name'])
-        if not os.path.exists(conversion_dir):
-            self.fatal("You need to run prepend-cvs before creating the work mirror!")
-
-#aki
-
-    def create_work_mirror(self):
-        hg = self.query_exe("hg", return_type="list")
-        git = self.query_exe("git", return_type="list")
-        dirs = self.query_abs_dirs()
-        repo_config = self.config['initial_repo']
-        work_dest = os.path.join(dirs['abs_initial_conversion_dir'], repo_config['repo_name'])
-        source_dest = os.path.join(dirs['abs_source_dir'], repo_config['repo_name'])
-        if not os.path.exists(work_dest):
-            self.run_command(hg + ["init", work_dest])
-        self.run_command(hg + ["pull", source_dest],
-                         cwd=work_dest,
-                         error_list=HgErrorList)
-        # Create .git for conversion, if it doesn't exist
-        git_dir = os.path.join(work_dest, '.git')
-        if not os.path.exists(git_dir):
-            self.run_command(git + ['init'], cwd=work_dest)
-            self.run_command(git + ['--git-dir', git_dir, 'config', 'gc.auto', '0'], cwd=work_dest)
-        # Update .hg/hgrc, if not already updated
-        hgrc = os.path.join(work_dest, '.hg', 'hgrc')
-        contents = ''
-        if os.path.exists(hgrc):
-            contents = self.read_from_file(hgrc)
-        if 'hggit=' not in contents:
-            hgrc_update = """[extensions]
-hggit=
-[git]
-intree=1
-"""
-            self.write_to_file(hgrc, hgrc_update, open_mode='a')
 
     def create_test_target(self):
         # TODO get working with query_abs_dirs
