@@ -233,9 +233,9 @@ intree=1
                 new_path = os.path.join(mapdir, git_sha)
                 if os.path.exists(new_path):
                     translated_git_sha = open(new_path).read().strip()
-                    print mapfile_fh, "%s %s" (translated_git_sha, hg_sha)
+                    print >>mapfile_fh, "%s %s" (translated_git_sha, hg_sha)
                 else:
-                    print mapfile_fh, "%s %s" (git_sha, hg_sha)
+                    print >>mapfile_fh, "%s %s" (git_sha, hg_sha)
         orig_mapfile_fh.close()
         mapfile_fh.close()
         self.copyfile(mapfile, os.path.join(conversion_dir, '.hg', 'git-mapfile'))
