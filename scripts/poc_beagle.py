@@ -35,6 +35,7 @@ class HgGitScript(VCSConversionMixin, VirtualenvMixin, TooltoolMixin, VCSScript)
                 'create-work-mirror',
                 'initial-conversion',
                 'prepend-cvs',
+                'munge-mapfile',
                 'create-test-target',
                 'update-stage-mirror',
                 'update-work-mirror',
@@ -52,6 +53,7 @@ class HgGitScript(VCSConversionMixin, VirtualenvMixin, TooltoolMixin, VCSScript)
                 'create-work-mirror',
                 'initial-conversion',
                 'prepend-cvs',
+                'munge-mapfile',
                 #'update-stage-mirror',
                 #'update-work-mirror',
                 #'push',
@@ -211,6 +213,32 @@ intree=1
         self.move(os.path.join(conversion_dir, '.git-rewrite'),
                   dirs['abs_git_rewrite_dir'])
         self.rmtree(grafts_file)
+
+    def munge_mapfile(self):
+        """ From https://github.com/ehsan/mozilla-history-tools/blob/master/initial_conversion/translate_git-mapfile.py
+            """
+        self.info("Updating pre-cvs mapfile...")
+        dirs = self.query_abs_dirs()
+        orig_mapfile = os.path.join(dirs['abs_work_dir'], 'pre-cvs-mapfile')
+        conversion_dir = os.path.join(dirs['abs_conversion_dir'], self.config['initial_repo']['repo_name'])
+        mapfile = os.path.join(dirs['abs_work_dir'], 'post-cvs-mapfile')
+        mapdir = os.path.join(dirs['abs_git_rewrite_dir'], 'map')
+        orig_mapfile_fh = open(orig_mapfile, "r")
+        mapfile_fh = open(mapfile, "w")
+        for line in orig_mapfile_fh:
+            tokens = line.split(" ")
+            if len(tokens) == 2:
+                git_sha = tokens[0].strip()
+                hg_sha = tokens[1].strip()
+                new_path = os.path.join(mapdir, git_sha)
+                if os.path.exists(new_path):
+                    translated_git_sha = open(new_path).read().strip()
+                    print mapfile_fh, "%s %s" (translated_git_sha, hg_sha)
+                else:
+                    print mapfile_fh, "%s %s" (git_sha, hg_sha)
+        orig_mapfile_fh.close()
+        mapfile_fh.close()
+        self.copyfile(mapfile, os.path.join(conversion_dir, '.hg', 'git-mapfile'))
 
     def create_test_target(self):
         # TODO get working with query_abs_dirs
