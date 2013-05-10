@@ -35,7 +35,6 @@ class HgGitScript(VirtualenvMixin, TooltoolMixin, VCSScript):
                 'create-work-mirror',
                 'initial-conversion',
                 'prepend-cvs',
-                'munge-mapfile',
                 'create-test-target',
                 'update-stage-mirror',
                 'update-work-mirror',
@@ -51,10 +50,9 @@ class HgGitScript(VirtualenvMixin, TooltoolMixin, VCSScript):
                 'create-work-mirror',
                 'initial-conversion',
                 'prepend-cvs',
-                'munge-mapfile',
                 'create-test-target',
                 'update-stage-mirror',
-                #'update-work-mirror',
+                'update-work-mirror',
                 #'push',
             ],
             require_config_file=require_config_file
@@ -133,6 +131,51 @@ class HgGitScript(VirtualenvMixin, TooltoolMixin, VCSScript):
             else:
                 self.fatal("Can't verify %s!" % source_dest)
 
+    def _check_initial_git_revisions(self, repo_path, expected_sha1, expected_sha2):
+        git = self.query_exe('git', return_type='list')
+        output = self.get_output_from_command(git + ['log', '--oneline', '--grep', '374866'],
+                                              cwd=repo_path)
+        # hardcode test
+        if not output:
+            self.fatal("No output from git log!")
+        rev = output.split(' ')[0]
+        if not rev.startswith(expected_sha1):
+            self.fatal("Output doesn't match expected sha %s for initial hg commit: %s" % (expected_sha1, str(output)))
+        output = self.get_output_from_command(git + ['log', '-n', '1', '%s^' % rev],
+                                              cwd=repo_path)
+        if not output:
+            self.fatal("No output from git log!")
+        rev = output.splitlines()[0].split(' ')[1]
+        if rev != expected_sha2:
+            self.fatal("Output rev %s doesn't show expected rev %s:\n\n%s" % (rev, expected_sha2, output))
+
+    def munge_mapfile(self):
+        """ From https://github.com/ehsan/mozilla-history-tools/blob/master/initial_conversion/translate_git-mapfile.py
+            """
+        self.info("Updating pre-cvs mapfile...")
+        dirs = self.query_abs_dirs()
+        orig_mapfile = os.path.join(dirs['abs_work_dir'], 'pre-cvs-mapfile')
+        conversion_dir = dirs['abs_conversion_dir']
+        mapfile = os.path.join(dirs['abs_work_dir'], 'post-cvs-mapfile')
+        mapdir = os.path.join(dirs['abs_git_rewrite_dir'], 'map')
+        orig_mapfile_fh = open(orig_mapfile, "r")
+        mapfile_fh = open(mapfile, "w")
+        for line in orig_mapfile_fh:
+            tokens = line.split(" ")
+            if len(tokens) == 2:
+                git_sha = tokens[0].strip()
+                hg_sha = tokens[1].strip()
+                new_path = os.path.join(mapdir, git_sha)
+                if os.path.exists(new_path):
+                    translated_git_sha = open(new_path).read().strip()
+                    print >>mapfile_fh, "%s %s" % (translated_git_sha, hg_sha)
+                else:
+                    print >>mapfile_fh, "%s %s" % (git_sha, hg_sha)
+        orig_mapfile_fh.close()
+        mapfile_fh.close()
+        self.copyfile(mapfile, os.path.join(conversion_dir, '.hg', 'git-mapfile'))
+        self.copy_to_upload_dir(mapfile, dest="post-cvs-mapfile")
+
     # Actions {{{1
     def create_stage_mirror(self):
         self.update_stage_mirror()
@@ -195,24 +238,6 @@ intree=1
             self.copy_to_upload_dir(os.path.join(dest, '.hg', 'git-mapfile'),
                                     dest="pre-cvs-mapfile")
 
-    def _check_initial_git_revisions(self, repo_path, expected_sha1, expected_sha2):
-        git = self.query_exe('git', return_type='list')
-        output = self.get_output_from_command(git + ['log', '--oneline', '--grep', '374866'],
-                                              cwd=repo_path)
-        # hardcode test
-        if not output:
-            self.fatal("No output from git log!")
-        rev = output.split(' ')[0]
-        if not rev.startswith(expected_sha1):
-            self.fatal("Output doesn't match expected sha %s for initial hg commit: %s" % (expected_sha1, str(output)))
-        output = self.get_output_from_command(git + ['log', '-n', '1', '%s^' % rev],
-                                              cwd=repo_path)
-        if not output:
-            self.fatal("No output from git log!")
-        rev = output.splitlines()[0].split(' ')[1]
-        if rev != expected_sha2:
-            self.fatal("Output rev %s doesn't show expected rev %s:\n\n%s" % (rev, expected_sha2, output))
-
     def prepend_cvs(self):
         dirs = self.query_abs_dirs()
         git = self.query_exe('git', return_type='list')
@@ -247,33 +272,7 @@ intree=1
         self.move(os.path.join(conversion_dir, '.git-rewrite'),
                   dirs['abs_git_rewrite_dir'])
         self.rmtree(grafts_file)
-
-    def munge_mapfile(self):
-        """ From https://github.com/ehsan/mozilla-history-tools/blob/master/initial_conversion/translate_git-mapfile.py
-            """
-        self.info("Updating pre-cvs mapfile...")
-        dirs = self.query_abs_dirs()
-        orig_mapfile = os.path.join(dirs['abs_work_dir'], 'pre-cvs-mapfile')
-        conversion_dir = dirs['abs_conversion_dir']
-        mapfile = os.path.join(dirs['abs_work_dir'], 'post-cvs-mapfile')
-        mapdir = os.path.join(dirs['abs_git_rewrite_dir'], 'map')
-        orig_mapfile_fh = open(orig_mapfile, "r")
-        mapfile_fh = open(mapfile, "w")
-        for line in orig_mapfile_fh:
-            tokens = line.split(" ")
-            if len(tokens) == 2:
-                git_sha = tokens[0].strip()
-                hg_sha = tokens[1].strip()
-                new_path = os.path.join(mapdir, git_sha)
-                if os.path.exists(new_path):
-                    translated_git_sha = open(new_path).read().strip()
-                    print >>mapfile_fh, "%s %s" % (translated_git_sha, hg_sha)
-                else:
-                    print >>mapfile_fh, "%s %s" % (git_sha, hg_sha)
-        orig_mapfile_fh.close()
-        mapfile_fh.close()
-        self.copyfile(mapfile, os.path.join(conversion_dir, '.hg', 'git-mapfile'))
-        self.copy_to_upload_dir(mapfile, dest="post-cvs-mapfile")
+        self.munge_mapfile()
 
     def create_test_target(self):
         # TODO get working with query_abs_dirs
