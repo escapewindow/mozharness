@@ -83,7 +83,7 @@ class HgGitScript(VirtualenvMixin, TooltoolMixin, VCSScript):
         return self.abs_dirs
 
     def query_all_repos(self):
-        return [self.config['inital_repo']] + self.config['conversion_repos']
+        return [self.config['initial_repo']] + self.config['conversion_repos']
 
     def _update_stage_repo(self, repo_config, retry=True, clobber=False):
         hg = self.query_exe('hg', return_type='list')
