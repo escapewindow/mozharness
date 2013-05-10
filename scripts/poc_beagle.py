@@ -15,7 +15,7 @@ import sys
 sys.path.insert(1, os.path.dirname(sys.path[0]))
 
 from mozharness.base.errors import HgErrorList, TarErrorList
-from mozharness.base.log import FATAL
+from mozharness.base.log import INFO, FATAL
 from mozharness.base.python import VirtualenvMixin, virtualenv_config_options
 from mozharness.base.vcs.vcsbase import VCSScript
 from mozharness.mozilla.tooltool import TooltoolMixin
@@ -174,7 +174,7 @@ class HgGitScript(VirtualenvMixin, TooltoolMixin, VCSScript):
         orig_mapfile_fh.close()
         mapfile_fh.close()
         self.copyfile(mapfile, os.path.join(conversion_dir, '.hg', 'git-mapfile'))
-        self.copy_to_upload_dir(mapfile, dest="post-cvs-mapfile")
+        self.copy_to_upload_dir(mapfile, dest="post-cvs-mapfile", log_level=INFO)
 
     # Actions {{{1
     def create_stage_mirror(self):
@@ -236,7 +236,7 @@ intree=1
                 error_level=FATAL,
             )
             self.copy_to_upload_dir(os.path.join(dest, '.hg', 'git-mapfile'),
-                                    dest="pre-cvs-mapfile")
+                                    dest="pre-cvs-mapfile", log_level=INFO)
 
     def prepend_cvs(self):
         dirs = self.query_abs_dirs()
@@ -317,7 +317,7 @@ intree=1
             error_level=FATAL,
         )
         self.copy_to_upload_dir(os.path.join(dest, '.hg', 'git-mapfile'),
-                                dest="gecko-mapfile")
+                                dest="gecko-mapfile", log_level=INFO)
 
 # __main__ {{{1
 if __name__ == '__main__':
