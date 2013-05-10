@@ -269,7 +269,7 @@ intree=1
     def create_test_target(self):
         # TODO get working with query_abs_dirs
         dirs = self.query_abs_dirs()
-        for repo_config in self.config['repos']:
+        for repo_config in self.query_all_repos():
             for target_config in repo_config['targets']:
                 target_dest = os.path.join(dirs['abs_target_dir'], target_config['target_dest'])
                 if not os.path.exists(target_dest):
