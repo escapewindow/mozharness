@@ -39,8 +39,6 @@ class HgGitScript(VCSConversionMixin, VirtualenvMixin, TooltoolMixin, VCSScript)
                 'create-test-target',
                 'update-stage-mirror',
                 'update-work-mirror',
-                'convert-work-mirror',
-                'create-map-file',
                 'verify',
                 'push',
                 'notify',
@@ -266,6 +264,7 @@ intree=1
         orig_mapfile_fh.close()
         mapfile_fh.close()
         self.copyfile(mapfile, os.path.join(conversion_dir, '.hg', 'git-mapfile'))
+        self.copy_to_upload_dir(mapfile, dest="post-cvs-mapfile")
 
     def create_test_target(self):
         # TODO get working with query_abs_dirs
@@ -290,17 +289,27 @@ intree=1
     def update_work_mirror(self):
         hg = self.query_exe("hg", return_type="list")
         dirs = self.query_abs_dirs()
+        dest = dirs['abs_conversion_dir']
         for repo_config in self.config['repos']:
-            source = os.path.join(dirs['abs_work_dir'], repo_config['source_dest'])
-            dest = os.path.join(dirs['abs_work_dir'], repo_config['work_dest'])
+            source = os.path.join(dirs['abs_source_dir'], repo_config['repo_name'])
             for (branch, target_branch) in repo_config['branches'].items():
                 output = self.get_output_from_command(hg + ['id', '-r', branch], cwd=source)
                 if output:
                     rev = output.split(' ')[0]
                 self.run_command(hg + ['pull', '-r', rev, source], cwd=dest)
                 self.run_command(hg + ['bookmark', '-f', '-r', rev, target_branch], cwd=dest)
-                self.run_command(hg + ['-v', 'gexport'], cwd=dest)
-        # TODO error checking, idle timeouts
+        self.retry(
+            self.run_command,
+            args=(hg + ['-v', 'gexport'], ),
+            kwargs={
+#                'idle_timeout': 15 * 60,
+                'cwd': dest,
+                'error_list': HgErrorList,
+            },
+            error_level=FATAL,
+        )
+        self.copy_to_upload_dir(os.path.join(dest, '.hg', 'git-mapfile'),
+                                dest="gecko-mapfile")
 
     def push(self):
         git = self.query_exe('git', return_type='list')
