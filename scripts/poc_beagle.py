@@ -54,7 +54,7 @@ class HgGitScript(VCSConversionMixin, VirtualenvMixin, TooltoolMixin, VCSScript)
                 'initial-conversion',
                 'prepend-cvs',
                 'munge-mapfile',
-                #'update-stage-mirror',
+                'update-stage-mirror',
                 #'update-work-mirror',
                 #'push',
             ],
@@ -82,25 +82,51 @@ class HgGitScript(VCSConversionMixin, VirtualenvMixin, TooltoolMixin, VCSScript)
         self.abs_dirs = abs_dirs
         return self.abs_dirs
 
-    # Actions {{{1
-    def create_stage_mirror(self):
+    def query_all_repos(self):
+        return [self.config['inital_repo']] + self.config['conversion_repos']
+
+    def _update_stage_repo(self, repo_config, retry=True, clobber=False):
         hg = self.query_exe('hg', return_type='list')
         dirs = self.query_abs_dirs()
-        repo_config = self.config['initial_repo']
         source_dest = os.path.join(dirs['abs_source_dir'], repo_config['repo_name'])
+        if clobber:
+            self.rmtree(source_dest)
         if not os.path.exists(source_dest):
-            self.retry(
+            if self.retry(
                 self.run_command,
                 args=(hg + ['clone', '--noupdate', repo_config['repo'], source_dest], ),
                 kwargs={
-#                    'idle_timeout': 15 * 60,
+#                   'idle_timeout': 15 * 60,
                     'cwd': dirs['abs_work_dir'],
                     'error_list': HgErrorList,
                 },
-                error_level=FATAL,
-            )
-        else:
-            self.info("%s already exists; skipping." % source_dest)
+            ):
+                if retry:
+                    return self._update_stage_repo(repo_config, retry=False, clobber=True)
+                else:
+                    self.fatal("Can't clone %s!" % repo_config['repo'])
+        cmd = hg + ['pull']
+        if self.retry(
+            self.run_command,
+            args=(cmd, ),
+            kwargs={
+                #'idle_timeout': 15 * 60,
+                'cwd': source_dest,
+            },
+        ):
+            if retry:
+                return self._update_stage_repo(repo_config, retry=False, clobber=True)
+            else:
+                self.fatal("Can't pull %s!" % repo_config['repo'])
+        if self.run_command(hg + ["verify"], cwd=source_dest):
+            if retry:
+                return self._update_stage_repo(repo_config, retry=False, clobber=True)
+            else:
+                self.fatal("Can't verify %s!" % source_dest)
+
+    # Actions {{{1
+    def create_stage_mirror(self):
+        self.update_stage_mirror()
 
     def create_work_mirror(self):
         hg = self.query_exe("hg", return_type="list")
@@ -256,21 +282,8 @@ intree=1
                     self.debug("%s exists; skipping." % target_dest)
 
     def update_stage_mirror(self):
-        hg = self.query_exe("hg", return_type="list")
-        dirs = self.query_abs_dirs()
-        for repo_config in self.config['repos']:
-            dest = os.path.join(dirs['abs_work_dir'], repo_config['source_dest'])
-            cmd = hg + ['pull']
-            self.retry(
-                self.run_command,
-                args=(cmd, ),
-                kwargs={
-                    #'idle_timeout': 15 * 60,
-                    'cwd': dest,
-                },
-            )
-            # TODO on failure, nuke and re-create stage mirror, not work mirror
-            # TODO I'm pulling tags as well as branches; limit?
+        for repo_config in self.query_all_repos():
+            self._update_stage_repo(repo_config)
 
     def update_work_mirror(self):
         hg = self.query_exe("hg", return_type="list")
