@@ -21,7 +21,7 @@ config = {
         "revision": "default",
         "repo_name": "mozilla-central",
         "targets": [{
-            "target_dest": "target/mozilla-central/.git",
+            "target_dest": "beagle/.git",
             "vcs": "git",
         }],
         "bare_checkout": True,
@@ -40,7 +40,7 @@ config = {
         "revision": "default",
         "repo_name": "mozilla-b2g18",
         "targets": [{
-            "target_dest": "target/mozilla-central/.git",
+            "target_dest": "beagle/.git",
             "vcs": "git",
         }],
         "bare_checkout": True,

@@ -54,6 +54,7 @@ class HgGitScript(VCSConversionMixin, VirtualenvMixin, TooltoolMixin, VCSScript)
                 'initial-conversion',
                 'prepend-cvs',
                 'munge-mapfile',
+                'create-test-target',
                 'update-stage-mirror',
                 #'update-work-mirror',
                 #'push',
@@ -79,6 +80,7 @@ class HgGitScript(VCSConversionMixin, VirtualenvMixin, TooltoolMixin, VCSScript)
         abs_dirs['abs_source_dir'] = os.path.join(abs_dirs['abs_work_dir'], 'stage_source')
         abs_dirs['abs_repo_sync_tools_dir'] = os.path.join(abs_dirs['abs_work_dir'], 'repo-sync-tools')
         abs_dirs['abs_git_rewrite_dir'] = os.path.join(abs_dirs['abs_work_dir'], 'mc-git-rewrite')
+        abs_dirs['abs_target_dir'] = os.path.join(abs_dirs['abs_work_dir'], 'target')
         self.abs_dirs = abs_dirs
         return self.abs_dirs
 
@@ -270,7 +272,7 @@ intree=1
         dirs = self.query_abs_dirs()
         for repo_config in self.config['repos']:
             for target_config in repo_config['targets']:
-                target_dest = os.path.join(dirs['abs_work_dir'], target_config['target_dest'])
+                target_dest = os.path.join(dirs['abs_target_dir'], target_config['target_dest'])
                 if not os.path.exists(target_dest):
                     self.info("Creating local target repo %s." % target_dest)
                     if target_config.get("vcs", "git") == "git":
