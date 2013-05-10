@@ -82,6 +82,15 @@ class HgGitScript(VirtualenvMixin, TooltoolMixin, VCSScript):
         self.abs_dirs = abs_dirs
         return self.abs_dirs
 
+    def init_git_repo(self, path, additional_args=None):
+        git = self.query_exe("git", return_type="list")
+        cmd = git + ['init']
+        # generally for --bare
+        if additional_args:
+            cmd.extend(additional_args)
+        cmd.append(path)
+        return self.retry(self.run_command, args=(cmd, ), error_level=FATAL, error_message="Can't set up %s!" % path)
+
     def query_all_repos(self):
         return [self.config['initial_repo']] + self.config['conversion_repos']
 
