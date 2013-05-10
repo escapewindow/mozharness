@@ -244,11 +244,13 @@ intree=1
         conversion_dir = dirs['abs_conversion_dir']
         grafts_file = os.path.join(conversion_dir, '.git', 'info', 'grafts')
         if not os.path.exists(dirs["abs_cvs_history_dir"]):
-            # TODO figure something else out here
             # gd2 doesn't have access to tooltool :(
             #manifest_path = self.create_tooltool_manifest(self.config['cvs_manifest'])
             #if self.tooltool_fetch(manifest_path, output_dir=dirs['abs_work_dir']):
             #    self.fatal("Unable to download cvs history via tooltool!")
+            # Temporary workaround
+            self.copyfile("/home/asasaki/mozilla-cvs-history.tar.bz2",
+                          os.path.join(dirs['abs_work_dir'], "mozilla-cvs-history.tar.bz2"))
             self.run_command(["tar", "xjvf", "mozilla-cvs-history.tar.bz2"], cwd=dirs["abs_work_dir"],
                              error_list=TarErrorList, halt_on_failure=True)
         # We need to git checkout, or git thinks we've removed all the files
