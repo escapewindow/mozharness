@@ -298,7 +298,7 @@ intree=1
         hg = self.query_exe("hg", return_type="list")
         dirs = self.query_abs_dirs()
         dest = dirs['abs_conversion_dir']
-        for repo_config in self.config['repos']:
+        for repo_config in self.query_all_repos():
             source = os.path.join(dirs['abs_source_dir'], repo_config['repo_name'])
             for (branch, target_branch) in repo_config['branches'].items():
                 output = self.get_output_from_command(hg + ['id', '-r', branch], cwd=source)
@@ -318,14 +318,6 @@ intree=1
         )
         self.copy_to_upload_dir(os.path.join(dest, '.hg', 'git-mapfile'),
                                 dest="gecko-mapfile")
-
-    def push(self):
-        git = self.query_exe('git', return_type='list')
-        for repo_config in self.config['repos']:
-            work_dest = self.query_repo_dest(repo_config, 'work_dest')
-            target_dest = self.query_repo_dest(repo_config, 'target_dest')
-            self.run_command(git + ['push', '--force', '--mirror', target_dest],
-                             cwd=work_dest)
 
 # __main__ {{{1
 if __name__ == '__main__':
