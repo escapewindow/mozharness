@@ -29,8 +29,8 @@ class HgGitScript(VirtualenvMixin, TooltoolMixin, VCSScript):
             config_options=virtualenv_config_options,
             all_actions=[
                 'clobber',
-                'pull',
                 'create-virtualenv',
+                'pull',
                 'create-stage-mirror',
                 'create-work-mirror',
                 'initial-conversion',
