@@ -75,7 +75,7 @@ class MercurialVCS(ScriptMixin, LogMixin, object):
         #  ssh_key: ssh_key,
         # }
         self.vcs_config = vcs_config
-        self.hg = [self.query_exe('hg')] + HG_OPTIONS
+        self.hg = self.query_exe('hg', return_type="list") + HG_OPTIONS
 
     def _make_absolute(self, repo):
         if repo.startswith("file://"):
@@ -176,7 +176,7 @@ class MercurialVCS(ScriptMixin, LogMixin, object):
             msg += " to revision %s" % revision
         self.info("%s." % msg)
         parent_dest = os.path.dirname(dest)
-        if not os.path.exists(parent_dest):
+        if parent_dest and not os.path.exists(parent_dest):
             self.mkdir_p(parent_dest)
         if os.path.exists(dest):
             self.info("Removing %s before clone." % dest)
@@ -195,7 +195,8 @@ class MercurialVCS(ScriptMixin, LogMixin, object):
                 cmd.extend(['-b', branch])
 
         cmd.extend([repo, dest])
-        self.run_command(cmd, error_list=HgErrorList)
+        if self.run_command(cmd, error_list=HgErrorList):
+            raise VCSException("Unable to clone %s to %s!" % (repo, dest))
 
         if update_dest:
             return self.update(dest, branch, revision)
