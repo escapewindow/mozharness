@@ -35,6 +35,7 @@ class HgGitScript(VirtualenvMixin, TooltoolMixin, VCSScript):
                 'create-work-mirror',
                 'initial-conversion',
                 'prepend-cvs',
+                'munge-mapfile',
                 'create-test-target',
                 'update-stage-mirror',
                 'update-work-mirror',
@@ -50,6 +51,7 @@ class HgGitScript(VirtualenvMixin, TooltoolMixin, VCSScript):
                 'create-work-mirror',
                 'initial-conversion',
                 'prepend-cvs',
+                'munge-mapfile',
                 'create-test-target',
                 'update-stage-mirror',
                 'update-work-mirror',
@@ -154,7 +156,7 @@ class HgGitScript(VirtualenvMixin, TooltoolMixin, VCSScript):
             """
         self.info("Updating pre-cvs mapfile...")
         dirs = self.query_abs_dirs()
-        orig_mapfile = os.path.join(dirs['abs_work_dir'], 'pre-cvs-mapfile')
+        orig_mapfile = os.path.join(dirs['abs_upload_dir'], 'pre-cvs-mapfile')
         conversion_dir = dirs['abs_conversion_dir']
         mapfile = os.path.join(dirs['abs_work_dir'], 'post-cvs-mapfile')
         mapdir = os.path.join(dirs['abs_git_rewrite_dir'], 'map')
