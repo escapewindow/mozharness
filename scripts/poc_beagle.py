@@ -176,6 +176,24 @@ class HgGitScript(VirtualenvMixin, TooltoolMixin, VCSScript):
         self.copyfile(mapfile, os.path.join(conversion_dir, '.hg', 'git-mapfile'))
         self.copy_to_upload_dir(mapfile, dest="post-cvs-mapfile", log_level=INFO)
 
+    def make_repo_bare(self, path, tmpdir=None):
+        self.info("Making %s/.git a bare repo..." % path)
+        for p in (path, os.path.join(path, ".git")):
+            if not os.path.exists(p):
+                self.error("%s doesn't exist! Skipping..." % p)
+        if tmpdir is None:
+            tmpdir = os.path.dirname(os.path.abspath(path))
+        git = self.query_exe("git", return_type="list")
+        for dirname in (".git", ".hg"):
+            if os.path.exists(os.path.join(path, dirname)):
+                self.move(os.path.join(path, dirname), os.path.join(tmpdir, dirname))
+        self.rmtree(path)
+        self.mkdir_p(path)
+        for dirname in (".git", ".hg"):
+            if os.path.exists(os.path.join(tmpdir, dirname)):
+                self.move(os.path.join(tmpdir, dirname), os.path.join(path, dirname))
+        self.run_command(git + ['--git-dir', os.path.join(path, ".git"), 'config', '--bool', 'core.bare', 'true'])
+
     # Actions {{{1
     def create_stage_mirror(self):
         self.update_stage_mirror()
@@ -275,6 +293,7 @@ intree=1
                   dirs['abs_git_rewrite_dir'])
         self.rmtree(grafts_file)
         self.munge_mapfile()
+        self.make_repo_bare(conversion_dir)
 
     def create_test_target(self):
         # TODO get working with query_abs_dirs
