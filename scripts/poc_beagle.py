@@ -298,6 +298,8 @@ intree=1
         self.make_repo_bare(conversion_dir)
 
     def test_action(self):
+        dirs = self.query_abs_dirs()
+        conversion_dir = dirs['abs_conversion_dir']
         self.make_repo_bare(conversion_dir)
 
     def create_test_target(self):
