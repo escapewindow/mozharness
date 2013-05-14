@@ -35,6 +35,7 @@ class HgGitScript(VirtualenvMixin, TooltoolMixin, VCSScript):
                 'create-work-mirror',
                 'initial-conversion',
                 'prepend-cvs',
+                'test-action',
                 'create-test-target',
                 'update-stage-mirror',
                 'update-work-mirror',
@@ -50,6 +51,7 @@ class HgGitScript(VirtualenvMixin, TooltoolMixin, VCSScript):
                 'create-work-mirror',
                 'initial-conversion',
                 'prepend-cvs',
+                'test-action',
                 'create-test-target',
                 'update-stage-mirror',
                 'update-work-mirror',
@@ -293,6 +295,9 @@ intree=1
                   dirs['abs_git_rewrite_dir'])
         self.rmtree(grafts_file)
         self.munge_mapfile()
+        self.make_repo_bare(conversion_dir)
+
+    def test_action(self):
         self.make_repo_bare(conversion_dir)
 
     def create_test_target(self):
