@@ -23,6 +23,11 @@ config = {
         "targets": [{
             "target_dest": "beagle/.git",
             "vcs": "git",
+            "test_push": True,
+        }, {
+            "target_dest": "m-c1/.git",
+            "vcs": "git",
+            "test_push": True,
         }],
         "bare_checkout": True,
         "vcs": "hg",
@@ -42,6 +47,11 @@ config = {
         "targets": [{
             "target_dest": "beagle/.git",
             "vcs": "git",
+            "test_push": True,
+        }, {
+            "target_dest": "m-b2g18/.git",
+            "vcs": "git",
+            "test_push": True,
         }],
         "bare_checkout": True,
         "vcs": "hg",

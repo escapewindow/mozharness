@@ -14,7 +14,7 @@ import sys
 
 sys.path.insert(1, os.path.dirname(sys.path[0]))
 
-from mozharness.base.errors import HgErrorList, TarErrorList
+from mozharness.base.errors import HgErrorList, GitErrorList, TarErrorList
 from mozharness.base.log import INFO, FATAL
 from mozharness.base.python import VirtualenvMixin, virtualenv_config_options
 from mozharness.base.vcs.vcsbase import VCSScript
@@ -35,11 +35,10 @@ class HgGitScript(VirtualenvMixin, TooltoolMixin, VCSScript):
                 'create-work-mirror',
                 'initial-conversion',
                 'prepend-cvs',
-                'create-test-target',
                 'update-stage-mirror',
                 'update-work-mirror',
-                'verify',
                 'push',
+                'upload',
                 'notify',
             ],
             default_actions=[
@@ -50,10 +49,9 @@ class HgGitScript(VirtualenvMixin, TooltoolMixin, VCSScript):
                 'create-work-mirror',
                 'initial-conversion',
                 'prepend-cvs',
-                'create-test-target',
                 'update-stage-mirror',
                 'update-work-mirror',
-                #'push',
+                'push',
             ],
             require_config_file=require_config_file
         )
@@ -295,11 +293,12 @@ intree=1
         self.munge_mapfile()
         self.make_repo_bare(conversion_dir)
 
-    def create_test_target(self):
-        # TODO get working with query_abs_dirs
+    def create_test_targets(self):
         dirs = self.query_abs_dirs()
         for repo_config in self.query_all_repos():
             for target_config in repo_config['targets']:
+                if not target_config.get('test_push'):
+                    continue
                 target_dest = os.path.join(dirs['abs_target_dir'], target_config['target_dest'])
                 if not os.path.exists(target_dest):
                     self.info("Creating local target repo %s." % target_dest)
@@ -325,6 +324,8 @@ intree=1
                 output = self.get_output_from_command(hg + ['id', '-r', branch], cwd=source)
                 if output:
                     rev = output.split(' ')[0]
+                else:
+                    self.fatal("Branch %s doesn't exist in %s!" % (branch, repo_config['repo_name']))
                 self.run_command(hg + ['pull', '-r', rev, source], cwd=dest)
                 self.run_command(hg + ['bookmark', '-f', '-r', rev, target_branch], cwd=dest)
         self.retry(
@@ -339,6 +340,31 @@ intree=1
         )
         self.copy_to_upload_dir(os.path.join(dest, '.hg', 'git-mapfile'),
                                 dest="gecko-mapfile", log_level=INFO)
+
+    def push(self):
+        self.create_test_targets()
+        dirs = self.query_abs_dirs()
+        conversion_dir = dirs['abs_conversion_dir']
+        git = self.query_exe('git', return_type='list')
+        for repo_config in self.query_all_repos():
+            for target_config in repo_config['targets']:
+                if target_config.get("vcs", "git") == "git":
+                    if target_config.get("test_push"):
+                        target_dest = os.path.join(dirs['abs_target_dir'], target_config['target_dest'])
+                        if self.retry(
+                            self.run_command,
+                            args=git + ['push', target_dest],
+                            kwargs={
+                                'cwd': os.path.join(conversion_dir, '.git'),
+                                'error_list': GitErrorList,
+                            },
+                        ):
+                            self.fatal("Can't push %s to %s!" % conversion_dir, target_dest)
+                    else:
+                        self.fatal("Don't know how to push live: %s!" % str(target_config))
+                else:
+                    self.fatal("Don't know how to deal with vcs %s!" % target_config['vcs'])
+                    # TODO hg
 
 # __main__ {{{1
 if __name__ == '__main__':
