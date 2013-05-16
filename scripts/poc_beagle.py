@@ -358,7 +358,7 @@ intree=1
                             self.run_command,
                             args=(command, ),
                             kwargs={
-#                                'idle_timeout': 15 * 60,
+#                                'idle_timeout': 30 * 60,  # TODO per-target timeouts
                                 'cwd': os.path.join(conversion_dir, '.git'),
                                 'error_list': GitErrorList,
                             },
