@@ -353,8 +353,9 @@ intree=1
                         target_dest = os.path.join(dirs['abs_target_dir'], target_config['target_dest'])
                         if self.retry(
                             self.run_command,
-                            args=git + ['push', target_dest],
+                            args=(git + ['push', target_dest], ),
                             kwargs={
+#                                'idle_timeout': 15 * 60,
                                 'cwd': os.path.join(conversion_dir, '.git'),
                                 'error_list': GitErrorList,
                             },
