@@ -351,9 +351,12 @@ intree=1
                 if target_config.get("vcs", "git") == "git":
                     if target_config.get("test_push"):
                         target_dest = os.path.join(dirs['abs_target_dir'], target_config['target_dest'])
+                        command = git + ['push', target_dest]
+                        for hgbranch, gitbranch in iter(repo_config.branches):
+                            command += ['+refs/heads/%s:refs/heads/%s' % (gitbranch, gitbranch)]
                         if self.retry(
                             self.run_command,
-                            args=(git + ['push', target_dest], ),
+                            args=(command, ),
                             kwargs={
 #                                'idle_timeout': 15 * 60,
                                 'cwd': os.path.join(conversion_dir, '.git'),
