@@ -352,8 +352,8 @@ intree=1
                     if target_config.get("test_push"):
                         target_dest = os.path.join(dirs['abs_target_dir'], target_config['target_dest'])
                         command = git + ['push', target_dest]
-                        for hgbranch, gitbranch in iter(repo_config.branches):
-                            command += ['+refs/heads/%s:refs/heads/%s' % (gitbranch, gitbranch)]
+                        for (branch, target_branch) in repo_config['branches'].items():
+                            command += ['+refs/heads/%s:refs/heads/%s' % (target_branch, target_branch)]
                         if self.retry(
                             self.run_command,
                             args=(command, ),
