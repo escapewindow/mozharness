@@ -194,6 +194,37 @@ class HgGitScript(VirtualenvMixin, TooltoolMixin, VCSScript):
                 self.move(os.path.join(tmpdir, dirname), os.path.join(path, dirname))
         self.run_command(git + ['--git-dir', os.path.join(path, ".git"), 'config', '--bool', 'core.bare', 'true'])
 
+    def _push_repo(self, repo_config):
+        dirs = self.query_abs_dirs()
+        conversion_dir = dirs['abs_conversion_dir']
+        git = self.query_exe('git', return_type='list')
+        for target_config in repo_config['targets']:
+            if target_config.get("vcs", "git") == "git":
+                if target_config.get("test_push"):
+                    target_dest = os.path.join(dirs['abs_target_dir'], target_config['target_dest'])
+                    command = git + ['push', target_dest]
+                    if target_config.get("branches"):
+                        for (branch, target_branch) in target_config['branches'].items():
+                            command += ['+refs/heads/%s:refs/heads/%s' % (branch, target_branch)]
+                    else:
+                        for (branch, target_branch) in repo_config['branches'].items():
+                            command += ['+refs/heads/%s:refs/heads/%s' % (target_branch, target_branch)]
+                    if self.retry(
+                        self.run_command,
+                        args=(command, ),
+                        kwargs={
+#                            'idle_timeout': target_config.get("idle_timeout", 30 * 60),
+                            'cwd': os.path.join(conversion_dir, '.git'),
+                            'error_list': GitErrorList,
+                        },
+                    ):
+                        self.fatal("Can't push %s to %s!" % conversion_dir, target_dest)
+                else:
+                    self.fatal("Don't know how to push live: %s!" % str(target_config))
+            else:
+                self.fatal("Don't know how to deal with vcs %s!" % target_config['vcs'])
+                # TODO hg
+
     # Actions {{{1
     def create_stage_mirror(self):
         self.update_stage_mirror()
@@ -345,36 +376,8 @@ intree=1
 
     def push(self):
         self.create_test_targets()
-        dirs = self.query_abs_dirs()
-        conversion_dir = dirs['abs_conversion_dir']
-        git = self.query_exe('git', return_type='list')
         for repo_config in self.query_all_repos():
-            for target_config in repo_config['targets']:
-                if target_config.get("vcs", "git") == "git":
-                    if target_config.get("test_push"):
-                        target_dest = os.path.join(dirs['abs_target_dir'], target_config['target_dest'])
-                        command = git + ['push', target_dest]
-                        if target_config.get("branches"):
-                            for (branch, target_branch) in target_config['branches'].items():
-                                command += ['+refs/heads/%s:refs/heads/%s' % (branch, target_branch)]
-                        else:
-                            for (branch, target_branch) in repo_config['branches'].items():
-                                command += ['+refs/heads/%s:refs/heads/%s' % (target_branch, target_branch)]
-                        if self.retry(
-                            self.run_command,
-                            args=(command, ),
-                            kwargs={
-#                                'idle_timeout': target_config.get("idle_timeout", 30 * 60),
-                                'cwd': os.path.join(conversion_dir, '.git'),
-                                'error_list': GitErrorList,
-                            },
-                        ):
-                            self.fatal("Can't push %s to %s!" % conversion_dir, target_dest)
-                    else:
-                        self.fatal("Don't know how to push live: %s!" % str(target_config))
-                else:
-                    self.fatal("Don't know how to deal with vcs %s!" % target_config['vcs'])
-                    # TODO hg
+            self._push_repo(repo_config)
 
 # __main__ {{{1
 if __name__ == '__main__':
