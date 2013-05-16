@@ -123,11 +123,13 @@ class HgGitScript(VirtualenvMixin, TooltoolMixin, VCSScript):
                 return self._update_stage_repo(repo_config, retry=False, clobber=True)
             else:
                 self.fatal("Can't pull %s!" % repo_config['repo'])
-        if self.run_command(hg + ["verify"], cwd=source_dest):
-            if retry:
-                return self._update_stage_repo(repo_config, retry=False, clobber=True)
-            else:
-                self.fatal("Can't verify %s!" % source_dest)
+        # commenting out hg verify since it takes ~5min per repo; hopefully
+        # exit codes will save us
+#        if self.run_command(hg + ["verify"], cwd=source_dest):
+#            if retry:
+#                return self._update_stage_repo(repo_config, retry=False, clobber=True)
+#            else:
+#                self.fatal("Can't verify %s!" % source_dest)
 
     def _check_initial_git_revisions(self, repo_path, expected_sha1, expected_sha2):
         git = self.query_exe('git', return_type='list')
@@ -352,13 +354,17 @@ intree=1
                     if target_config.get("test_push"):
                         target_dest = os.path.join(dirs['abs_target_dir'], target_config['target_dest'])
                         command = git + ['push', target_dest]
-                        for (branch, target_branch) in repo_config['branches'].items():
-                            command += ['+refs/heads/%s:refs/heads/%s' % (target_branch, target_branch)]
+                        if target_config.get("branches"):
+                            for (branch, target_branch) in target_config['branches'].items():
+                                command += ['+refs/heads/%s:refs/heads/%s' % (branch, target_branch)]
+                        else:
+                            for (branch, target_branch) in repo_config['branches'].items():
+                                command += ['+refs/heads/%s:refs/heads/%s' % (target_branch, target_branch)]
                         if self.retry(
                             self.run_command,
                             args=(command, ),
                             kwargs={
-#                                'idle_timeout': 30 * 60,  # TODO per-target timeouts
+#                                'idle_timeout': target_config.get("idle_timeout", 30 * 60),
                                 'cwd': os.path.join(conversion_dir, '.git'),
                                 'error_list': GitErrorList,
                             },

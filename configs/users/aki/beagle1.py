@@ -48,6 +48,9 @@ config = {
             "target_dest": "beagle/.git",
             "vcs": "git",
             "test_push": True,
+            "branches": {
+                "b2g18": "master",
+            },
         }, {
             "target_dest": "m-b2g18/.git",
             "vcs": "git",
