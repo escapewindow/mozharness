@@ -200,27 +200,30 @@ class HgGitScript(VirtualenvMixin, TooltoolMixin, VCSScript):
         git = self.query_exe('git', return_type='list')
         for target_config in repo_config['targets']:
             if target_config.get("vcs", "git") == "git":
+                command = git + ['push']
                 if target_config.get("test_push"):
                     target_dest = os.path.join(dirs['abs_target_dir'], target_config['target_dest'])
-                    command = git + ['push', target_dest]
+                    command.append(target_dest)
                     if target_config.get("branches"):
                         for (branch, target_branch) in target_config['branches'].items():
                             command += ['+refs/heads/%s:refs/heads/%s' % (branch, target_branch)]
                     else:
                         for (branch, target_branch) in repo_config['branches'].items():
                             command += ['+refs/heads/%s:refs/heads/%s' % (target_branch, target_branch)]
-                    if self.retry(
-                        self.run_command,
-                        args=(command, ),
-                        kwargs={
-#                            'idle_timeout': target_config.get("idle_timeout", 30 * 60),
-                            'cwd': os.path.join(conversion_dir, '.git'),
-                            'error_list': GitErrorList,
-                        },
-                    ):
-                        self.fatal("Can't push %s to %s!" % conversion_dir, target_dest)
                 else:
                     self.fatal("Don't know how to push live: %s!" % str(target_config))
+#git remote add origin git@github.com:escapewindow/test-beagle.git
+#git push -u origin master
+                if self.retry(
+                    self.run_command,
+                    args=(command, ),
+                    kwargs={
+#                        'idle_timeout': target_config.get("idle_timeout", 30 * 60),
+                        'cwd': os.path.join(conversion_dir, '.git'),
+                        'error_list': GitErrorList,
+                    },
+                ):
+                    self.fatal("Can't push %s to %s!" % conversion_dir, target_dest)
             else:
                 self.fatal("Don't know how to deal with vcs %s!" % target_config['vcs'])
                 # TODO hg

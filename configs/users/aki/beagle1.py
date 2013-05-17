@@ -25,6 +25,10 @@ config = {
             "vcs": "git",
             "test_push": True,
         }, {
+            "target_dest": "github-beagle",
+        }, {
+            "target_dest": "spork-beagle",
+        }, {
             "target_dest": "m-c1/.git",
             "vcs": "git",
             "test_push": True,
@@ -49,6 +53,15 @@ config = {
             "vcs": "git",
             "test_push": True,
         }, {
+            "target_dest": "github-beagle",
+        }, {
+            "target_dest": "spork-beagle",
+        }, {
+            "target_dest": "spork-b2g18",
+            "branches": {
+                "b2g18": "master",
+            },
+        }, {
             "target_dest": "m-b2g18/.git",
             "vcs": "git",
             "test_push": True,
@@ -62,6 +75,23 @@ config = {
             "default": "b2g18",
         },
     }],
+    "remote_targets": {
+        'github-beagle': {
+            'repo': 'git@github.com:escapewindow/test-beagle.git',
+            'ssh_key': '~/.ssh/github1_rsa',
+            'vcs': 'git',
+        },
+        'spork-beagle': {
+            'repo': 'gituser@spork.escapewindow.com:/src/git/beagle.git',
+            'ssh_key': '~/.ssh/spork1_rsa',
+            'vcs': 'git',
+        },
+        'spork-b2g18': {
+            'repo': 'gituser@spork.escapewindow.com:/src/git/b2g18.git',
+            'ssh_key': '~/.ssh/spork1_rsa',
+            'vcs': 'git',
+        },
+    },
 
     "exes": {
         # bug 828140 - shut https warnings up.
