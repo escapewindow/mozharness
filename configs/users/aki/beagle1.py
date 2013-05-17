@@ -83,17 +83,17 @@ config = {
     "remote_targets": {
         'github-beagle': {
             'repo': 'git@github.com:escapewindow/test-beagle.git',
-            'ssh_key': '/home/asasaki/.ssh/github1_rsa',
+            'ssh_key': '~/.ssh/github1_rsa',
             'vcs': 'git',
         },
         'spork-beagle': {
             'repo': 'gituser@spork.escapewindow.com:/src/git/beagle.git',
-            'ssh_key': '/home/asasaki/.ssh/spork1_rsa',
+            'ssh_key': '~/.ssh/spork1_rsa',
             'vcs': 'git',
         },
         'spork-b2g18': {
             'repo': 'gituser@spork.escapewindow.com:/src/git/b2g18.git',
-            'ssh_key': '/home/asasaki/.ssh/spork1_rsa',
+            'ssh_key': '~/.ssh/spork1_rsa',
             'vcs': 'git',
         },
     },
