@@ -213,11 +213,11 @@ class HgGitScript(VirtualenvMixin, TooltoolMixin, VCSScript):
                     command.append(target_dest)
                 else:
                     target_name = target_config['target_dest']
-                    repo_config = self.config.get('remote_targets', {}).get(target_name)
-                    if not repo_config:
+                    remote_config = self.config.get('remote_targets', {}).get(target_name)
+                    if not remote_config:
                         self.fatal("Can't find %s in remote_targets!" % target_name)
-                    command.append(repo_config['repo'])
-                    env['GIT_SSH_KEY'] = repo_config['ssh_key']
+                    command.append(remote_config['repo'])
+                    env['GIT_SSH_KEY'] = remote_config['ssh_key']
                     env['GIT_SSH'] = os.path.join(external_tools_path, 'git-ssh-wrapper.sh')
                 if target_config.get("branches"):
                     for (branch, target_branch) in target_config['branches'].items():
