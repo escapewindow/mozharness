@@ -237,7 +237,7 @@ class HgGitScript(VirtualenvMixin, TooltoolMixin, VCSScript):
                         'env': self.query_env(partial_env=env),
                     },
                 ):
-                    self.fatal("Can't push %s to %s!" % conversion_dir, target_dest)
+                    self.fatal("Can't push %s to %s!" % (conversion_dir, target_dest))
             else:
                 self.fatal("Don't know how to deal with vcs %s!" % target_config['vcs'])
                 # TODO hg
