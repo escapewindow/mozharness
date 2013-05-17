@@ -221,10 +221,10 @@ class HgGitScript(VirtualenvMixin, TooltoolMixin, VCSScript):
                     env['GIT_SSH'] = os.path.join(external_tools_path, 'git-ssh-wrapper.sh')
                 if target_config.get("branches"):
                     for (branch, target_branch) in target_config['branches'].items():
-                            command += ['+refs/heads/%s:refs/heads/%s' % (branch, target_branch)]
-                    else:
-                        for (branch, target_branch) in repo_config['branches'].items():
-                            command += ['+refs/heads/%s:refs/heads/%s' % (target_branch, target_branch)]
+                        command += ['+refs/heads/%s:refs/heads/%s' % (branch, target_branch)]
+                else:
+                    for (branch, target_branch) in repo_config['branches'].items():
+                        command += ['+refs/heads/%s:refs/heads/%s' % (target_branch, target_branch)]
 #git remote add origin git@github.com:escapewindow/test-beagle.git
 #git push -u origin master
                 if self.retry(
