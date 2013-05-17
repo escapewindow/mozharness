@@ -28,9 +28,6 @@ config = {
             "target_dest": "github-beagle",
             "vcs": "git",
         }, {
-            "target_dest": "spork-beagle",
-            "vcs": "git",
-        }, {
             "target_dest": "m-c1/.git",
             "vcs": "git",
             "test_push": True,
@@ -56,9 +53,6 @@ config = {
             "test_push": True,
         }, {
             "target_dest": "github-beagle",
-            "vcs": "git",
-        }, {
-            "target_dest": "spork-beagle",
             "vcs": "git",
         }, {
             "target_dest": "spork-b2g18",
