@@ -14,6 +14,12 @@ import sys
 
 sys.path.insert(1, os.path.dirname(sys.path[0]))
 
+import mozharness
+external_tools_path = os.path.join(
+    os.path.abspath(os.path.dirname(os.path.dirname(mozharness.__file__))),
+    'external_tools',
+)
+
 from mozharness.base.errors import HgErrorList, GitErrorList, TarErrorList
 from mozharness.base.log import INFO, FATAL
 from mozharness.base.python import VirtualenvMixin, virtualenv_config_options
@@ -201,17 +207,24 @@ class HgGitScript(VirtualenvMixin, TooltoolMixin, VCSScript):
         for target_config in repo_config['targets']:
             if target_config.get("vcs", "git") == "git":
                 command = git + ['push']
+                env = {}
                 if target_config.get("test_push"):
                     target_dest = os.path.join(dirs['abs_target_dir'], target_config['target_dest'])
                     command.append(target_dest)
-                    if target_config.get("branches"):
-                        for (branch, target_branch) in target_config['branches'].items():
+                else:
+                    target_name = target_config['target_dest']
+                    repo_config = self.config.get('remote_targets', {}).get(target_name)
+                    if not repo_config:
+                        self.fatal("Can't find %s in remote_targets!" % target_name)
+                    command.append(repo_config['repo'])
+                    env['GIT_SSH_KEY'] = repo_config['ssh_key']
+                    env['GIT_SSH'] = os.path.join(external_tools_path, 'git-ssh-wrapper.sh')
+                if target_config.get("branches"):
+                    for (branch, target_branch) in target_config['branches'].items():
                             command += ['+refs/heads/%s:refs/heads/%s' % (branch, target_branch)]
                     else:
                         for (branch, target_branch) in repo_config['branches'].items():
                             command += ['+refs/heads/%s:refs/heads/%s' % (target_branch, target_branch)]
-                else:
-                    self.fatal("Don't know how to push live: %s!" % str(target_config))
 #git remote add origin git@github.com:escapewindow/test-beagle.git
 #git push -u origin master
                 if self.retry(
@@ -221,6 +234,7 @@ class HgGitScript(VirtualenvMixin, TooltoolMixin, VCSScript):
 #                        'idle_timeout': target_config.get("idle_timeout", 30 * 60),
                         'cwd': os.path.join(conversion_dir, '.git'),
                         'error_list': GitErrorList,
+                        'env': self.query_env(partial_env=env),
                     },
                 ):
                     self.fatal("Can't push %s to %s!" % conversion_dir, target_dest)
