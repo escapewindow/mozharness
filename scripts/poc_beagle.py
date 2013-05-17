@@ -234,8 +234,7 @@ class HgGitScript(VirtualenvMixin, TooltoolMixin, VCSScript):
 #                        'idle_timeout': target_config.get("idle_timeout", 30 * 60),
                         'cwd': os.path.join(conversion_dir, '.git'),
                         'error_list': GitErrorList,
-#                        'env': self.query_env(partial_env=env),
-                        'env': env,
+                        'env': self.query_env(partial_env=env),
                     },
                 ):
                     self.fatal("Can't push %s to %s!" % (conversion_dir, target_dest))
