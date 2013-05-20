@@ -11,6 +11,13 @@ Proof of concept for multi-repo m-c hg<->gitmo conversions with cvs prepending.
 
 import os
 import sys
+import time
+
+try:
+    import simplejson as json
+    assert json
+except ImportError:
+    import json
 
 sys.path.insert(1, os.path.dirname(sys.path[0]))
 
@@ -367,16 +374,26 @@ intree=1
         hg = self.query_exe("hg", return_type="list")
         dirs = self.query_abs_dirs()
         dest = dirs['abs_conversion_dir']
+        repo_map = {}
         for repo_config in self.query_all_repos():
-            source = os.path.join(dirs['abs_source_dir'], repo_config['repo_name'])
+            repo_name = repo_config['repo_name']
+            source = os.path.join(dirs['abs_source_dir'], repo_name)
             for (branch, target_branch) in repo_config['branches'].items():
                 output = self.get_output_from_command(hg + ['id', '-r', branch], cwd=source)
                 if output:
                     rev = output.split(' ')[0]
                 else:
-                    self.fatal("Branch %s doesn't exist in %s!" % (branch, repo_config['repo_name']))
+                    self.fatal("Branch %s doesn't exist in %s!" % (branch, repo_name))
+                timestamp = int(time.time())
                 self.run_command(hg + ['pull', '-r', rev, source], cwd=dest)
                 self.run_command(hg + ['bookmark', '-f', '-r', rev, target_branch], cwd=dest)
+                if repo_name not in repo_map:
+                    repo_map[repo_name] = {}
+                repo_map[repo_name][branch] = {
+                    'hg_revision': rev,
+                    'timestamp': timestamp,
+                    'datetime': time.strftime('%Y-%m-%d %H:%M %Z'),
+                }
         self.retry(
             self.run_command,
             args=(hg + ['-v', 'gexport'], ),
@@ -387,6 +404,10 @@ intree=1
             },
             error_level=FATAL,
         )
+        # TODO get git rev/branch data into the repo_map
+        contents = json.dumps(repo_map, sort_keys=True, indent=4)
+        self.write_to_file('repo_update.json', contents, parent_dir=dirs['abs_upload_dir'],
+                           create_parent_dir=True)
         self.copy_to_upload_dir(os.path.join(dest, '.hg', 'git-mapfile'),
                                 dest="gecko-mapfile", log_level=INFO)
 
