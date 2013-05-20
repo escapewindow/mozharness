@@ -452,7 +452,7 @@ intree=1
             repo_name = repo_config['repo_name']
             for (branch, target_branch) in repo_config['branches'].items():
                 git_revision = self._query_mapped_revision(revision=rev, mapfile=generated_mapfile)
-                repo_map[repo_name][branch]['git_revision'] = git_revision
+                repo_map[repo_name]['branches'][branch]['git_revision'] = git_revision
         self._write_repo_update_json(repo_map)
         self.copy_to_upload_dir(generated_mapfile, dest="gecko-mapfile", log_level=INFO)
 
