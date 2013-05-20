@@ -37,6 +37,8 @@ from mozharness.mozilla.tooltool import TooltoolMixin
 # HgGitScript {{{1
 class HgGitScript(VirtualenvMixin, TooltoolMixin, VCSScript):
 
+    mapfile_binary_search = None
+
     def __init__(self, require_config_file=True):
         super(HgGitScript, self).__init__(
             config_options=virtualenv_config_options,
@@ -245,6 +247,19 @@ class HgGitScript(VirtualenvMixin, TooltoolMixin, VCSScript):
                 self.fatal("Don't know how to deal with vcs %s!" % target_config['vcs'])
                 # TODO hg
 
+    def _query_mapped_revision(self, revision=None, mapfile=None):
+        if not callable(self.mapfile_binary_search):
+            site_packages_path = self.query_python_site_packages_path()
+            sys.path.append(os.path.join(site_packages_path, 'mapper'))
+            try:
+                from bsearch import mapfile_binary_search
+                global log
+                log = self.log_obj
+                self.mapfile_binary_search = mapfile_binary_search
+            except ImportError, e:
+                self.fatal("Can't import mapfile_binary_search! %s\nDid you create-virtualenv?" % str(e))
+        return self.mapfile_binary_search(mapfile, revision)
+
     def _post_fatal(self, message=None, exit_code=None):
         if 'notify' in self.actions:
             self.notify(message=message, fatal=True)
@@ -391,7 +406,9 @@ intree=1
                 if repo_name not in repo_map:
                     repo_map[repo_name] = {}
                 repo_map[repo_name][branch] = {
+                    'hg_branch': branch,
                     'hg_revision': rev,
+                    'git_branch': target_branch,
                     'timestamp': timestamp,
                     'datetime': time.strftime('%Y-%m-%d %H:%M %Z'),
                 }
@@ -406,11 +423,16 @@ intree=1
             error_level=FATAL,
         )
         # TODO get git rev/branch data into the repo_map
+        generated_mapfile = os.path.join(dest, '.hg', 'git-mapfile')
+        for repo_config in self.query_all_repos():
+            repo_name = repo_config['repo_name']
+            for (branch, target_branch) in repo_config['branches'].items():
+                git_revision = self._query_mapped_revision(revision=rev, mapfile=generated_mapfile)
+                repo_map[repo_name][branch]['git_revision'] = git_revision
         contents = json.dumps(repo_map, sort_keys=True, indent=4)
-        self.write_to_file('repo_update.json', contents, parent_dir=dirs['abs_upload_dir'],
+        self.write_to_file(os.path.join(dirs['abs_upload_dir'], 'repo_update.json'), contents,
                            create_parent_dir=True)
-        self.copy_to_upload_dir(os.path.join(dest, '.hg', 'git-mapfile'),
-                                dest="gecko-mapfile", log_level=INFO)
+        self.copy_to_upload_dir(generated_mapfile, dest="gecko-mapfile", log_level=INFO)
 
     def push(self):
         self.create_test_targets()
