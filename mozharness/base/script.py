@@ -777,6 +777,9 @@ class BaseScript(ScriptMixin, LogMixin, object):
         elif error_if_missing:
             self.error("No such method %s!" % method_name)
 
+    def _post_fatal(self, message=None, exit_code=None):
+        self.copy_logs_to_upload_dir()
+
     def copy_logs_to_upload_dir(self):
         """Copies logs to the upload directory"""
         self.info("Copying logs to upload dir...")
