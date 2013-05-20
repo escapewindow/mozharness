@@ -31,12 +31,13 @@ external_tools_path = os.path.join(
 from mozharness.base.errors import HgErrorList, GitErrorList, TarErrorList
 from mozharness.base.log import INFO, FATAL
 from mozharness.base.python import VirtualenvMixin, virtualenv_config_options
+from mozharness.base.transfer import TransferMixin
 from mozharness.base.vcs.vcsbase import VCSScript
 from mozharness.mozilla.tooltool import TooltoolMixin
 
 
 # HgGitScript {{{1
-class HgGitScript(VirtualenvMixin, TooltoolMixin, VCSScript):
+class HgGitScript(VirtualenvMixin, TooltoolMixin, TransferMixin, VCSScript):
 
     mapfile_binary_search = None
 
