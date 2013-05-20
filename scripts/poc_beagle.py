@@ -242,7 +242,7 @@ class HgGitScript(VirtualenvMixin, TooltoolMixin, TransferMixin, VCSScript):
 #                        'idle_timeout': target_config.get("idle_timeout", 30 * 60),
                         'cwd': os.path.join(conversion_dir, '.git'),
                         'error_list': GitErrorList,
-                        'env': self.query_env(partial_env=env),
+                        'partial_env': env,
                     },
                 ):
                     self.error("Can't push %s to %s!" % (conversion_dir, target_dest))
@@ -381,10 +381,10 @@ intree=1
         # This script is modified from git-filter-branch from git.
         # https://people.mozilla.com/~hwine/tmp/vcs2vcs/notes.html#initial-conversion
         # We may need to update this script if we update git.
-        env = self.query_env()
+        env = self.config.get('env', {})
         git_filter_branch = os.path.join(dirs['abs_repo_sync_tools_dir'], 'git-filter-branch-keep-rewrites')
         self.run_command([git_filter_branch, '--', '3ec464b55782fb94dbbb9b5784aac141f3e3ac01..HEAD'],
-                         env=env, cwd=conversion_dir, halt_on_failure=True)
+                         partial_env=env, cwd=conversion_dir, halt_on_failure=True)
         self.move(os.path.join(conversion_dir, '.git-rewrite'),
                   dirs['abs_git_rewrite_dir'])
         self.rmtree(grafts_file)

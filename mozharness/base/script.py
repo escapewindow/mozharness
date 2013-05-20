@@ -533,15 +533,12 @@ class ScriptMixin(object):
 
     def run_command(self, command, cwd=None, error_list=None, parse_at_end=False,
                     halt_on_failure=False, success_codes=None,
-                    env=None, return_type='status', throw_exception=False,
-                    output_parser=None):
+                    env=None, partial_env=None, return_type='status',
+                    throw_exception=False, output_parser=None):
         """Run a command, with logging and error parsing.
 
         TODO: parse_at_end, context_lines
-        TODO: retry_interval?
         TODO: error_level_override?
-        TODO: Add a copy-pastable version of |command| if it's a list.
-        TODO: print env if set
 
         output_parser lets you provide an instance of your own OutputParser
         subclass, or pass None to use OutputParser.
@@ -571,6 +568,12 @@ class ScriptMixin(object):
         shell = True
         if isinstance(command, list):
             shell = False
+        if env is None:
+            if partial_env:
+                self.info("Using partial env: %s" % pprint.pformat(partial_env))
+                env = self.query_env(partial_env=partial_env)
+        else:
+            self.info("Using env: %s" % pprint.pformat(env))
         try:
             p = subprocess.Popen(command, shell=shell, stdout=subprocess.PIPE,
                                  cwd=cwd, stderr=subprocess.STDOUT, env=env)
