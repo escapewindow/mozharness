@@ -267,6 +267,7 @@ class HgGitScript(VirtualenvMixin, TooltoolMixin, VCSScript):
     def _post_fatal(self, message=None, exit_code=None):
         if 'notify' in self.actions:
             self.notify(message=message, fatal=True)
+        self.copy_logs_to_upload_dir()
 
     # Actions {{{1
     def create_stage_mirror(self):
