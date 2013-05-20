@@ -210,6 +210,7 @@ class HgGitScript(VirtualenvMixin, TooltoolMixin, VCSScript):
         dirs = self.query_abs_dirs()
         conversion_dir = dirs['abs_conversion_dir']
         git = self.query_exe('git', return_type='list')
+        return_status = 0
         for target_config in repo_config['targets']:
             if target_config.get("vcs", "git") == "git":
                 command = git + ['push']
@@ -243,10 +244,13 @@ class HgGitScript(VirtualenvMixin, TooltoolMixin, VCSScript):
                         'env': self.query_env(partial_env=env),
                     },
                 ):
-                    self.fatal("Can't push %s to %s!" % (conversion_dir, target_dest))
+                    self.error("Can't push %s to %s!" % (conversion_dir, target_dest))
+                    return_status = -1
             else:
-                self.fatal("Don't know how to deal with vcs %s!" % target_config['vcs'])
+                self.error("Don't know how to deal with vcs %s!" % target_config['vcs'])
+                return_status = -2
                 # TODO hg
+        return return_status
 
     def _query_mapped_revision(self, revision=None, mapfile=None):
         if not callable(self.mapfile_binary_search):
@@ -268,6 +272,22 @@ class HgGitScript(VirtualenvMixin, TooltoolMixin, VCSScript):
         if 'notify' in self.actions:
             self.notify(message=message, fatal=True)
         self.copy_logs_to_upload_dir()
+
+    def _read_repo_update_json(self):
+        repo_map = {}
+        dirs = self.query_abs_dirs()
+        path = os.path.join(dirs['abs_upload_dir'], 'repo_update.json')
+        if os.path.exists(path):
+            fh = open(path, 'r')
+            repo_map = json.load(fh)
+            fh.close()
+        return repo_map
+
+    def _write_repo_update_json(self, repo_map):
+        dirs = self.query_abs_dirs()
+        contents = json.dumps(repo_map, sort_keys=True, indent=4)
+        self.write_to_file(os.path.join(dirs['abs_upload_dir'], 'repo_update.json'), contents,
+                           create_parent_dir=True)
 
     # Actions {{{1
     def create_stage_mirror(self):
@@ -395,7 +415,7 @@ intree=1
         hg = self.query_exe("hg", return_type="list")
         dirs = self.query_abs_dirs()
         dest = dirs['abs_conversion_dir']
-        repo_map = {}
+        repo_map = self._read_repo_update_json()
         for repo_config in self.query_all_repos():
             repo_name = repo_config['repo_name']
             source = os.path.join(dirs['abs_source_dir'], repo_name)
@@ -406,16 +426,15 @@ intree=1
                 else:
                     self.fatal("Branch %s doesn't exist in %s!" % (branch, repo_name))
                 timestamp = int(time.time())
+                datetime = time.strftime('%Y-%m-%d %H:%M %Z')
                 self.run_command(hg + ['pull', '-r', rev, source], cwd=dest)
                 self.run_command(hg + ['bookmark', '-f', '-r', rev, target_branch], cwd=dest)
-                if repo_name not in repo_map:
-                    repo_map[repo_name] = {}
-                repo_map[repo_name][branch] = {
+                repo_map.setdefault(repo_name, {})[branch] = {
                     'hg_branch': branch,
                     'hg_revision': rev,
                     'git_branch': target_branch,
-                    'timestamp': timestamp,
-                    'datetime': time.strftime('%Y-%m-%d %H:%M %Z'),
+                    'pull_timestamp': timestamp,
+                    'pull_datetime': datetime,
                 }
         self.retry(
             self.run_command,
@@ -434,15 +453,25 @@ intree=1
             for (branch, target_branch) in repo_config['branches'].items():
                 git_revision = self._query_mapped_revision(revision=rev, mapfile=generated_mapfile)
                 repo_map[repo_name][branch]['git_revision'] = git_revision
-        contents = json.dumps(repo_map, sort_keys=True, indent=4)
-        self.write_to_file(os.path.join(dirs['abs_upload_dir'], 'repo_update.json'), contents,
-                           create_parent_dir=True)
+        self._write_repo_update_json(repo_map)
         self.copy_to_upload_dir(generated_mapfile, dest="gecko-mapfile", log_level=INFO)
 
     def push(self):
         self.create_test_targets()
+        repo_map = self._read_repo_update_json()
+        failure_msg = ""
         for repo_config in self.query_all_repos():
-            self._push_repo(repo_config)
+            timestamp = int(time.time())
+            datetime = time.strftime('%Y-%m-%d %H:%M %Z')
+            if self._push_repo(repo_config) == 0:
+                repo_name = repo_config['repo_name']
+                repo_map.setdefault(repo_name, {})['push_timestamp'] = timestamp
+                repo_map[repo_name]['push_datetime'] = datetime
+            else:
+                failure_msg += "  %s\n" % repo_config['repo_name']
+        self._write_repo_update_json(repo_map)
+        if failure_msg:
+            self.fatal("Unable to push these repos:\n%s" % failure_msg)
 
     def upload(self):
         pass
