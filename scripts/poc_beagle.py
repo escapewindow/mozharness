@@ -474,7 +474,19 @@ intree=1
             self.fatal("Unable to push these repos:\n%s" % failure_msg)
 
     def upload(self):
-        pass
+        failure_msg = ''
+        dirs = self.query_abs_dirs()
+        for upload_config in self.config.get('upload_config', []):
+            if self.retry(
+                self.rsync_upload_directory,
+                args=(
+                    dirs['abs_upload_dir'],
+                ),
+                kwargs=upload_config,
+            ):
+                failure_msg += '%s:%s' % (upload_config['remote_host'], upload_config['remote_path'])
+        if failure_msg:
+            self.fatal("Unable to upload to this location:\n%s" % failure_msg)
 
     def notify(self, message=None, fatal=False):
         """ TODO

@@ -109,6 +109,13 @@ config = {
     ],
 #    "find_links": ["http://puppetagain.pub.build.mozilla.org/data/python/packages/", ],
 
+    "upload_config": [{
+        'ssh_key': '~/.ssh/spork1_rsa',
+        'ssh_user': 'gituser',
+        'remote_host': 'spork.escapewindow.com',
+        'remote_path': '/home/gituser/upload/beagle-upload',
+    }],
+
     ## .ssh/config
     #Host git.m.o
     #    HostName git.mozilla.org
