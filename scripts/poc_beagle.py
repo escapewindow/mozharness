@@ -505,12 +505,12 @@ intree=1
             message = string.join((
                 "From: %s" % fromaddr,
                 "To: %s" % notify_config['to'],
-                "CC: %s" % notify_config.get('cc', ''),
+                "CC: %s" % ','.join(notify_config.get('cc', [])),
                 "Subject: %s" % subject,
                 "",
                 text
             ), "\r\n")
-            toaddrs = notify_config['to'] + notify_config.get('cc', [])
+            toaddrs = [notify_config['to']] + notify_config.get('cc', [])
             # TODO allow for a different smtp server
             # TODO deal with failures
             server = smtplib.SMTP('localhost')
