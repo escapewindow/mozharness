@@ -48,16 +48,11 @@ class HgGitScript(VirtualenvMixin, TooltoolMixin, VCSScript):
                 'notify',
             ],
             default_actions=[
-                'clobber',
-                'pull',
-                'create-virtualenv',
-                'create-stage-mirror',
-                'create-work-mirror',
-                'initial-conversion',
-                'prepend-cvs',
                 'update-stage-mirror',
                 'update-work-mirror',
                 'push',
+                'upload',
+                'notify',
             ],
             require_config_file=require_config_file
         )
@@ -242,6 +237,10 @@ class HgGitScript(VirtualenvMixin, TooltoolMixin, VCSScript):
                 self.fatal("Don't know how to deal with vcs %s!" % target_config['vcs'])
                 # TODO hg
 
+    def _post_fatal(self, message=None, exit_code=None):
+        if 'notify' in self.actions:
+            self.notify(message=message, fatal=True)
+
     # Actions {{{1
     def create_stage_mirror(self):
         self.update_stage_mirror()
@@ -395,6 +394,14 @@ intree=1
         self.create_test_targets()
         for repo_config in self.query_all_repos():
             self._push_repo(repo_config)
+
+    def upload(self):
+        pass
+
+    def notify(self, message=None, fatal=False):
+        """ TODO
+            """
+        pass
 
 # __main__ {{{1
 if __name__ == '__main__':
