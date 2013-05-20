@@ -76,7 +76,6 @@ class VirtualenvMixin(object):
         c['virtualenv_path'] is set; otherwise return the binary name.
         Otherwise return None
         """
-        self._check_existing_virtualenv()
         if binary not in self.python_paths:
             bin_dir = 'bin'
             if self._is_windows():
@@ -142,12 +141,6 @@ class VirtualenvMixin(object):
         """
         packages = self.package_versions(error_level=error_level).keys()
         return package_name.lower() in [package.lower() for package in packages]
-
-    def _check_existing_virtualenv(self, error_level=WARNING):
-        if 'VIRTUAL_ENV' in os.environ:
-            self.log("VIRTUAL_ENV %s set; this may break mozharness virtualenv calls!" % os.environ['VIRTUAL_ENV'],
-                     level=error_level)
-            return True
 
     def install_module(self, module=None, module_url=None, install_method=None,
                        requirements=()):
@@ -256,7 +249,6 @@ class VirtualenvMixin(object):
         c = self.config
         dirs = self.query_abs_dirs()
         venv_path = self.query_virtualenv_path()
-        self._check_existing_virtualenv()
         self.info("Creating virtualenv %s" % venv_path)
         virtualenv = c.get('virtualenv', self.query_exe('virtualenv'))
         if isinstance(virtualenv, str):
