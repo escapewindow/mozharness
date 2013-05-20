@@ -9,6 +9,7 @@
 Proof of concept for multi-repo m-c hg<->gitmo conversions with cvs prepending.
 """
 
+import mmap
 import os
 import sys
 import time
@@ -258,7 +259,10 @@ class HgGitScript(VirtualenvMixin, TooltoolMixin, VCSScript):
                 self.mapfile_binary_search = mapfile_binary_search
             except ImportError, e:
                 self.fatal("Can't import mapfile_binary_search! %s\nDid you create-virtualenv?" % str(e))
-        return self.mapfile_binary_search(mapfile, revision)
+        # I wish mapper did this for me, but ...
+        fd = open(mapfile, 'rb')
+        m = mmap.mmap(fd.fileno(), 0, mmap.MAP_PRIVATE, mmap.PROT_READ)
+        return self.mapfile_binary_search(m, revision)
 
     def _post_fatal(self, message=None, exit_code=None):
         if 'notify' in self.actions:
