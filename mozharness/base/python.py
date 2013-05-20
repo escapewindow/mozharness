@@ -288,10 +288,13 @@ class VirtualenvMixin(object):
         virtualenv_options = c.get('virtualenv_options',
                                    ['--no-site-packages', '--distribute'])
 
-        self.run_command(virtualenv + virtualenv_options + [venv_path],
-                         cwd=dirs['abs_work_dir'],
-                         error_list=VirtualenvErrorList,
-                         halt_on_failure=True)
+        if os.path.exists(self.query_python_path()):
+            self.info("Virtualenv %s appears to already exist; skipping virtualenv creation.")
+        else:
+            self.run_command(virtualenv + virtualenv_options + [venv_path],
+                             cwd=dirs['abs_work_dir'],
+                             error_list=VirtualenvErrorList,
+                             halt_on_failure=True)
         if not modules:
             modules = c.get('virtualenv_modules', [])
         if not requirements:

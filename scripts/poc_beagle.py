@@ -55,6 +55,7 @@ class HgGitScript(VirtualenvMixin, TooltoolMixin, VCSScript):
                 'notify',
             ],
             default_actions=[
+                'create-virtualenv',
                 'update-stage-mirror',
                 'update-work-mirror',
                 'push',
