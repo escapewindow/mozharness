@@ -11,6 +11,8 @@ Proof of concept for multi-repo m-c hg<->gitmo conversions with cvs prepending.
 
 import mmap
 import os
+import smtplib
+import string
 import sys
 import time
 
@@ -490,9 +492,34 @@ intree=1
             self.fatal("Unable to upload to this location:\n%s" % failure_msg)
 
     def notify(self, message=None, fatal=False):
-        """ TODO
-            """
-        pass
+        c = self.config
+        subject = "Successful conversion for %s <EOM>" % c['conversion_dir']
+        text = ''
+        if fatal:
+            subject = "Failed conversion for %s" % c['conversion_dir']
+            text = message
+        for notify_config in c.get('notify_config', []):
+            if not fatal and notify_config.get('failure_only'):
+                continue
+            fromaddr = notify_config.get('from', c['default_notify_from'])
+            message = string.join((
+                "From: %s" % fromaddr,
+                "To: %s" % notify_config['to'],
+                "CC: %s" % notify_config.get('cc', ''),
+                "Subject: %s" % subject,
+                "",
+                text
+            ), "\r\n")
+            toaddrs = notify_config['to'] + notify_config.get('cc', [])
+            # TODO allow for a different smtp server
+            # TODO deal with failures
+            server = smtplib.SMTP('localhost')
+            server.set_debuglevel(1)
+            self.retry(
+                server.sendmail,
+                args=(fromaddr, toaddrs, message),
+            )
+            server.quit()
 
 # __main__ {{{1
 if __name__ == '__main__':

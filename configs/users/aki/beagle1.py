@@ -1,4 +1,5 @@
 import os
+import socket
 
 CVS_MANIFEST = """[{
 "size": 1301484692,
@@ -114,6 +115,12 @@ config = {
         'ssh_user': 'gituser',
         'remote_host': 'spork.escapewindow.com',
         'remote_path': '/home/gituser/upload/beagle-upload',
+    }],
+
+    "default_notify_from": "vcs2vcs@%s" % socket.gethostname(),
+    "notify_config": [{
+        'to': 'aki@mozilla.com',
+        'failure_only': False,
     }],
 
     ## .ssh/config
