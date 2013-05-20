@@ -429,7 +429,7 @@ intree=1
                 datetime = time.strftime('%Y-%m-%d %H:%M %Z')
                 self.run_command(hg + ['pull', '-r', rev, source], cwd=dest)
                 self.run_command(hg + ['bookmark', '-f', '-r', rev, target_branch], cwd=dest)
-                repo_map.setdefault(repo_name, {})[branch] = {
+                repo_map.setdefault(repo_name, {}).setdefault('branches', {})[branch] = {
                     'hg_branch': branch,
                     'hg_revision': rev,
                     'git_branch': target_branch,
