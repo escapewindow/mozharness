@@ -61,20 +61,20 @@ config = {
             "target_dest": "spork-b2g18",
             "vcs": "git",
             "branches": {
-                "mozilla-b2g18": "master",
+                "b2g18": "master",
             },
         }, {
             "target_dest": "m-b2g18/.git",
             "vcs": "git",
             "test_push": True,
             "branches": {
-                "mozilla-b2g18": "master",
+                "b2g18": "master",
             },
         }],
         "bare_checkout": True,
         "vcs": "hg",
         "branches": {
-            "default": "mozilla-b2g18",
+            "default": "b2g18",
         },
         "tags": {
             re.compile("^B2G_"): None,
