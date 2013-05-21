@@ -52,6 +52,9 @@ config = {
             "target_dest": "beagle/.git",
             "vcs": "git",
             "test_push": True,
+            "tag_config": {
+                "tags": {'*': '*'},
+            },
         }, {
             "target_dest": "github-beagle",
             "vcs": "git",
@@ -74,9 +77,11 @@ config = {
         "branches": {
             "default": "b2g18",
         },
-        "tags": [{
-            "regex": "^B2G_",
-        }],
+        "tag_config": {
+            "tag_regexes": [
+                "^B2G_",
+            ],
+        },
     }, {
         "repo": "https://hg.mozilla.org/releases/mozilla-b2g18_v1_0_1",
         "revision": "default",
@@ -94,9 +99,11 @@ config = {
         "branches": {
             "default": "b2g18_v1_0_1",
         },
-        "tags": [{
-            "regex": "^B2G_",
-        }],
+        "tag_config": {
+            "tag_regexes": [
+                "^B2G_",
+            ],
+        },
     }, {
         "repo": "https://hg.mozilla.org/releases/mozilla-b2g18_v1_0_0",
         "revision": "default",
@@ -114,9 +121,11 @@ config = {
         "branches": {
             "default": "b2g18_v1_0_0",
         },
-        "tags": [{
-            "regex": "^B2G_",
-        }],
+        "tag_config": {
+            "tag_regexes": [
+                "^B2G_",
+            ],
+        },
     }],
     "remote_targets": {
         "github-beagle": {
