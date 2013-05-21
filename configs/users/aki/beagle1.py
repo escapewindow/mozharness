@@ -1,4 +1,5 @@
 import os
+import re
 import socket
 
 CVS_MANIFEST = """[{
@@ -38,6 +39,7 @@ config = {
         "branches": {
             "default": "master",
         },
+        "tags": {},
     },
     "cvs_manifest": CVS_MANIFEST,
     "tooltool_servers": ["http://runtime-binaries.pvt.build.mozilla.org/tooltool/"],
@@ -74,32 +76,35 @@ config = {
         "branches": {
             "default": "b2g18",
         },
+        "tags": {
+            re.compile("^B2G_"): None,
+        },
     }],
     "remote_targets": {
-        'github-beagle': {
-            'repo': 'git@github.com:escapewindow/test-beagle.git',
-            'ssh_key': '~/.ssh/github1_rsa',
-            'vcs': 'git',
+        "github-beagle": {
+            "repo": "git@github.com:escapewindow/test-beagle.git",
+            "ssh_key": "~/.ssh/github1_rsa",
+            "vcs": "git",
         },
-        'spork-beagle': {
-            'repo': 'gituser@spork.escapewindow.com:/src/git/beagle.git',
-            'ssh_key': '~/.ssh/spork1_rsa',
-            'vcs': 'git',
+        "spork-beagle": {
+            "repo": "gituser@spork.escapewindow.com:/src/git/beagle.git",
+            "ssh_key": "~/.ssh/spork1_rsa",
+            "vcs": "git",
         },
-        'spork-b2g18': {
-            'repo': 'gituser@spork.escapewindow.com:/src/git/b2g18.git',
-            'ssh_key': '~/.ssh/spork1_rsa',
-            'vcs': 'git',
+        "spork-b2g18": {
+            "repo": "gituser@spork.escapewindow.com:/src/git/b2g18.git",
+            "ssh_key": "~/.ssh/spork1_rsa",
+            "vcs": "git",
         },
     },
 
     "exes": {
         # bug 828140 - shut https warnings up.
         # http://kiln.stackexchange.com/questions/2816/mercurial-certificate-warning-certificate-not-verified-web-cacerts
-        "hg": [os.path.join(os.getcwd(), 'build', 'venv', 'bin', 'hg'), '--config', 'web.cacerts=/etc/pki/tls/certs/ca-bundle.crt'],
+        "hg": [os.path.join(os.getcwd(), "build", "venv", "bin", "hg"), "--config", "web.cacerts=/etc/pki/tls/certs/ca-bundle.crt"],
         "tooltool.py": [
-            os.path.join(os.getcwd(), 'build', 'venv', 'bin', 'python'),
-            os.path.join(os.getcwd(), 'mozharness', 'external_tools', 'tooltool.py'),
+            os.path.join(os.getcwd(), "build", "venv", "bin", "python"),
+            os.path.join(os.getcwd(), "mozharness", "external_tools", "tooltool.py"),
         ],
     },
 
@@ -111,16 +116,16 @@ config = {
 #    "find_links": ["http://puppetagain.pub.build.mozilla.org/data/python/packages/", ],
 
     "upload_config": [{
-        'ssh_key': '~/.ssh/spork1_rsa',
-        'ssh_user': 'gituser',
-        'remote_host': 'spork.escapewindow.com',
-        'remote_path': '/home/gituser/upload/beagle-upload',
+        "ssh_key": "~/.ssh/spork1_rsa",
+        "ssh_user": "gituser",
+        "remote_host": "spork.escapewindow.com",
+        "remote_path": "/home/gituser/upload/beagle-upload",
     }],
 
     "default_notify_from": "vcs2vcs@%s" % socket.gethostname(),
     "notify_config": [{
-        'to': 'aki@mozilla.com',
-        'failure_only': False,
+        "to": "aki@mozilla.com",
+        "failure_only": False,
     }],
 
     ## .ssh/config

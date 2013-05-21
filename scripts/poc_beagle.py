@@ -233,7 +233,7 @@ class HgGitScript(VirtualenvMixin, TooltoolMixin, TransferMixin, VCSScript):
                     for (branch, target_branch) in target_config['branches'].items():
                         command += ['+refs/heads/%s:refs/heads/%s' % (branch, target_branch)]
                 else:
-                    for (branch, target_branch) in repo_config['branches'].items():
+                    for (branch, target_branch) in repo_config.get('branches', {}).items():
                         command += ['+refs/heads/%s:refs/heads/%s' % (target_branch, target_branch)]
 #git remote add origin git@github.com:escapewindow/test-beagle.git
 #git push -u origin master
@@ -333,7 +333,7 @@ intree=1
         repo_config = self.config['initial_repo']
         source = os.path.join(dirs['abs_source_dir'], repo_config['repo_name'])
         dest = dirs['abs_conversion_dir']
-        for (branch, target_branch) in repo_config['branches'].items():
+        for (branch, target_branch) in repo_config.get('branches', {}).items():
             output = self.get_output_from_command(hg + ['id', '-r', branch], cwd=source)
             if output:
                 rev = output.split(' ')[0]
@@ -422,7 +422,7 @@ intree=1
         for repo_config in self.query_all_repos():
             repo_name = repo_config['repo_name']
             source = os.path.join(dirs['abs_source_dir'], repo_name)
-            for (branch, target_branch) in repo_config['branches'].items():
+            for (branch, target_branch) in repo_config.get('branches', {}).items():
                 output = self.get_output_from_command(hg + ['id', '-r', branch], cwd=source)
                 if output:
                     rev = output.split(' ')[0]
@@ -453,7 +453,7 @@ intree=1
         generated_mapfile = os.path.join(dest, '.hg', 'git-mapfile')
         for repo_config in self.query_all_repos():
             repo_name = repo_config['repo_name']
-            for (branch, target_branch) in repo_config['branches'].items():
+            for (branch, target_branch) in repo_config.get('branches', {}).items():
                 git_revision = self._query_mapped_revision(revision=rev, mapfile=generated_mapfile)
                 repo_map[repo_name]['branches'][branch]['git_revision'] = git_revision
         self._write_repo_update_json(repo_map)
@@ -514,7 +514,6 @@ intree=1
             # TODO allow for a different smtp server
             # TODO deal with failures
             server = smtplib.SMTP('localhost')
-            server.set_debuglevel(1)
             self.retry(
                 server.sendmail,
                 args=(fromaddr, toaddrs, message),
