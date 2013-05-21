@@ -1,5 +1,4 @@
 import os
-import re
 import socket
 
 CVS_MANIFEST = """[{
@@ -75,9 +74,9 @@ config = {
         "branches": {
             "default": "b2g18",
         },
-        "tags": {
-            re.compile("^B2G_"): None,
-        },
+        "tags": [{
+            "regex": "^B2G_",
+        }],
     }, {
         "repo": "https://hg.mozilla.org/releases/mozilla-b2g18_v1_0_1",
         "revision": "default",
@@ -95,9 +94,9 @@ config = {
         "branches": {
             "default": "b2g18_v1_0_1",
         },
-        "tags": {
-            re.compile("^B2G_"): None,
-        },
+        "tags": [{
+            "regex": "^B2G_",
+        }],
     }],
     "remote_targets": {
         "github-beagle": {
