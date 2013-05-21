@@ -97,6 +97,26 @@ config = {
         "tags": [{
             "regex": "^B2G_",
         }],
+    }, {
+        "repo": "https://hg.mozilla.org/releases/mozilla-b2g18_v1_0_0",
+        "revision": "default",
+        "repo_name": "mozilla-b2g18_v1_0_0",
+        "targets": [{
+            "target_dest": "beagle/.git",
+            "vcs": "git",
+            "test_push": True,
+        }, {
+            "target_dest": "github-beagle",
+            "vcs": "git",
+        }],
+        "bare_checkout": True,
+        "vcs": "hg",
+        "branches": {
+            "default": "b2g18_v1_0_0",
+        },
+        "tags": [{
+            "regex": "^B2G_",
+        }],
     }],
     "remote_targets": {
         "github-beagle": {
