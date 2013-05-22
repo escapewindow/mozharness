@@ -11,7 +11,7 @@ CVS_MANIFEST = """[{
 
 config = {
     "log_name": "beagle",
-    "log_max_rotate": 10,
+    "log_max_rotate": 99,
     "repos": [{
         "repo": "https://hg.mozilla.org/users/hwine_mozilla.com/repo-sync-tools",
         "vcs": "hg",
