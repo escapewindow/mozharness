@@ -444,7 +444,7 @@ intree=1
                 else:
                     self.fatal("Branch %s doesn't exist in %s!" % (branch, repo_name))
                 timestamp = int(time.time())
-                datetime = time.strftime('%Y-%m-%d %H:%M %Z', timestamp)
+                datetime = time.strftime('%Y-%m-%d %H:%M %Z')
                 self.run_command(hg + ['pull', '-r', rev, source], cwd=dest)
                 self.run_command(hg + ['bookmark', '-f', '-r', rev, target_branch], cwd=dest)
                 repo_map.setdefault(repo_name, {}).setdefault('branches', {})[branch] = {
@@ -480,7 +480,7 @@ intree=1
         failure_msg = ""
         for repo_config in self.query_all_repos():
             timestamp = int(time.time())
-            datetime = time.strftime('%Y-%m-%d %H:%M %Z', timestamp)
+            datetime = time.strftime('%Y-%m-%d %H:%M %Z')
             if self._push_repo(repo_config) == 0:
                 repo_name = repo_config['repo_name']
                 repo_map.setdefault(repo_name, {})['push_timestamp'] = timestamp
