@@ -210,6 +210,41 @@ class HgGitScript(VirtualenvMixin, TooltoolMixin, TransferMixin, VCSScript):
                 self.move(os.path.join(tmpdir, dirname), os.path.join(path, dirname))
         self.run_command(git + ['--git-dir', os.path.join(path, ".git"), 'config', '--bool', 'core.bare', 'true'])
 
+    def _fix_tags(self, path):
+        """ Ehsan's git tag fixer, ported from bash.
+
+         `` Git's history rewriting is not smart about preserving the tags in your repository,
+            so you would end up with tags which point to commits in the old history line. If you
+            push your repository to some other repository for example, all of the tags in the
+            target repository would be invalid, since they would be pointing to commits that
+            don't exist in that repository. ''
+
+            https://github.com/ehsan/mozilla-history-tools/blob/master/initial_conversion/translate_git_tags.sh
+            """
+        pass
+# TODO XXX aki
+# TEMPDIR=/tmp/translate_git_tags
+# GITREWRITEDIR=../git-rewrite
+#
+# rm -rf $TEMPDIR
+# mkdir $TEMPDIR
+#
+# git for-each-ref > $TEMPDIR/refs
+#
+# while read sha1 type name
+# do
+# case "$type" in
+#   commit)
+#     # Try to find the corresponding hg cset sha1 from the old git-mapfile
+#     if echo "$name" | grep -q '^refs/tags/'; then
+# TAG_NAME=`echo -n "$name" | cut -d / -f 3`
+#       GIT_OLD_COMMIT="$sha1"
+#       GIT_NEW_COMMIT=`cat $GITREWRITEDIR/map/$sha1 2>/dev/null`
+#       git update-ref "$name" "$GIT_NEW_COMMIT" "$GIT_OLD_COMMIT"
+#     fi
+# esac
+# done < $TEMPDIR/refs
+
     def _push_repo(self, repo_config):
         dirs = self.query_abs_dirs()
         conversion_dir = dirs['abs_conversion_dir']
@@ -353,21 +388,28 @@ intree=1
             if output:
                 rev = output.split(' ')[0]
             self.run_command(hg + ['pull', '-r', rev, source], cwd=dest,
-                             error_list=HgErrorList)
+                             error_list=HgErrorList, halt_on_failure=True)
             self.run_command(hg + ['bookmark', '-f', '-r', rev, target_branch], cwd=dest,
-                             error_list=HgErrorList)
-            self.retry(
-                self.run_command,
-                args=(hg + ['-v', 'gexport'], ),
-                kwargs={
-#                    'idle_timeout': 15 * 60,
-                    'cwd': dest,
-                    'error_list': HgErrorList,
-                },
-                error_level=FATAL,
-            )
-            self.copy_to_upload_dir(os.path.join(dest, '.hg', 'git-mapfile'),
-                                    dest="pre-cvs-mapfile", log_level=INFO)
+                             error_list=HgErrorList, halt_on_failure=True)
+        output = self.get_output_from_command(hg + ['branches', '-c'], cwd=source)
+        for line in output.splitlines():
+            branch_name = line.split(' ')[0]
+            if branch_name in repo_config.get('branches', {}):
+                continue
+            self.run_command(hg + ['bookmarks', '-f', 'r', branch_name, branch_name],
+                             cwd=dest, error_list=HgErrorList, halt_on_failure=True)
+        self.retry(
+            self.run_command,
+            args=(hg + ['-v', 'gexport'], ),
+            kwargs={
+#                'idle_timeout': 15 * 60,
+                'cwd': dest,
+                'error_list': HgErrorList,
+            },
+            error_level=FATAL,
+        )
+        self.copy_to_upload_dir(os.path.join(dest, '.hg', 'git-mapfile'),
+                                dest="pre-cvs-mapfile", log_level=INFO)
 
     def prepend_cvs(self):
         dirs = self.query_abs_dirs()
@@ -407,6 +449,9 @@ intree=1
         self.rmtree(grafts_file)
         self.munge_mapfile()
         self.make_repo_bare(conversion_dir)
+        # TODO XXX aki
+        self._fix_tags(os.path.join(conversion_dir, '.git'))
+        # git gc --aggressive
 
     def create_test_targets(self):
         dirs = self.query_abs_dirs()
