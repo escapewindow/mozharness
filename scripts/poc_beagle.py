@@ -210,7 +210,7 @@ class HgGitScript(VirtualenvMixin, TooltoolMixin, TransferMixin, VCSScript):
                 self.move(os.path.join(tmpdir, dirname), os.path.join(path, dirname))
         self.run_command(git + ['--git-dir', os.path.join(path, ".git"), 'config', '--bool', 'core.bare', 'true'])
 
-    def _fix_tags(self, path):
+    def _fix_tags(self, conversion_dir, git_rewrite_dir):
         """ Ehsan's git tag fixer, ported from bash.
 
          `` Git's history rewriting is not smart about preserving the tags in your repository,
@@ -221,29 +221,27 @@ class HgGitScript(VirtualenvMixin, TooltoolMixin, TransferMixin, VCSScript):
 
             https://github.com/ehsan/mozilla-history-tools/blob/master/initial_conversion/translate_git_tags.sh
             """
-        pass
-# TODO XXX aki
-# TEMPDIR=/tmp/translate_git_tags
-# GITREWRITEDIR=../git-rewrite
-#
-# rm -rf $TEMPDIR
-# mkdir $TEMPDIR
-#
-# git for-each-ref > $TEMPDIR/refs
-#
-# while read sha1 type name
-# do
-# case "$type" in
-#   commit)
-#     # Try to find the corresponding hg cset sha1 from the old git-mapfile
-#     if echo "$name" | grep -q '^refs/tags/'; then
-# TAG_NAME=`echo -n "$name" | cut -d / -f 3`
-#       GIT_OLD_COMMIT="$sha1"
-#       GIT_NEW_COMMIT=`cat $GITREWRITEDIR/map/$sha1 2>/dev/null`
-#       git update-ref "$name" "$GIT_NEW_COMMIT" "$GIT_OLD_COMMIT"
-#     fi
-# esac
-# done < $TEMPDIR/refs
+        self.info("Fixing tags...")
+        git = self.query_exe('git', return_type='list')
+        output = self.get_output_from_command(
+            git + ['for-each-ref'],
+            error_list=GitErrorList,
+            cwd=conversion_dir,
+            halt_on_failure=True,
+        )
+        for line in output.splitlines():
+            old_sha1, git_type, name = line.split(' ')
+            if git_type == 'commit' and name.startswith('refs/tags'):
+                path = os.path.join(git_rewrite_dir, 'map', old_sha1)
+                if os.path.exists(path):
+                    new_sha1 = self.read_from_file(path)
+                new_sha1.rstrip()
+                self.run_command(
+                    git + ['update-ref', name, new_sha1, old_sha1],
+                    cwd=conversion_dir,
+                    error_list=GitErrorList,
+                    halt_on_failure=True,
+                )
 
     def _push_repo(self, repo_config):
         dirs = self.query_abs_dirs()
@@ -449,7 +447,7 @@ intree=1
         self.rmtree(grafts_file)
         self.munge_mapfile()
         self.make_repo_bare(conversion_dir)
-        self._fix_tags(os.path.join(conversion_dir, '.git'))
+        self._fix_tags(os.path.join(conversion_dir, '.git'), dirs['abs_git_rewrite_dir'])
         self.run_command(
             git + ['gc', '--aggressive'],
             cwd=os.path.join(conversion_dir, '.git'),
