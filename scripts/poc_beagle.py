@@ -11,6 +11,7 @@ Proof of concept for multi-repo m-c hg<->gitmo conversions with cvs prepending.
 
 import mmap
 import os
+import re
 import smtplib
 import string
 import sys
@@ -235,8 +236,21 @@ class HgGitScript(VirtualenvMixin, TooltoolMixin, TransferMixin, VCSScript):
                 else:
                     for (branch, target_branch) in repo_config.get('branches', {}).items():
                         command += ['+refs/heads/%s:refs/heads/%s' % (target_branch, target_branch)]
-#git remote add origin git@github.com:escapewindow/test-beagle.git
-#git push -u origin master
+                tag_config = target_config.get('tag_config', repo_config.get('tag_config', {}))
+                if tag_config.get('tags'):
+                    for (tag, target_tag) in tag_config['tags'].items():
+                        command += ['+refs/tags/%s:refs/tags/%s' % (tag, target_tag)]
+                elif tag_config.get('tag_regexes'):
+                    regex_list = []
+                    for regex in tag_config['tag_regexes']:
+                        regex_list.append(re.compile(regex))
+                    tag_list = self.get_output_from_command(git + ['tag', '-l'],
+                                                            cwd=os.path.join(conversion_dir, '.git'))
+                    for tag_name in tag_list:
+                        for regex in regex_list:
+                            if regex.search(tag_name) is not None:
+                                command += ['tag', tag_name]
+                                continue
                 if self.retry(
                     self.run_command,
                     args=(command, ),
