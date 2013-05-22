@@ -393,7 +393,7 @@ intree=1
             branch_name = line.split(' ')[0]
             if branch_name in repo_config.get('branches', {}):
                 continue
-            self.run_command(hg + ['bookmarks', '-f', 'r', branch_name, branch_name],
+            self.run_command(hg + ['bookmarks', '-f', '-r', branch_name, branch_name],
                              cwd=dest, error_list=HgErrorList, halt_on_failure=True)
         self.retry(
             self.run_command,
