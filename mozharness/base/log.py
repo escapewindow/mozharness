@@ -49,8 +49,11 @@ class LogMixin(object):
 
     def log(self, message, level=INFO, exit_code=-1):
         if self.log_obj:
-            return self.log_obj.log_message(message, level=level,
-                                            exit_code=exit_code)
+            return self.log_obj.log_message(
+                message, level=level,
+                exit_code=exit_code,
+                post_fatal_callback=self._post_fatal,
+            )
         if level == INFO:
             if self._log_level_at_least(level):
                 self._print(message)
@@ -63,7 +66,6 @@ class LogMixin(object):
         elif level == FATAL:
             if self._log_level_at_least(level):
                 self._print("FATAL: %s" % message, stderr=True)
-            self._post_fatal(message=message, exit_code=exit_code)
             raise SystemExit(exit_code)
 
     # Copying Bear's dumpException():
@@ -320,7 +322,7 @@ class BaseLogger(object):
         self.logger.addHandler(file_handler)
         self.all_handlers.append(file_handler)
 
-    def log_message(self, message, level=INFO, exit_code=-1):
+    def log_message(self, message, level=INFO, exit_code=-1, post_fatal_callback=None):
         """Generic log method.
         There should be more options here -- do or don't split by line,
         use os.linesep instead of assuming \n, be able to pass in log level
@@ -332,8 +334,10 @@ class BaseLogger(object):
             return
         for line in message.splitlines():
             self.logger.log(self.get_logger_level(level), line)
-        if level == FATAL and self.halt_on_failure:
+        if level == FATAL:
             self.logger.log(FATAL_LEVEL, 'Exiting %d' % exit_code)
+            if callable(post_fatal_callback):
+                post_fatal_callback(message=message, exit_code=exit_code)
             raise SystemExit(exit_code)
 
 
