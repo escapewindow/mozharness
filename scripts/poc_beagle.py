@@ -449,9 +449,13 @@ intree=1
         self.rmtree(grafts_file)
         self.munge_mapfile()
         self.make_repo_bare(conversion_dir)
-        # TODO XXX aki
         self._fix_tags(os.path.join(conversion_dir, '.git'))
-        # git gc --aggressive
+        self.run_command(
+            git + ['gc', '--aggressive'],
+            cwd=os.path.join(conversion_dir, '.git'),
+            error_list=GitErrorList,
+            halt_on_failure=True,
+        )
 
     def create_test_targets(self):
         dirs = self.query_abs_dirs()
