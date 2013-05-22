@@ -58,6 +58,9 @@ config = {
         }, {
             "target_dest": "github-beagle",
             "vcs": "git",
+            "tag_config": {
+                "tags": {'*': '*'},
+            },
         }, {
             "target_dest": "spork-b2g18",
             "vcs": "git",
