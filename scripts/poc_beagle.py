@@ -225,7 +225,6 @@ class HgGitScript(VirtualenvMixin, TooltoolMixin, TransferMixin, VCSScript):
         git = self.query_exe('git', return_type='list')
         output = self.get_output_from_command(
             git + ['for-each-ref'],
-            error_list=GitErrorList,
             cwd=conversion_dir,
             halt_on_failure=True,
         )
