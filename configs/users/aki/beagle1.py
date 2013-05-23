@@ -176,6 +176,9 @@ config = {
     "notify_config": [{
         "to": "aki@mozilla.com",
         "failure_only": False,
+    }, {
+        "to": "aki@escapewindow.com",
+        "failure_only": True,
     }],
 
     ## .ssh/config
