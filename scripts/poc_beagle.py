@@ -79,7 +79,12 @@ class HgGitScript(VirtualenvMixin, TooltoolMixin, TransferMixin, VCSScript):
         if additional_args:
             cmd.extend(additional_args)
         cmd.append(path)
-        return self.retry(self.run_command, args=(cmd, ), error_level=FATAL, error_message="Can't set up %s!" % path)
+        return self.retry(
+            self.run_command,
+            args=(cmd, ),
+            error_level=FATAL,
+            error_message="Can't set up %s!" % path,
+        )
 
     def query_abs_dirs(self):
         if self.abs_dirs:
@@ -101,7 +106,12 @@ class HgGitScript(VirtualenvMixin, TooltoolMixin, TransferMixin, VCSScript):
         if additional_args:
             cmd.extend(additional_args)
         cmd.append(path)
-        return self.retry(self.run_command, args=(cmd, ), error_level=FATAL, error_message="Can't set up %s!" % path)
+        return self.retry(
+            self.run_command,
+            args=(cmd, ),
+            error_level=FATAL,
+            error_message="Can't set up %s!" % path
+        )
 
     def query_all_repos(self):
         return [self.config['initial_repo']] + self.config['conversion_repos']
@@ -208,7 +218,9 @@ class HgGitScript(VirtualenvMixin, TooltoolMixin, TransferMixin, VCSScript):
         for dirname in (".git", ".hg"):
             if os.path.exists(os.path.join(tmpdir, dirname)):
                 self.move(os.path.join(tmpdir, dirname), os.path.join(path, dirname))
-        self.run_command(git + ['--git-dir', os.path.join(path, ".git"), 'config', '--bool', 'core.bare', 'true'])
+        self.run_command(
+            git + ['--git-dir', os.path.join(path, ".git"),
+                   'config', '--bool', 'core.bare', 'true'])
 
     def _fix_tags(self, conversion_dir, git_rewrite_dir):
         """ Ehsan's git tag fixer, ported from bash.
@@ -421,8 +433,12 @@ intree=1
             # Temporary workaround
             self.copyfile("/home/asasaki/mozilla-cvs-history.tar.bz2",
                           os.path.join(dirs['abs_work_dir'], "mozilla-cvs-history.tar.bz2"))
-            self.run_command(["tar", "xjvf", "mozilla-cvs-history.tar.bz2"], cwd=dirs["abs_work_dir"],
-                             error_list=TarErrorList, halt_on_failure=True)
+            self.run_command(
+                ["tar", "xjvf", "mozilla-cvs-history.tar.bz2"],
+                cwd=dirs["abs_work_dir"],
+                error_list=TarErrorList,
+                halt_on_failure=True
+            )
         # We need to git checkout, or git thinks we've removed all the files
         # without committing
         self.run_command(git + ["checkout"], cwd=conversion_dir)
