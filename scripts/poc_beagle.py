@@ -90,12 +90,20 @@ class HgGitScript(VirtualenvMixin, TooltoolMixin, TransferMixin, VCSScript):
         if self.abs_dirs:
             return self.abs_dirs
         abs_dirs = super(HgGitScript, self).query_abs_dirs()
-        abs_dirs['abs_cvs_history_dir'] = os.path.join(abs_dirs['abs_work_dir'], 'mozilla-cvs-history')
-        abs_dirs['abs_conversion_dir'] = os.path.join(abs_dirs['abs_work_dir'], 'conversion', self.config['conversion_dir'])
-        abs_dirs['abs_source_dir'] = os.path.join(abs_dirs['abs_work_dir'], 'stage_source')
-        abs_dirs['abs_repo_sync_tools_dir'] = os.path.join(abs_dirs['abs_work_dir'], 'repo-sync-tools')
-        abs_dirs['abs_git_rewrite_dir'] = os.path.join(abs_dirs['abs_work_dir'], 'mc-git-rewrite')
-        abs_dirs['abs_target_dir'] = os.path.join(abs_dirs['abs_work_dir'], 'target')
+        abs_dirs['abs_cvs_history_dir'] = os.path.join(
+            abs_dirs['abs_work_dir'], 'mozilla-cvs-history')
+        abs_dirs['abs_conversion_dir'] = os.path.join(
+            abs_dirs['abs_work_dir'], 'conversion',
+            self.config['conversion_dir']
+        )
+        abs_dirs['abs_source_dir'] = os.path.join(
+            abs_dirs['abs_work_dir'], 'stage_source')
+        abs_dirs['abs_repo_sync_tools_dir'] = os.path.join(
+            abs_dirs['abs_work_dir'], 'repo-sync-tools')
+        abs_dirs['abs_git_rewrite_dir'] = os.path.join(
+            abs_dirs['abs_work_dir'], 'mc-git-rewrite')
+        abs_dirs['abs_target_dir'] = os.path.join(abs_dirs['abs_work_dir'],
+                                                  'target')
         self.abs_dirs = abs_dirs
         return self.abs_dirs
 
@@ -119,13 +127,15 @@ class HgGitScript(VirtualenvMixin, TooltoolMixin, TransferMixin, VCSScript):
     def _update_stage_repo(self, repo_config, retry=True, clobber=False):
         hg = self.query_exe('hg', return_type='list')
         dirs = self.query_abs_dirs()
-        source_dest = os.path.join(dirs['abs_source_dir'], repo_config['repo_name'])
+        source_dest = os.path.join(dirs['abs_source_dir'],
+                                   repo_config['repo_name'])
         if clobber:
             self.rmtree(source_dest)
         if not os.path.exists(source_dest):
             if self.retry(
                 self.run_command,
-                args=(hg + ['clone', '--noupdate', repo_config['repo'], source_dest], ),
+                args=(hg + ['clone', '--noupdate', repo_config['repo'],
+                      source_dest], ),
                 kwargs={
 #                   'idle_timeout': 15 * 60,
                     'cwd': dirs['abs_work_dir'],
@@ -133,7 +143,8 @@ class HgGitScript(VirtualenvMixin, TooltoolMixin, TransferMixin, VCSScript):
                 },
             ):
                 if retry:
-                    return self._update_stage_repo(repo_config, retry=False, clobber=True)
+                    return self._update_stage_repo(
+                        repo_config, retry=False, clobber=True)
                 else:
                     self.fatal("Can't clone %s!" % repo_config['repo'])
         cmd = hg + ['pull']
@@ -146,7 +157,8 @@ class HgGitScript(VirtualenvMixin, TooltoolMixin, TransferMixin, VCSScript):
             },
         ):
             if retry:
-                return self._update_stage_repo(repo_config, retry=False, clobber=True)
+                return self._update_stage_repo(
+                    repo_config, retry=False, clobber=True)
             else:
                 self.fatal("Can't pull %s!" % repo_config['repo'])
         # commenting out hg verify since it takes ~5min per repo; hopefully
@@ -157,18 +169,23 @@ class HgGitScript(VirtualenvMixin, TooltoolMixin, TransferMixin, VCSScript):
 #            else:
 #                self.fatal("Can't verify %s!" % source_dest)
 
-    def _check_initial_git_revisions(self, repo_path, expected_sha1, expected_sha2):
+    def _check_initial_git_revisions(self, repo_path, expected_sha1,
+                                     expected_sha2):
         git = self.query_exe('git', return_type='list')
-        output = self.get_output_from_command(git + ['log', '--oneline', '--grep', '374866'],
-                                              cwd=repo_path)
+        output = self.get_output_from_command(
+            git + ['log', '--oneline', '--grep', '374866'],
+            cwd=repo_path
+        )
         # hardcode test
         if not output:
             self.fatal("No output from git log!")
         rev = output.split(' ')[0]
         if not rev.startswith(expected_sha1):
             self.fatal("Output doesn't match expected sha %s for initial hg commit: %s" % (expected_sha1, str(output)))
-        output = self.get_output_from_command(git + ['log', '-n', '1', '%s^' % rev],
-                                              cwd=repo_path)
+        output = self.get_output_from_command(
+            git + ['log', '-n', '1', '%s^' % rev],
+            cwd=repo_path
+        )
         if not output:
             self.fatal("No output from git log!")
         rev = output.splitlines()[0].split(' ')[1]
@@ -199,8 +216,12 @@ class HgGitScript(VirtualenvMixin, TooltoolMixin, TransferMixin, VCSScript):
                     print >>mapfile_fh, "%s %s" % (git_sha, hg_sha)
         orig_mapfile_fh.close()
         mapfile_fh.close()
-        self.copyfile(mapfile, os.path.join(conversion_dir, '.hg', 'git-mapfile'))
-        self.copy_to_upload_dir(mapfile, dest="post-cvs-mapfile", log_level=INFO)
+        self.copyfile(
+            mapfile,
+            os.path.join(conversion_dir, '.hg', 'git-mapfile')
+        )
+        self.copy_to_upload_dir(mapfile, dest="post-cvs-mapfile",
+                                log_level=INFO)
 
     def make_repo_bare(self, path, tmpdir=None):
         self.info("Making %s/.git a bare repo..." % path)
@@ -212,12 +233,18 @@ class HgGitScript(VirtualenvMixin, TooltoolMixin, TransferMixin, VCSScript):
         git = self.query_exe("git", return_type="list")
         for dirname in (".git", ".hg"):
             if os.path.exists(os.path.join(path, dirname)):
-                self.move(os.path.join(path, dirname), os.path.join(tmpdir, dirname))
+                self.move(
+                    os.path.join(path, dirname),
+                    os.path.join(tmpdir, dirname)
+                )
         self.rmtree(path)
         self.mkdir_p(path)
         for dirname in (".git", ".hg"):
             if os.path.exists(os.path.join(tmpdir, dirname)):
-                self.move(os.path.join(tmpdir, dirname), os.path.join(path, dirname))
+                self.move(
+                    os.path.join(tmpdir, dirname),
+                    os.path.join(path, dirname)
+                )
         self.run_command(
             git + ['--git-dir', os.path.join(path, ".git"),
                    'config', '--bool', 'core.bare', 'true'])
@@ -225,11 +252,12 @@ class HgGitScript(VirtualenvMixin, TooltoolMixin, TransferMixin, VCSScript):
     def _fix_tags(self, conversion_dir, git_rewrite_dir):
         """ Ehsan's git tag fixer, ported from bash.
 
-         `` Git's history rewriting is not smart about preserving the tags in your repository,
-            so you would end up with tags which point to commits in the old history line. If you
-            push your repository to some other repository for example, all of the tags in the
-            target repository would be invalid, since they would be pointing to commits that
-            don't exist in that repository. ''
+         `` Git's history rewriting is not smart about preserving the tags in
+            your repository, so you would end up with tags which point to
+            commits in the old history line. If you push your repository to
+            some other repository for example, all of the tags in the target
+            repository would be invalid, since they would be pointing to
+            commits that don't exist in that repository. ''
 
             https://github.com/ehsan/mozilla-history-tools/blob/master/initial_conversion/translate_git_tags.sh
             """
@@ -264,7 +292,8 @@ class HgGitScript(VirtualenvMixin, TooltoolMixin, TransferMixin, VCSScript):
                 command = git + ['push']
                 env = {}
                 if target_config.get("test_push"):
-                    target_dest = os.path.join(dirs['abs_target_dir'], target_config['target_dest'])
+                    target_dest = os.path.join(
+                        dirs['abs_target_dir'], target_config['target_dest'])
                     command.append(target_dest)
                 else:
                     target_name = target_config['target_dest']
@@ -288,8 +317,10 @@ class HgGitScript(VirtualenvMixin, TooltoolMixin, TransferMixin, VCSScript):
                     regex_list = []
                     for regex in tag_config['tag_regexes']:
                         regex_list.append(re.compile(regex))
-                    tag_list = self.get_output_from_command(git + ['tag', '-l'],
-                                                            cwd=os.path.join(conversion_dir, '.git'))
+                    tag_list = self.get_output_from_command(
+                        git + ['tag', '-l'],
+                        cwd=os.path.join(conversion_dir, '.git')
+                    )
                     for tag_name in tag_list:
                         for regex in regex_list:
                             if regex.search(tag_name) is not None:
@@ -347,8 +378,11 @@ class HgGitScript(VirtualenvMixin, TooltoolMixin, TransferMixin, VCSScript):
     def _write_repo_update_json(self, repo_map):
         dirs = self.query_abs_dirs()
         contents = json.dumps(repo_map, sort_keys=True, indent=4)
-        self.write_to_file(os.path.join(dirs['abs_upload_dir'], 'repo_update.json'), contents,
-                           create_parent_dir=True)
+        self.write_to_file(
+            os.path.join(dirs['abs_upload_dir'], 'repo_update.json'),
+            contents,
+            create_parent_dir=True
+        )
 
     # Actions {{{1
     def create_stage_mirror(self):
@@ -361,7 +395,8 @@ class HgGitScript(VirtualenvMixin, TooltoolMixin, TransferMixin, VCSScript):
         dirs = self.query_abs_dirs()
         repo_config = self.config['initial_repo']
         work_dest = dirs['abs_conversion_dir']
-        source_dest = os.path.join(dirs['abs_source_dir'], repo_config['repo_name'])
+        source_dest = os.path.join(
+            dirs['abs_source_dir'], repo_config['repo_name'])
         if not os.path.exists(work_dest):
             self.run_command(hg + ["init", work_dest])
         self.run_command(hg + ["pull", source_dest],
@@ -371,7 +406,10 @@ class HgGitScript(VirtualenvMixin, TooltoolMixin, TransferMixin, VCSScript):
         git_dir = os.path.join(work_dest, '.git')
         if not os.path.exists(git_dir):
             self.run_command(git + ['init'], cwd=work_dest)
-            self.run_command(git + ['--git-dir', git_dir, 'config', 'gc.auto', '0'], cwd=work_dest)
+            self.run_command(
+                git + ['--git-dir', git_dir, 'config', 'gc.auto', '0'],
+                cwd=work_dest
+            )
         # Update .hg/hgrc, if not already updated
         hgrc = os.path.join(work_dest, '.hg', 'hgrc')
         contents = ''
@@ -393,20 +431,29 @@ intree=1
         source = os.path.join(dirs['abs_source_dir'], repo_config['repo_name'])
         dest = dirs['abs_conversion_dir']
         for (branch, target_branch) in repo_config.get('branches', {}).items():
-            output = self.get_output_from_command(hg + ['id', '-r', branch], cwd=source)
+            output = self.get_output_from_command(
+                hg + ['id', '-r', branch], cwd=source)
             if output:
                 rev = output.split(' ')[0]
             self.run_command(hg + ['pull', '-r', rev, source], cwd=dest,
                              error_list=HgErrorList, halt_on_failure=True)
-            self.run_command(hg + ['bookmark', '-f', '-r', rev, target_branch], cwd=dest,
-                             error_list=HgErrorList, halt_on_failure=True)
+            self.run_command(
+                hg + ['bookmark', '-f', '-r', rev, target_branch],
+                cwd=dest,
+                error_list=HgErrorList,
+                halt_on_failure=True,
+            )
         output = self.get_output_from_command(hg + ['branches', '-c'], cwd=source)
         for line in output.splitlines():
             branch_name = line.split(' ')[0]
             if branch_name in repo_config.get('branches', {}):
                 continue
-            self.run_command(hg + ['bookmarks', '-f', '-r', branch_name, branch_name],
-                             cwd=dest, error_list=HgErrorList, halt_on_failure=True)
+            self.run_command(
+                hg + ['bookmarks', '-f', '-r', branch_name, branch_name],
+                cwd=dest,
+                error_list=HgErrorList,
+                halt_on_failure=True,
+            )
         self.retry(
             self.run_command,
             args=(hg + ['-v', 'gexport'], ),
@@ -431,8 +478,10 @@ intree=1
             #if self.tooltool_fetch(manifest_path, output_dir=dirs['abs_work_dir']):
             #    self.fatal("Unable to download cvs history via tooltool!")
             # Temporary workaround
-            self.copyfile("/home/asasaki/mozilla-cvs-history.tar.bz2",
-                          os.path.join(dirs['abs_work_dir'], "mozilla-cvs-history.tar.bz2"))
+            self.copyfile(
+                "/home/asasaki/mozilla-cvs-history.tar.bz2",
+                os.path.join(dirs['abs_work_dir'], "mozilla-cvs-history.tar.bz2")
+            )
             self.run_command(
                 ["tar", "xjvf", "mozilla-cvs-history.tar.bz2"],
                 cwd=dirs["abs_work_dir"],
@@ -442,8 +491,11 @@ intree=1
         # We need to git checkout, or git thinks we've removed all the files
         # without committing
         self.run_command(git + ["checkout"], cwd=conversion_dir)
-        self.run_command('ln -s ' + os.path.join(dirs['abs_cvs_history_dir'], 'objects', 'pack', '*') +
-                         ' .', cwd=os.path.join(conversion_dir, '.git', 'objects', 'pack'))
+        self.run_command(
+            'ln -s ' + os.path.join(dirs['abs_cvs_history_dir'], 'objects',
+                                    'pack', '*') + ' .',
+            cwd=os.path.join(conversion_dir, '.git', 'objects', 'pack')
+        )
         self._check_initial_git_revisions(dirs['abs_cvs_history_dir'], 'e230b03',
                                           '3ec464b55782fb94dbbb9b5784aac141f3e3ac01')
         self._check_initial_git_revisions(conversion_dir, '4b3fd9',
@@ -454,15 +506,26 @@ intree=1
         # https://people.mozilla.com/~hwine/tmp/vcs2vcs/notes.html#initial-conversion
         # We may need to update this script if we update git.
         env = self.config.get('env', {})
-        git_filter_branch = os.path.join(dirs['abs_repo_sync_tools_dir'], 'git-filter-branch-keep-rewrites')
-        self.run_command([git_filter_branch, '--', '3ec464b55782fb94dbbb9b5784aac141f3e3ac01..HEAD'],
-                         partial_env=env, cwd=conversion_dir, halt_on_failure=True)
+        git_filter_branch = os.path.join(
+            dirs['abs_repo_sync_tools_dir'],
+            'git-filter-branch-keep-rewrites'
+        )
+        self.run_command(
+            [git_filter_branch, '--',
+             '3ec464b55782fb94dbbb9b5784aac141f3e3ac01..HEAD'],
+            partial_env=env,
+            cwd=conversion_dir,
+            halt_on_failure=True
+        )
         self.move(os.path.join(conversion_dir, '.git-rewrite'),
                   dirs['abs_git_rewrite_dir'])
         self.rmtree(grafts_file)
         self.munge_mapfile()
         self.make_repo_bare(conversion_dir)
-        self._fix_tags(os.path.join(conversion_dir, '.git'), dirs['abs_git_rewrite_dir'])
+        self._fix_tags(
+            os.path.join(conversion_dir, '.git'),
+            dirs['abs_git_rewrite_dir']
+        )
         self.run_command(
             git + ['gc', '--aggressive'],
             cwd=os.path.join(conversion_dir, '.git'),
@@ -500,7 +563,10 @@ intree=1
             repo_name = repo_config['repo_name']
             source = os.path.join(dirs['abs_source_dir'], repo_name)
             for (branch, target_branch) in repo_config.get('branches', {}).items():
-                output = self.get_output_from_command(hg + ['id', '-r', branch], cwd=source)
+                output = self.get_output_from_command(
+                    hg + ['id', '-r', branch],
+                    cwd=source
+                )
                 if output:
                     rev = output.split(' ')[0]
                 else:
@@ -508,7 +574,10 @@ intree=1
                 timestamp = int(time.time())
                 datetime = time.strftime('%Y-%m-%d %H:%M %Z')
                 self.run_command(hg + ['pull', '-r', rev, source], cwd=dest)
-                self.run_command(hg + ['bookmark', '-f', '-r', rev, target_branch], cwd=dest)
+                self.run_command(
+                    hg + ['bookmark', '-f', '-r', rev, target_branch],
+                    cwd=dest
+                )
                 repo_map.setdefault(repo_name, {}).setdefault('branches', {})[branch] = {
                     'hg_branch': branch,
                     'hg_revision': rev,
@@ -531,7 +600,8 @@ intree=1
         for repo_config in self.query_all_repos():
             repo_name = repo_config['repo_name']
             for (branch, target_branch) in repo_config.get('branches', {}).items():
-                git_revision = self._query_mapped_revision(revision=rev, mapfile=generated_mapfile)
+                git_revision = self._query_mapped_revision(
+                    revision=rev, mapfile=generated_mapfile)
                 repo_map[repo_name]['branches'][branch]['git_revision'] = git_revision
         self._write_repo_update_json(repo_map)
         self.copy_to_upload_dir(generated_mapfile, dest="gecko-mapfile", log_level=INFO)
@@ -564,7 +634,8 @@ intree=1
                 ),
                 kwargs=upload_config,
             ):
-                failure_msg += '%s:%s' % (upload_config['remote_host'], upload_config['remote_path'])
+                failure_msg += '%s:%s' % (upload_config['remote_host'],
+                                          upload_config['remote_path'])
         if failure_msg:
             self.fatal("Unable to upload to this location:\n%s" % failure_msg)
 
