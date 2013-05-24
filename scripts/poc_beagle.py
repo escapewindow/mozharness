@@ -275,8 +275,7 @@ class HgGitScript(VirtualenvMixin, TooltoolMixin, TransferMixin, VCSScript):
             if git_type == 'commit' and name.startswith('refs/tags'):
                 path = os.path.join(git_rewrite_dir, 'map', old_sha1)
                 if os.path.exists(path):
-                    new_sha1 = self.read_from_file(path)
-                new_sha1.rstrip()
+                    new_sha1 = self.read_from_file(path).rstrip()
                 self.run_command(
                     git + ['update-ref', name, new_sha1, old_sha1],
                     cwd=conversion_dir,
