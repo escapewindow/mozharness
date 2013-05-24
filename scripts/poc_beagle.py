@@ -55,6 +55,7 @@ class HgGitScript(VirtualenvMixin, TooltoolMixin, TransferMixin, VCSScript):
                 'create-work-mirror',
                 'initial-conversion',
                 'prepend-cvs',
+                'fix-tags',
                 'update-stage-mirror',
                 'update-work-mirror',
                 'push',
@@ -275,12 +276,13 @@ class HgGitScript(VirtualenvMixin, TooltoolMixin, TransferMixin, VCSScript):
                 path = os.path.join(git_rewrite_dir, 'map', old_sha1)
                 if os.path.exists(path):
                     new_sha1 = self.read_from_file(path).rstrip()
-                self.run_command(
-                    git + ['update-ref', name, new_sha1, old_sha1],
-                    cwd=conversion_dir,
-                    error_list=GitErrorList,
-                    halt_on_failure=True,
-                )
+                    self.run_command(
+                        git + ['update-ref', name.replace('refs/tags/', ''),
+                               new_sha1, old_sha1],
+                        cwd=conversion_dir,
+                        error_list=GitErrorList,
+                        halt_on_failure=True,
+                    )
 
     def _push_repo(self, repo_config):
         dirs = self.query_abs_dirs()
@@ -531,6 +533,14 @@ intree=1
             cwd=os.path.join(conversion_dir, '.git'),
             error_list=GitErrorList,
             halt_on_failure=True,
+        )
+
+    def fix_tags(self):
+        dirs = self.query_abs_dirs()
+        conversion_dir = dirs['abs_conversion_dir']
+        self._fix_tags(
+            os.path.join(conversion_dir, '.git'),
+            dirs['abs_git_rewrite_dir']
         )
 
     def create_test_targets(self):
