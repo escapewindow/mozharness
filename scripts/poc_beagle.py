@@ -55,6 +55,7 @@ class HgGitScript(VirtualenvMixin, TooltoolMixin, TransferMixin, VCSScript):
                 'create-work-mirror',
                 'initial-conversion',
                 'prepend-cvs',
+                'fix-tags',
                 'update-stage-mirror',
                 'update-work-mirror',
                 'push',
@@ -269,7 +270,8 @@ class HgGitScript(VirtualenvMixin, TooltoolMixin, TransferMixin, VCSScript):
             halt_on_failure=True,
         )
         for line in output.splitlines():
-            old_sha1, git_type, name = line.split(' ')
+            old_sha1, the_rest = line.split(' ')
+            git_type, name = the_rest.split('	')
             if git_type == 'commit' and name.startswith('refs/tags'):
                 path = os.path.join(git_rewrite_dir, 'map', old_sha1)
                 if os.path.exists(path):
@@ -522,6 +524,11 @@ intree=1
         self.rmtree(grafts_file)
         self.munge_mapfile()
         self.make_repo_bare(conversion_dir)
+
+    def fix_tags(self):
+        dirs = self.query_abs_dirs()
+        git = self.query_exe('git', return_type='list')
+        conversion_dir = dirs['abs_conversion_dir']
         self._fix_tags(
             os.path.join(conversion_dir, '.git'),
             dirs['abs_git_rewrite_dir']
