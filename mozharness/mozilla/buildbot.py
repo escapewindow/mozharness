@@ -13,6 +13,7 @@ import sys
 
 try:
     import simplejson as json
+    assert json
 except ImportError:
     import json
 
@@ -35,6 +36,13 @@ TBPL_STATUS_DICT = {
     TBPL_EXCEPTION: ERROR,
     TBPL_RETRY: WARNING,
 }
+EXIT_STATUS_DICT = {
+    TBPL_SUCCESS: 0,
+    TBPL_WARNING: 1,
+    TBPL_FAILURE: 2,
+    TBPL_EXCEPTION: 3,
+    TBPL_RETRY: 4,
+}
 
 
 class BuildbotMixin(object):
@@ -54,13 +62,28 @@ class BuildbotMixin(object):
     def tryserver_email(self):
         pass
 
-    def buildbot_status(self, tbpl_status, level=None):
+    def buildbot_status(self, tbpl_status, level=None, set_return_code=True):
         if tbpl_status not in TBPL_STATUS_DICT:
             self.error("buildbot_status() doesn't grok the status %s!" % tbpl_status)
         else:
+            # Set failure if our log > buildbot_max_log_size (bug 876159)
+            if self.config.get("buildbot_max_log_size") and self.log_obj:
+                # Find the path to the default log
+                dirs = self.query_abs_dirs()
+                log_file = os.path.join(
+                    dirs['abs_log_dir'],
+                    self.log_obj.log_files[self.log_obj.log_level]
+                )
+                if os.path.exists(log_file):
+                    file_size = os.path.getsize(log_file)
+                    if file_size > self.config['buildbot_max_log_size']:
+                        self.error("Log file size %d is greater than max allowed %d! Setting TBPL_FAILURE (was %s)..." % (file_size, self.config['buildbot_max_log_size'], tbpl_status))
+                        tbpl_status = TBPL_FAILURE
             if not level:
                 level = TBPL_STATUS_DICT[tbpl_status]
             self.add_summary("# TBPL %s #" % tbpl_status, level=level)
+            if set_return_code:
+                self.return_code = EXIT_STATUS_DICT[tbpl_status]
 
     def set_buildbot_property(self, prop_name, prop_value, write_to_file=False):
         self.info("Setting buildbot property %s to %s" % (prop_name, prop_value))
