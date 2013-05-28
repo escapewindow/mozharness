@@ -279,7 +279,8 @@ class HgGitScript(VirtualenvMixin, TooltoolMixin, TransferMixin, VCSScript):
 #                    self.info("Would have run: %s" % ' '.join(git + ['update-ref', name, new_sha1, old_sha1]))
                     self.run_command(
                         git + ['update-ref', name,
-                               new_sha1, old_sha1],
+#                               new_sha1, old_sha1],
+                               old_sha1, new_sha1],
                         cwd=conversion_dir,
                         error_list=GitErrorList,
                         halt_on_failure=True,
