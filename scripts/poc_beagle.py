@@ -276,13 +276,14 @@ class HgGitScript(VirtualenvMixin, TooltoolMixin, TransferMixin, VCSScript):
                 path = os.path.join(git_rewrite_dir, 'map', old_sha1)
                 if os.path.exists(path):
                     new_sha1 = self.read_from_file(path).rstrip()
-                    self.run_command(
-                        git + ['update-ref', name,
-                               new_sha1, old_sha1],
-                        cwd=conversion_dir,
-                        error_list=GitErrorList,
-                        halt_on_failure=True,
-                    )
+                    self.info("Would have run: %s" % ' '.join(git + 'update-ref', name, new_sha1, old_sha1))
+#                    self.run_command(
+#                        git + ['update-ref', name,
+#                               new_sha1, old_sha1],
+#                        cwd=conversion_dir,
+#                        error_list=GitErrorList,
+#                        halt_on_failure=True,
+#                    )
 
     def _push_repo(self, repo_config):
         dirs = self.query_abs_dirs()
