@@ -495,15 +495,15 @@ intree=1
             )
         # We need to git checkout, or git thinks we've removed all the files
         # without committing
-#        self.run_command(git + ["checkout"], cwd=conversion_dir)
+        self.run_command(git + ["checkout"], cwd=conversion_dir)
         self.run_command(
             'ln -s ' + os.path.join(dirs['abs_cvs_history_dir'], 'objects',
                                     'pack', '*') + ' .',
-            cwd=os.path.join(git_conversion_dir, 'objects', 'pack')
+            cwd=os.path.join(conversion_dir, 'objects', 'pack')
         )
         self._check_initial_git_revisions(dirs['abs_cvs_history_dir'], 'e230b03',
                                           '3ec464b55782fb94dbbb9b5784aac141f3e3ac01')
-        self._check_initial_git_revisions(git_conversion_dir, '4b3fd9',
+        self._check_initial_git_revisions(conversion_dir, '4b3fd9',
                                           '2514a423aca5d1273a842918589e44038d046a51')
         self.write_to_file(grafts_file,
                            '2514a423aca5d1273a842918589e44038d046a51 3ec464b55782fb94dbbb9b5784aac141f3e3ac01')
@@ -519,11 +519,12 @@ intree=1
             [git_filter_branch, '--',
              '3ec464b55782fb94dbbb9b5784aac141f3e3ac01..HEAD'],
             partial_env=env,
-            cwd=git_conversion_dir,
+            cwd=conversion_dir,
             halt_on_failure=True
         )
         self.move(os.path.join(git_conversion_dir, '.git-rewrite'),
                   dirs['abs_git_rewrite_dir'])
+        self.make_repo_bare(conversion_dir)
         branch_list = self.get_output_from_command(
             git + ['branch'],
             cwd=git_conversion_dir,
@@ -545,7 +546,6 @@ intree=1
                 self.rmtree(os.path.join(git_conversion_dir, '.git-rewrite'))
         self.rmtree(grafts_file)
         self.munge_mapfile()
-        self.make_repo_bare(conversion_dir)
 
     def fix_tags(self):
         dirs = self.query_abs_dirs()
