@@ -279,8 +279,7 @@ class HgGitScript(VirtualenvMixin, TooltoolMixin, TransferMixin, VCSScript):
 #                    self.info("Would have run: %s" % ' '.join(git + ['update-ref', name, new_sha1, old_sha1]))
                     self.run_command(
                         git + ['update-ref', name,
-                               old_sha1, new_sha1],
-#                               new_sha1, old_sha1],
+                               new_sha1, old_sha1],
                         cwd=conversion_dir,
                         error_list=GitErrorList,
                         halt_on_failure=True,
@@ -529,7 +528,7 @@ intree=1
 
     def fix_tags(self):
         dirs = self.query_abs_dirs()
-#        git = self.query_exe("git", return_type="list")
+        git = self.query_exe("git", return_type="list")
         conversion_dir = dirs['abs_conversion_dir']
         self._fix_tags(
             os.path.join(conversion_dir, '.git'),
