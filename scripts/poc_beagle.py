@@ -474,7 +474,9 @@ intree=1
         dirs = self.query_abs_dirs()
         git = self.query_exe('git', return_type='list')
         conversion_dir = dirs['abs_conversion_dir']
-        grafts_file = os.path.join(conversion_dir, '.git', 'info', 'grafts')
+        git_conversion_dir = os.path.join(conversion_dir, '.git')
+        grafts_file = os.path.join(git_conversion_dir, 'info', 'grafts')
+        map_dir = os.path.join(git_conversion_dir, '.git-rewrite', 'map')
         if not os.path.exists(dirs["abs_cvs_history_dir"]):
             # gd2 doesn't have access to tooltool :(
             #manifest_path = self.create_tooltool_manifest(self.config['cvs_manifest'])
@@ -493,15 +495,15 @@ intree=1
             )
         # We need to git checkout, or git thinks we've removed all the files
         # without committing
-        self.run_command(git + ["checkout"], cwd=conversion_dir)
+#        self.run_command(git + ["checkout"], cwd=conversion_dir)
         self.run_command(
             'ln -s ' + os.path.join(dirs['abs_cvs_history_dir'], 'objects',
                                     'pack', '*') + ' .',
-            cwd=os.path.join(conversion_dir, '.git', 'objects', 'pack')
+            cwd=os.path.join(git_conversion_dir, 'objects', 'pack')
         )
         self._check_initial_git_revisions(dirs['abs_cvs_history_dir'], 'e230b03',
                                           '3ec464b55782fb94dbbb9b5784aac141f3e3ac01')
-        self._check_initial_git_revisions(conversion_dir, '4b3fd9',
+        self._check_initial_git_revisions(git_conversion_dir, '4b3fd9',
                                           '2514a423aca5d1273a842918589e44038d046a51')
         self.write_to_file(grafts_file,
                            '2514a423aca5d1273a842918589e44038d046a51 3ec464b55782fb94dbbb9b5784aac141f3e3ac01')
@@ -517,18 +519,37 @@ intree=1
             [git_filter_branch, '--',
              '3ec464b55782fb94dbbb9b5784aac141f3e3ac01..HEAD'],
             partial_env=env,
-            cwd=conversion_dir,
+            cwd=git_conversion_dir,
             halt_on_failure=True
         )
-        self.move(os.path.join(conversion_dir, '.git-rewrite'),
+        self.move(os.path.join(git_conversion_dir, '.git-rewrite'),
                   dirs['abs_git_rewrite_dir'])
+        branch_list = self.get_output_from_command(
+            git + ['branch'],
+            cwd=git_conversion_dir,
+        )
+        for branch in branch_list.splitlines():
+            if branch.startswith('*'):
+                continue
+            branch = branch.strip()
+            self.run_command(
+                [git_filter_branch, '--',
+                 '3ec464b55782fb94dbbb9b5784aac141f3e3ac01..%s' % branch],
+                partial_env=env,
+                cwd=git_conversion_dir,
+                halt_on_failure=True
+            )
+            if os.path.exists(map_dir):
+                self.run_command(['rsync', '-azv', os.path.join(map_dir, '.'),
+                                  os.path.join(dirs['abs_git_rewrite_dir'], 'map', '.')])
+                self.rmtree(os.path.join(git_conversion_dir, '.git-rewrite'))
         self.rmtree(grafts_file)
         self.munge_mapfile()
         self.make_repo_bare(conversion_dir)
 
     def fix_tags(self):
         dirs = self.query_abs_dirs()
-        git = self.query_exe("git", return_type="list")
+#        git = self.query_exe("git", return_type="list")
         conversion_dir = dirs['abs_conversion_dir']
         self._fix_tags(
             os.path.join(conversion_dir, '.git'),
