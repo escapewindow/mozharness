@@ -219,7 +219,8 @@ class HgGitScript(VirtualenvMixin, TooltoolMixin, TransferMixin, VCSScript):
         mapfile_fh.close()
         self.copyfile(
             mapfile,
-            os.path.join(conversion_dir, '.hg', 'git-mapfile')
+            os.path.join(conversion_dir, '.hg', 'git-mapfile'),
+            error_level=FATAL,
         )
         self.copy_to_upload_dir(mapfile, dest="post-cvs-mapfile",
                                 log_level=INFO)
@@ -236,19 +237,23 @@ class HgGitScript(VirtualenvMixin, TooltoolMixin, TransferMixin, VCSScript):
             if os.path.exists(os.path.join(path, dirname)):
                 self.move(
                     os.path.join(path, dirname),
-                    os.path.join(tmpdir, dirname)
+                    os.path.join(tmpdir, dirname),
+                    error_level=FATAL,
                 )
-        self.rmtree(path)
+        self.rmtree(path, error_level=FATAL)
         self.mkdir_p(path)
         for dirname in (".git", ".hg"):
             if os.path.exists(os.path.join(tmpdir, dirname)):
                 self.move(
                     os.path.join(tmpdir, dirname),
-                    os.path.join(path, dirname)
+                    os.path.join(path, dirname),
+                    error_level=FATAL,
                 )
         self.run_command(
             git + ['--git-dir', os.path.join(path, ".git"),
-                   'config', '--bool', 'core.bare', 'true'])
+                   'config', '--bool', 'core.bare', 'true'],
+            halt_on_failure=True,
+        )
 
     def _fix_tags(self, conversion_dir, git_rewrite_dir):
         """ Ehsan's git tag fixer, ported from bash.
@@ -499,7 +504,7 @@ intree=1
         self.run_command(
             'ln -s ' + os.path.join(dirs['abs_cvs_history_dir'], 'objects',
                                     'pack', '*') + ' .',
-            cwd=os.path.join(conversion_dir, 'objects', 'pack')
+            cwd=os.path.join(git_conversion_dir, 'objects', 'pack')
         )
         self._check_initial_git_revisions(dirs['abs_cvs_history_dir'], 'e230b03',
                                           '3ec464b55782fb94dbbb9b5784aac141f3e3ac01')
@@ -522,8 +527,9 @@ intree=1
             cwd=conversion_dir,
             halt_on_failure=True
         )
-        self.move(os.path.join(git_conversion_dir, '.git-rewrite'),
-                  dirs['abs_git_rewrite_dir'])
+        self.move(os.path.join(conversion_dir, '.git-rewrite'),
+                  dirs['abs_git_rewrite_dir'],
+                  error_level=FATAL)
         self.make_repo_bare(conversion_dir)
         branch_list = self.get_output_from_command(
             git + ['branch'],
@@ -541,10 +547,14 @@ intree=1
                 halt_on_failure=True
             )
             if os.path.exists(map_dir):
-                self.run_command(['rsync', '-azv', os.path.join(map_dir, '.'),
-                                  os.path.join(dirs['abs_git_rewrite_dir'], 'map', '.')])
-                self.rmtree(os.path.join(git_conversion_dir, '.git-rewrite'))
-        self.rmtree(grafts_file)
+                self.run_command(
+                    ['rsync', '-azv', os.path.join(map_dir, '.'),
+                     os.path.join(dirs['abs_git_rewrite_dir'], 'map', '.')],
+                    halt_on_failure=True
+                )
+                self.rmtree(os.path.join(git_conversion_dir, '.git-rewrite'),
+                            error_level=FATAL)
+        self.rmtree(grafts_file, error_level=FATAL)
         self.munge_mapfile()
 
     def fix_tags(self):
