@@ -92,25 +92,38 @@ class BumpGaiaJson(MercurialScript):
             self.add_failure("Unable to update %s with new revision %s!" % (path, revision))
             return -2
 
-    def _pull_repos(self, orig_repo_config, targets_only=False):
+    def _pull_repos(self, orig_repo_config, pull_source=True,
+                    pull_targets=True):
         repos = []
         repo_config = {}
         repo_paths = self.get_repo_paths(orig_repo_config)
-        if not targets_only:
+        if pull_source:
             repo_config["repo"] = orig_repo_config["repo"]
             if "tag" in orig_repo_config:
                 repo_config["tag"] = orig_repo_config["tag"]
             repo_config["dest"] = repo_paths[0]
             repos.append(repo_config)
-        for target_config in orig_repo_config['target_repos']:
-            repo_config = {}
-            repo_config["repo"] = target_config["pull_repo_url"]
-            repo_config["tag"] = target_config.get("tag", "default")
-            repo_config["dest"] = repo_paths[1][repo_config["repo"]]
-            repos.append(repo_config)
-        status = super(BumpGaiaJson, self).pull(repos=repos)
-        if isinstance(status, dict):
-            self.revision_dict.update(status)
+        if pull_targets:
+            for target_config in orig_repo_config['target_repos']:
+                repo_config = {}
+                repo_config["repo"] = target_config["pull_repo_url"]
+                repo_config["tag"] = target_config.get("tag", "default")
+                repo_config["dest"] = repo_paths[1][repo_config["repo"]]
+                repos.append(repo_config)
+            status = super(BumpGaiaJson, self).pull(repos=repos)
+            if isinstance(status, dict):
+                self.revision_dict.update(status)
+
+    def _do_looped_push(self, repo_config, target_config, repo_paths, rev):
+        self._pull_repos(repo_config, pull_source=False)
+        path = os.path.join(
+            repo_paths[1][target_config['pull_repo_url']],
+            self.config['revision_file'],
+        )
+        if self._update_json(path, rev, repo_config["repo"]):
+# TODO
+            pass
+# TODO commit, push, if success return; otherwise rollback/revert
 
     # Actions {{{1
     def pull(self):
@@ -124,15 +137,15 @@ class BumpGaiaJson(MercurialScript):
             """
         for repo_config in self.config['repo_list']:
             repo_paths = self.get_repo_paths(repo_config)
-            self._pull_repos(repo_config)
+            self._pull_repos(repo_config, pull_targets=False)
             rev = self.revision_dict[repo_paths[0]]['revision']
             self.info("%s is revision %s" % (repo_config["repo"], rev))
             for target_config in repo_config['target_repos']:
-                path = os.path.join(
-                    repo_paths[1][target_config['pull_repo_url']],
-                    self.config['revision_file'],
+# TODO error check / add_failure
+                self.retry(
+                    self._do_looped_push,
+                    args=(repo_config, target_config, repo_paths, rev),
                 )
-                self._update_json(path, rev, repo_config["repo"])
 
 
 # __main__ {{{1
