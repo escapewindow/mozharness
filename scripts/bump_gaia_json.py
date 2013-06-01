@@ -23,7 +23,8 @@ except ImportError:
 
 sys.path.insert(1, os.path.dirname(sys.path[0]))
 
-from mozharness.base.log import ERROR
+from mozharness.base.errors import HgErrorList
+from mozharness.base.log import ERROR, FATAL
 from mozharness.base.vcs.vcsbase import MercurialScript
 
 
@@ -64,6 +65,23 @@ class BumpGaiaJson(MercurialScript):
             dest = os.path.join(dirs['abs_work_dir'], parent_dir, repo_name)
             target_paths[target_config['pull_repo_url']] = dest
         return (source_path, target_paths)
+
+    def get_revision_info(self, path, revision):
+        """ Get the author + commit message from the revision
+            """
+        hg = self.query_exe("hg", return_type="list")
+        revision_info = {}
+        revision_info['author'] = self.retry(
+            self.get_output_from_command,
+            args=(hg + ["log", "-r", revision, "--template", "{author}"],),
+            error_level=FATAL,
+        )
+        revision_info['desc'] = self.retry(
+            self.get_output_from_command,
+            args=(hg + ["log", "-r", revision, "--template", "{desc}"],),
+            error_level=FATAL,
+        )
+        return revision_info
 
     def _update_json(self, path, revision, url):
         """ Update path with url/revision.
@@ -119,19 +137,32 @@ class BumpGaiaJson(MercurialScript):
                 repo_config["tag"] = target_config.get("tag", "default")
                 repo_config["dest"] = repo_paths[1][repo_config["repo"]]
                 repos.append(repo_config)
-            status = super(BumpGaiaJson, self).pull(repos=repos)
-            if isinstance(status, dict):
-                self.revision_dict.update(status)
+        status = super(BumpGaiaJson, self).pull(repos=repos)
+        if isinstance(status, dict):
+            self.revision_dict.update(status)
 
-    def _do_looped_push(self, repo_config, target_config, repo_paths, rev):
+    def _do_looped_push(self, repo_config, target_config, repo_paths, revision,
+                        revision_info):
         self._pull_repos(repo_config, pull_source=False)
+        hg = self.query_exe("hg", return_type="list")
         path = os.path.join(
             repo_paths[1][target_config['pull_repo_url']],
             self.config['revision_file'],
         )
-        if self._update_json(path, rev, repo_config["repo"]):
+        if self._update_json(path, revision, repo_config["repo"]):
             return -1
-# TODO commit, push, if success return; otherwise rollback/revert
+        command = hg + ["commit", "-u", revision_info['author'],
+                        "-m", revision_info['desc']]
+        self.run_command(command, cwd=path)
+        command = hg + ["push", target_config["push_repo_url"]]
+        status = self.run_command(command, cwd=path,
+                                  error_list=HgErrorList)
+        if status:
+            self.run_command(hg + ["rollback"],
+                             cwd=path)
+            self.run_command(hg + ["revert", "-a"],
+                             cwd=path)
+            return -1
 
     # Actions {{{1
     def pull(self):
@@ -146,12 +177,14 @@ class BumpGaiaJson(MercurialScript):
         for repo_config in self.config['repo_list']:
             repo_paths = self.get_repo_paths(repo_config)
             self._pull_repos(repo_config, pull_targets=False)
-            rev = self.revision_dict[repo_paths[0]]['revision']
-            self.info("%s is revision %s" % (repo_config["repo"], rev))
+            revision = self.revision_dict[repo_paths[0]]['revision']
+            revision_info = self.get_revision(repo_paths[0], revision)
+            self.info("%s is revision %s" % (repo_config["repo"], revision))
             for target_config in repo_config['target_repos']:
                 if self.retry(
                     self._do_looped_push,
-                    args=(repo_config, target_config, repo_paths, rev),
+                    args=(repo_config, target_config, repo_paths, revision,
+                          revision_info),
                 ):
                     self.add_summary(
                         "Unable to push to %s" % target_config['push_repo_url'],

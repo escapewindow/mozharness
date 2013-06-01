@@ -6,7 +6,6 @@ config = {
     "ssh_key": os.path.expanduser("~/.ssh/id_rsa"),
     "ssh_user": "asasaki@mozilla.com",
     "revision_file": "b2g/config/gaia.json",
-    "hg_username": "Test User <aki@mozilla.com>",
 # Let's not use share base while committing/pushing might cause issues in the
 # share dir
 #    "vcs_share_base": "/builds/hg-shared",
