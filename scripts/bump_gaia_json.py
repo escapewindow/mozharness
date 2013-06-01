@@ -108,8 +108,9 @@ class BumpGaiaJson(MercurialScript):
         if contents.get("repo") != url:
             self.error("Current repo %s differs from %s!" % (str(contents.get("repo")), url))
         if contents.get("revision") == revision:
-            self.info("Revision %s is the same.  No action needed.")
-            return 1
+            self.info("Revision %s is the same.  No action needed." % revision)
+            self.add_summary("%s is unchanged." % url)
+            return 0
         contents = {
             "repo": url,
             "revision": revision
@@ -151,13 +152,19 @@ class BumpGaiaJson(MercurialScript):
             repo_paths[1][target_config['pull_repo_url']],
             self.config['revision_file'],
         )
-        if self._update_json(path, revision, repo_config["repo"]):
-            return -1
+        status = self._update_json(path, revision, repo_config["repo"])
+        if status is not None:
+            return status
         path = repo_paths[1][target_config['pull_repo_url']]
         command = hg + ["commit", "-u", revision_info['author'],
                         "-m", revision_info['desc']]
         self.run_command(command, cwd=path)
-        command = hg + ["push", target_config["push_repo_url"]]
+        # TODO need to specify user / ssh key
+        command = hg + ["push", "-e",
+                        "ssh -oIdentityFile=%s -i %s" % (
+                            self.config["ssh_key"], self.config["ssh_user"],
+                        ),
+                        target_config["push_repo_url"]]
         status = self.run_command(command, cwd=path,
                                   error_list=HgErrorList)
         if status:
