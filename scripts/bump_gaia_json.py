@@ -153,6 +153,7 @@ class BumpGaiaJson(MercurialScript):
         )
         if self._update_json(path, revision, repo_config["repo"]):
             return -1
+        path = repo_paths[1][target_config['pull_repo_url']]
         command = hg + ["commit", "-u", revision_info['author'],
                         "-m", revision_info['desc']]
         self.run_command(command, cwd=path)
