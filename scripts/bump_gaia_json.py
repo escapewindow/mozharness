@@ -74,11 +74,13 @@ class BumpGaiaJson(MercurialScript):
         revision_info['author'] = self.retry(
             self.get_output_from_command,
             args=(hg + ["log", "-r", revision, "--template", "{author}"],),
+            kwargs={"cwd": path},
             error_level=FATAL,
         )
         revision_info['desc'] = self.retry(
             self.get_output_from_command,
             args=(hg + ["log", "-r", revision, "--template", "{desc}"],),
+            kwargs={"cwd": path},
             error_level=FATAL,
         )
         return revision_info
@@ -178,7 +180,7 @@ class BumpGaiaJson(MercurialScript):
             repo_paths = self.get_repo_paths(repo_config)
             self._pull_repos(repo_config, pull_targets=False)
             revision = self.revision_dict[repo_paths[0]]['revision']
-            revision_info = self.get_revision(repo_paths[0], revision)
+            revision_info = self.get_revision_info(repo_paths[0], revision)
             self.info("%s is revision %s" % (repo_config["repo"], revision))
             for target_config in repo_config['target_repos']:
                 if self.retry(
