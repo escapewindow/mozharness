@@ -23,6 +23,7 @@ except ImportError:
 
 sys.path.insert(1, os.path.dirname(sys.path[0]))
 
+from mozharness.base.log import ERROR
 from mozharness.base.vcs.vcsbase import MercurialScript
 
 
@@ -38,10 +39,12 @@ class BumpGaiaJson(MercurialScript):
                 'clobber',
                 'pull',
                 'push-loop',
+                'summary',
             ],
             default_actions=[
                 'pull',
                 'push-loop',
+                'summary',
             ],
             require_config_file=require_config_file,
         )
@@ -69,7 +72,10 @@ class BumpGaiaJson(MercurialScript):
             If the url changes or the current json is invalid, error but don't fail.
             """
         if not os.path.exists(path):
-            self.add_failure("%s doesn't exist; can't update with repo %s revision %s!" % url, revision)
+            self.add_summary(
+                "%s doesn't exist; can't update with repo %s revision %s!" % (path, url, revision),
+                level=ERROR,
+            )
             return -1
         try:
             # Hm, should we use self.read_from_file() then json.loads() here?
@@ -77,7 +83,7 @@ class BumpGaiaJson(MercurialScript):
             contents = json.load(fh)
             fh.close()
         except ValueError:
-            self.error("%s is invalid json!" % url, revision)
+            self.error("%s is invalid json!" % (url, revision))
             contents = {}
         if contents.get("repo") != url:
             self.error("Current repo %s differs from %s!" % (str(contents.get("repo")), url))
@@ -89,7 +95,10 @@ class BumpGaiaJson(MercurialScript):
             "revision": revision
         }
         if self.write_to_file(path, json.dumps(contents, indent=4) + "\n") != path:
-            self.add_failure("Unable to update %s with new revision %s!" % (path, revision))
+            self.add_summary(
+                "Unable to update %s with new revision %s!" % (path, revision),
+                level=ERROR,
+            )
             return -2
 
     def _pull_repos(self, orig_repo_config, pull_source=True,
@@ -121,8 +130,7 @@ class BumpGaiaJson(MercurialScript):
             self.config['revision_file'],
         )
         if self._update_json(path, rev, repo_config["repo"]):
-# TODO
-            pass
+            return -1
 # TODO commit, push, if success return; otherwise rollback/revert
 
     # Actions {{{1
@@ -141,11 +149,14 @@ class BumpGaiaJson(MercurialScript):
             rev = self.revision_dict[repo_paths[0]]['revision']
             self.info("%s is revision %s" % (repo_config["repo"], rev))
             for target_config in repo_config['target_repos']:
-# TODO error check / add_failure
-                self.retry(
+                if self.retry(
                     self._do_looped_push,
                     args=(repo_config, target_config, repo_paths, rev),
-                )
+                ):
+                    self.add_summary(
+                        "Unable to push to %s" % target_config['push_repo_url'],
+                        level=ERROR,
+                    )
 
 
 # __main__ {{{1
