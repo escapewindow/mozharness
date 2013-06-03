@@ -68,6 +68,18 @@ class LogMixin(object):
                 self._print("FATAL: %s" % message, stderr=True)
             raise SystemExit(exit_code)
 
+    def worst_level(self, target_level, existing_level, levels=None):
+        """returns either existing_level or target level.
+        This depends on which is closest to levels[0]
+        By default, levels is the list of log levels"""
+        if not levels:
+            levels = [FATAL, CRITICAL, ERROR, WARNING, INFO, DEBUG, IGNORE]
+        if target_level not in levels:
+            self.fatal("'%s' not in %s'." % (target_level, levels))
+        for l in levels:
+            if l in (target_level, existing_level):
+                return l
+
     # Copying Bear's dumpException():
     # http://hg.mozilla.org/build/tools/annotate/1485f23c38e0/sut_tools/sut_lib.py#l23
     def exception(self, message=None, level=ERROR):
@@ -184,18 +196,6 @@ pre-context-line setting in error_list.)
                 continue
             line = line.decode("utf-8", 'replace').rstrip()
             self.parse_single_line(line)
-
-    def worst_level(self, target_level, existing_level, levels=None):
-        """returns either existing_level or target level.
-        This depends on which is closest to levels[0]
-        By default, levels is the list of log levels"""
-        if not levels:
-            levels = [FATAL, CRITICAL, ERROR, WARNING, INFO, DEBUG, IGNORE]
-        if target_level not in levels:
-            self.fatal("'%s' not in %s'." % (target_level, levels))
-        for l in levels:
-            if l in (target_level, existing_level):
-                return l
 
 
 # BaseLogger {{{1
