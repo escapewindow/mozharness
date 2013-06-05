@@ -1,9 +1,7 @@
 #!/usr/bin/env python
 
-import os
-
 config = {
-    "ssh_key": os.path.expanduser("~/.ssh/id_rsa"),
+    "ssh_key": "~/.ssh/id_rsa",
     "ssh_user": "asasaki@mozilla.com",
     "hg_user": "Test Pusher <test@pusher.org>",
     "revision_file": "b2g/config/gaia.json",

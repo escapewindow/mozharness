@@ -87,15 +87,9 @@ class BumpGaiaJson(MercurialScript):
         # limit the list to max_revisions
         return revision_list[-max_revisions:]
 
-    def get_revision_info(self, revision_config):
-        """ Get the author + commit message (of the final commit)
-            from the revision config
-            """
-        revision_info = {}
-        revision_info['revision'] = revision_config['changesets'][-1]['node']
-        revision_info['author'] = revision_config['changesets'][-1]['author']
-        revision_info['desc'] = revision_config['changesets'][-1]['desc']
-        return revision_info
+    def build_commit_message(self, revision_config):
+        # TODO
+        pass
 
     def query_repo_path(self, repo_config):
         dirs = self.query_abs_dirs()
@@ -161,15 +155,14 @@ class BumpGaiaJson(MercurialScript):
         self._pull_target_repo(repo_config)
         repo_path = self.query_repo_path(repo_config)
         path = os.path.join(repo_path, self.config['revision_file'])
-        revision_info = self.get_revision_info(revision_config)
-        status = self._update_json(path, revision_info['revision'], repo_config["repo"])
+        revision = revision_config['changesets'][-1]['node']
+        status = self._update_json(path, revision, repo_config["repo"])
         if status is not None:
             return status
-        # TODO change author / message
-        command = hg + ["commit", "-u", revision_info['author'],
-                        "-m", revision_info['desc']]
+        message = self.build_commit_message(revision_config)
+        command = hg + ["commit", "-u", self.config['hg_user'],
+                        "-m", message]
         self.run_command(command, cwd=repo_path)
-        # TODO need to specify user / ssh key
         command = hg + ["push", "-e",
                         "ssh -oIdentityFile=%s -i %s" % (
                             self.config["ssh_key"], self.config["ssh_user"],
