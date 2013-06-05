@@ -237,6 +237,10 @@ class ScriptMixin(object):
             self.log("IO error: %s" % str(e),
                      level=error_level, exit_code=exit_code)
             return -1
+        except shutil.Error, e:
+            self.log("shutil error: %s" % str(e),
+                     level=error_level, exit_code=exit_code)
+            return -1
         return 0
 
     def chmod(self, path, mode):

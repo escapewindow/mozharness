@@ -527,6 +527,7 @@ intree=1
             cwd=conversion_dir,
             halt_on_failure=True
         )
+        self.rmtree(dirs['abs_git_rewrite_dir'])
         self.move(os.path.join(conversion_dir, '.git-rewrite'),
                   dirs['abs_git_rewrite_dir'],
                   error_level=FATAL)
