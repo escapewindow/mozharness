@@ -219,7 +219,6 @@ class BumpGaiaJson(MercurialScript):
                     self._do_looped_push,
                     args=(repo_config, revision_config),
                 ):
-#                 if self._do_looped_push(repo_config, revision_config):
                     self.add_summary(
                         "Unable to push to %s" % repo_config['target_push_url'],
                         level=FATAL,
