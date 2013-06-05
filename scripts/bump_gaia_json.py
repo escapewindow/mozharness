@@ -24,7 +24,7 @@ except ImportError:
 sys.path.insert(1, os.path.dirname(sys.path[0]))
 
 from mozharness.base.errors import HgErrorList
-from mozharness.base.log import ERROR, FATAL
+from mozharness.base.log import ERROR
 from mozharness.base.vcs.vcsbase import MercurialScript
 
 
@@ -38,15 +38,10 @@ class BumpGaiaJson(MercurialScript):
             "default": 5,
             "help": "Limit the number of revisions to populate to this number.",
         }],
-        [['--prev-revision', ], {
-            "action": "store",
-            "dest": "prev_revision",
-            "type": "string",
-            "help": "Specify which revision to poll from.",
-        }],
     ]
 
     def __init__(self, require_config_file=False):
+        self.prev_revisions = {}
         super(BumpGaiaJson, self).__init__(
             config_options=self.config_options,
             all_actions=[
@@ -62,23 +57,45 @@ class BumpGaiaJson(MercurialScript):
         )
 
     # Helper methods {{{1
-    def get_revision_info(self, path, revision):
-        """ Get the author + commit message from the revision
+    def get_revision_list(self, repo_config):
+        revision_list = []
+        url = repo_config['polling_url']
+        branch = repo_config.get('branch', 'default')
+        max_revisions = self.config['max_revisions']
+        dirs = self.query_abs_dirs()
+        if self.prev_revisions.get(repo_config['repo_url']):
+            # hgweb json-pushes hardcode
+            url += '&fromchange=%s' % self.prev_revisions[repo_config['repo_url']]
+        file_name = os.path.join(dirs['abs_work_dir'],
+                                 '%s.json' % repo_config['repo_name'])
+        # might be nice to have a load-from-url option; til then,
+        # download then read
+        if self.retry(
+            self.download_file,
+            args=(url, ),
+            kwargs={file_name: file_name},
+            error_level=ERROR,
+        ) != file_name:
+            return None
+        contents = self.read_from_file(file_name)
+        revision_dict = json.loads(contents)
+        if not revision_dict:
+            return []
+        # Discard any revisions not on the branch we care about.
+        for k, v in sorted(revision_dict.items()):
+            if v['changesets'][-1]['branch'] == branch:
+                revision_list.append(v)
+        # limit the list to max_revisions
+        return revision_list[-max_revisions:]
+
+    def get_revision_info(self, revision_config):
+        """ Get the author + commit message (of the final commit)
+            from the revision config
             """
-        hg = self.query_exe("hg", return_type="list")
         revision_info = {}
-        revision_info['author'] = self.retry(
-            self.get_output_from_command,
-            args=(hg + ["log", "-r", revision, "--template", "{author}"],),
-            kwargs={"cwd": path},
-            error_level=FATAL,
-        )
-        revision_info['desc'] = self.retry(
-            self.get_output_from_command,
-            args=(hg + ["log", "-r", revision, "--template", "{desc}"],),
-            kwargs={"cwd": path},
-            error_level=FATAL,
-        )
+        revision_info['revision'] = revision_config['changesets'][-1]['node']
+        revision_info['author'] = revision_config['changesets'][-1]['author']
+        revision_info['desc'] = revision_config['changesets'][-1]['desc']
         return revision_info
 
     def _update_json(self, path, revision, url):
@@ -107,6 +124,8 @@ class BumpGaiaJson(MercurialScript):
             self.info("Revision %s is the same.  No action needed." % revision)
             self.add_summary("%s is unchanged." % url)
             return 0
+        else:
+            self.prev_revisions[url] = contents['revision']
         contents = {
             "repo": url,
             "revision": revision
@@ -130,7 +149,7 @@ class BumpGaiaJson(MercurialScript):
         repos = [repo_config]
         super(BumpGaiaJson, self).pull(repos=repos)
 
-    def _do_looped_push(self, repo_config, revision_config):
+    def _do_looped_push(self, repo_config, revision_info):
         dirs = self.query_abs_dirs()
         hg = self.query_exe("hg", return_type="list")
         self._pull_target_repo(repo_config)
@@ -140,10 +159,8 @@ class BumpGaiaJson(MercurialScript):
             repo_config['target_repo_name'],
         )
         # TODO
-        revision = 'TODO'
-        revision_info = {}
         path = os.path.join(repo_path, self.config['revision_file'])
-        status = self._update_json(path, revision, repo_config["repo"])
+        status = self._update_json(path, revision_info['revision'], repo_config["repo"])
         if status is not None:
             return status
         command = hg + ["commit", "-u", revision_info['author'],
@@ -170,13 +187,14 @@ class BumpGaiaJson(MercurialScript):
             """
         for repo_config in self.config['repo_list']:
             self._pull_target_repo(repo_config)
-            # TODO get revision list from json
-            revision_list = {}
+            # TODO get previous revision from json
+            revision_list = self.get_revision_list(repo_config)
             for revision_config in revision_list:
+                revision_info = self.get_revision_info(revision_config)
 #                self.info("%s is revision %s" % (repo_config["repo"], revisionlist))
                 if self.retry(
                     self._do_looped_push,
-                    args=(repo_config, revision_config),
+                    args=(repo_config, revision_info),
                 ):
                     self.add_summary(
                         "Unable to push to %s" % repo_config['push_repo_url'],
