@@ -182,7 +182,7 @@ class BumpGaiaJson(MercurialScript):
                         "ssh -oIdentityFile=%s -i %s" % (
                             self.config["ssh_key"], self.config["ssh_user"],
                         ),
-                        repo_config["push_repo_url"]]
+                        repo_config["target_push_url"]]
         status = self.run_command(command, cwd=repo_path,
                                   error_list=HgErrorList)
         if status:
@@ -220,7 +220,7 @@ class BumpGaiaJson(MercurialScript):
 #                ):
                  if self._do_looped_push(repo_config, revision_config):
                     self.add_summary(
-                        "Unable to push to %s" % repo_config['push_repo_url'],
+                        "Unable to push to %s" % repo_config['target_push_url'],
                         level=FATAL,
                     )
 
