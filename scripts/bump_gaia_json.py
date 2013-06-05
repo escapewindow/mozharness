@@ -179,7 +179,7 @@ class BumpGaiaJson(MercurialScript):
                         "-m", message]
         self.run_command(command, cwd=repo_path)
         command = hg + ["push", "-e",
-                        "ssh -oIdentityFile=%s -i %s" % (
+                        "ssh -oIdentityFile=%s -l %s" % (
                             self.config["ssh_key"], self.config["ssh_user"],
                         ),
                         repo_config["target_push_url"]]

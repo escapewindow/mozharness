@@ -1,6 +1,7 @@
 #!/usr/bin/env python
 
 config = {
+    "log_name": "gaia_bump",
     "ssh_key": "~/.ssh/id_rsa",
     "ssh_user": "asasaki@mozilla.com",
     "hg_user": "Test Pusher <aki@escapewindow.com>",
