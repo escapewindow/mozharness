@@ -9,7 +9,7 @@ config = {
     "revision_file": "b2g/config/gaia.json",
     "push_wait": 3 * 60,
     "repo_list": [{
-        "polling_url": "http://hg.mozilla.org/integration/gaia-central/json-pushes?full=1&tipsonly=1",
+        "polling_url": "http://hg.mozilla.org/integration/gaia-central/json-pushes?full=1",
         "branch": "default",
         "repo_url": "http://hg.mozilla.org/integration/gaia-central",
         "repo_name": "gaia-central",

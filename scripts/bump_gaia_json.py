@@ -41,7 +41,6 @@ class BumpGaiaJson(MercurialScript):
     ]
 
     def __init__(self, require_config_file=False):
-        self.prev_revisions = {}
         super(BumpGaiaJson, self).__init__(
             config_options=self.config_options,
             all_actions=[
@@ -57,15 +56,15 @@ class BumpGaiaJson(MercurialScript):
         )
 
     # Helper methods {{{1
-    def get_revision_list(self, repo_config):
+    def get_revision_list(self, repo_config, prev_revision=None):
         revision_list = []
         url = repo_config['polling_url']
         branch = repo_config.get('branch', 'default')
         max_revisions = self.config['max_revisions']
         dirs = self.query_abs_dirs()
-        if self.prev_revisions.get(repo_config['repo_url']):
+        if prev_revision:
             # hgweb json-pushes hardcode
-            url += '&fromchange=%s' % self.prev_revisions[repo_config['repo_url']]
+            url += '&fromchange=%s' % prev_revision
         file_name = os.path.join(dirs['abs_work_dir'],
                                  '%s.json' % repo_config['repo_name'])
         # might be nice to have a load-from-url option; til then,
@@ -98,6 +97,25 @@ class BumpGaiaJson(MercurialScript):
         revision_info['desc'] = revision_config['changesets'][-1]['desc']
         return revision_info
 
+    def query_repo_path(self, repo_config):
+        dirs = self.query_abs_dirs()
+        return os.path.join(
+            dirs['abs_work_dir'],
+            repo_config['repo_name'],
+            repo_config['target_repo_name'],
+        )
+
+    def _read_json(self, path):
+        if not os.path.exists(path):
+            self.error("%s doesn't exist!" % path)
+            return
+        contents = self.read_from_file(path)
+        try:
+            json_contents = json.loads(contents)
+            return json_contents
+        except ValueError:
+            self.error("%s is invalid json!" % path)
+
     def _update_json(self, path, revision, url):
         """ Update path with url/revision.
 
@@ -110,22 +128,14 @@ class BumpGaiaJson(MercurialScript):
                 level=ERROR,
             )
             return -1
-        try:
-            # Hm, should we use self.read_from_file() then json.loads() here?
-            fh = open(path, 'r')
-            contents = json.load(fh)
-            fh.close()
-        except ValueError:
-            self.error("%s is invalid json!" % (url, revision))
-            contents = {}
-        if contents.get("repo") != url:
-            self.error("Current repo %s differs from %s!" % (str(contents.get("repo")), url))
-        if contents.get("revision") == revision:
-            self.info("Revision %s is the same.  No action needed." % revision)
-            self.add_summary("%s is unchanged." % url)
-            return 0
-        else:
-            self.prev_revisions[url] = contents['revision']
+        contents = self._read_json(path)
+        if contents:
+            if contents.get("repo") != url:
+                self.error("Current repo %s differs from %s!" % (str(contents.get("repo")), url))
+            if contents.get("revision") == revision:
+                self.info("Revision %s is the same.  No action needed." % revision)
+                self.add_summary("%s is unchanged." % url)
+                return 0
         contents = {
             "repo": url,
             "revision": revision
@@ -138,31 +148,24 @@ class BumpGaiaJson(MercurialScript):
             return -2
 
     def _pull_target_repo(self, orig_repo_config):
-        dirs = self.query_abs_dirs()
         repo_config = {}
         repo_config["repo"] = orig_repo_config["target_pull_url"]
         repo_config["tag"] = orig_repo_config.get("target_tag", "default")
-        repo_config["dest"] = os.path.join(
-            dirs['abs_work_dir'], orig_repo_config['repo_name'],
-            orig_repo_config['target_repo_name']
-        )
+        repo_path = self.query_repo_path(orig_repo_config)
+        repo_config["dest"] = repo_path
         repos = [repo_config]
         super(BumpGaiaJson, self).pull(repos=repos)
 
-    def _do_looped_push(self, repo_config, revision_info):
-        dirs = self.query_abs_dirs()
+    def _do_looped_push(self, repo_config, revision_config):
         hg = self.query_exe("hg", return_type="list")
         self._pull_target_repo(repo_config)
-        repo_path = os.path.join(
-            dirs['abs_work_dir'],
-            repo_config['repo_name'],
-            repo_config['target_repo_name'],
-        )
-        # TODO
+        repo_path = self.query_repo_path(repo_config)
         path = os.path.join(repo_path, self.config['revision_file'])
+        revision_info = self.get_revision_info(revision_config)
         status = self._update_json(path, revision_info['revision'], repo_config["repo"])
         if status is not None:
             return status
+        # TODO change author / message
         command = hg + ["commit", "-u", revision_info['author'],
                         "-m", revision_info['desc']]
         self.run_command(command, cwd=repo_path)
@@ -187,14 +190,25 @@ class BumpGaiaJson(MercurialScript):
             """
         for repo_config in self.config['repo_list']:
             self._pull_target_repo(repo_config)
-            # TODO get previous revision from json
-            revision_list = self.get_revision_list(repo_config)
+            repo_path = self.query_repo_path(repo_config)
+            contents = self._read_json(os.path.join(repo_path, self.config['revision_file']))
+            prev_revision = None
+            if contents:
+                prev_revision = contents.get('revision')
+            revision_list = self.get_revision_list(repo_config, prev_revision=prev_revision)
+            if not revision_list:
+                self.add_summary(
+                    "Unable to get revision_list for %s" % repo_config['repo_url'],
+                    level=ERROR,
+                )
+                continue
+            # TODO get this loop in a helper method, so I can return if any of
+            # the pushes fail (stop trying to push this repo, but continue if
+            # there's a list of additional repos)
             for revision_config in revision_list:
-                revision_info = self.get_revision_info(revision_config)
-#                self.info("%s is revision %s" % (repo_config["repo"], revisionlist))
                 if self.retry(
                     self._do_looped_push,
-                    args=(repo_config, revision_info),
+                    args=(repo_config, revision_config),
                 ):
                     self.add_summary(
                         "Unable to push to %s" % repo_config['push_repo_url'],
