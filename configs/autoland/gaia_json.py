@@ -5,20 +5,17 @@ import os
 config = {
     "ssh_key": os.path.expanduser("~/.ssh/id_rsa"),
     "ssh_user": "asasaki@mozilla.com",
+    "hg_user": "Test Pusher <test@pusher.org>",
     "revision_file": "b2g/config/gaia.json",
-# Let's not use share base while committing/pushing might cause issues in the
-# share dir
-#    "vcs_share_base": "/builds/hg-shared",
-#    "hgtool_base_mirror_urls": ["http://hg-internal.dmz.scl3.mozilla.com"],
-#    "hgtool_base_bundle_urls": ["http://ftp.mozilla.org/pub/mozilla.org/firefox/bundles"],
+    "push_wait": 3 * 60,
     "repo_list": [{
-        "repo": "http://hg.mozilla.org/integration/gaia-central",
-        "tag": "default",
-        "parent_dir": "gaia-central",
-        "target_repos": [{
-            "push_repo_url": "ssh://hg.mozilla.org/users/asasaki_mozilla.com/birch",
-            "pull_repo_url": "http://hg.mozilla.org/users/asasaki_mozilla.com/birch",
-            "tag": "default",
-        }],
+        "polling_url": "http://hg.mozilla.org/integration/gaia-central/json-pushes?full=1&tipsonly=1",
+        "branch": "default",
+        "repo_url": "http://hg.mozilla.org/integration/gaia-central",
+        "repo_name": "gaia-central",
+        "target_push_url": "ssh://hg.mozilla.org/users/asasaki_mozilla.com/birch",
+        "target_pull_url": "http://hg.mozilla.org/users/asasaki_mozilla.com/birch",
+        "target_tag": "default",
+        "target_repo_name": "birch",
     }],
 }

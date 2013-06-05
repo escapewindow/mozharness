@@ -30,20 +30,31 @@ from mozharness.base.vcs.vcsbase import MercurialScript
 
 # BumpGaiaJson {{{1
 class BumpGaiaJson(MercurialScript):
-    config_options = []
-    revision_dict = {}
+    config_options = [
+        [['--max-revisions', ], {
+            "action": "store",
+            "dest": "max_revisions",
+            "type": "int",
+            "default": 5,
+            "help": "Limit the number of revisions to populate to this number.",
+        }],
+        [['--prev-revision', ], {
+            "action": "store",
+            "dest": "prev_revision",
+            "type": "string",
+            "help": "Specify which revision to poll from.",
+        }],
+    ]
 
     def __init__(self, require_config_file=False):
         super(BumpGaiaJson, self).__init__(
             config_options=self.config_options,
             all_actions=[
                 'clobber',
-                'pull',
                 'push-loop',
                 'summary',
             ],
             default_actions=[
-                'pull',
                 'push-loop',
                 'summary',
             ],
@@ -51,21 +62,6 @@ class BumpGaiaJson(MercurialScript):
         )
 
     # Helper methods {{{1
-    def get_repo_paths(self, repo_config):
-        """ I found myself re-generating these file paths multiple times,
-            so I put the logic in its own method.
-            """
-        dirs = self.query_abs_dirs()
-        repo_name = self.get_filename_from_url(repo_config["repo"])
-        parent_dir = repo_config.get("parent_dir", repo_name)
-        source_path = os.path.join(dirs['abs_work_dir'], parent_dir, repo_name)
-        target_paths = {}
-        for target_config in repo_config['target_repos']:
-            repo_name = self.get_filename_from_url(target_config['pull_repo_url'])
-            dest = os.path.join(dirs['abs_work_dir'], parent_dir, repo_name)
-            target_paths[target_config['pull_repo_url']] = dest
-        return (source_path, target_paths)
-
     def get_revision_info(self, path, revision):
         """ Get the author + commit message from the revision
             """
@@ -122,82 +118,68 @@ class BumpGaiaJson(MercurialScript):
             )
             return -2
 
-    def _pull_repos(self, orig_repo_config, pull_source=True,
-                    pull_targets=True):
-        repos = []
+    def _pull_target_repo(self, orig_repo_config):
+        dirs = self.query_abs_dirs()
         repo_config = {}
-        repo_paths = self.get_repo_paths(orig_repo_config)
-        if pull_source:
-            repo_config["repo"] = orig_repo_config["repo"]
-            if "tag" in orig_repo_config:
-                repo_config["tag"] = orig_repo_config["tag"]
-            repo_config["dest"] = repo_paths[0]
-            repos.append(repo_config)
-        if pull_targets:
-            for target_config in orig_repo_config['target_repos']:
-                repo_config = {}
-                repo_config["repo"] = target_config["pull_repo_url"]
-                repo_config["tag"] = target_config.get("tag", "default")
-                repo_config["dest"] = repo_paths[1][repo_config["repo"]]
-                repos.append(repo_config)
-        status = super(BumpGaiaJson, self).pull(repos=repos)
-        if isinstance(status, dict):
-            self.revision_dict.update(status)
-
-    def _do_looped_push(self, repo_config, target_config, repo_paths, revision,
-                        revision_info):
-        self._pull_repos(repo_config, pull_source=False)
-        hg = self.query_exe("hg", return_type="list")
-        path = os.path.join(
-            repo_paths[1][target_config['pull_repo_url']],
-            self.config['revision_file'],
+        repo_config["repo"] = orig_repo_config["target_pull_url"]
+        repo_config["tag"] = orig_repo_config.get("target_tag", "default")
+        repo_config["dest"] = os.path.join(
+            dirs['abs_work_dir'], orig_repo_config['repo_name'],
+            orig_repo_config['target_repo_name']
         )
+        repos = [repo_config]
+        super(BumpGaiaJson, self).pull(repos=repos)
+
+    def _do_looped_push(self, repo_config, revision_config):
+        dirs = self.query_abs_dirs()
+        hg = self.query_exe("hg", return_type="list")
+        self._pull_target_repo(repo_config)
+        repo_path = os.path.join(
+            dirs['abs_work_dir'],
+            repo_config['repo_name'],
+            repo_config['target_repo_name'],
+        )
+        # TODO
+        revision = 'TODO'
+        revision_info = {}
+        path = os.path.join(repo_path, self.config['revision_file'])
         status = self._update_json(path, revision, repo_config["repo"])
         if status is not None:
             return status
-        path = repo_paths[1][target_config['pull_repo_url']]
         command = hg + ["commit", "-u", revision_info['author'],
                         "-m", revision_info['desc']]
-        self.run_command(command, cwd=path)
+        self.run_command(command, cwd=repo_path)
         # TODO need to specify user / ssh key
         command = hg + ["push", "-e",
                         "ssh -oIdentityFile=%s -i %s" % (
                             self.config["ssh_key"], self.config["ssh_user"],
                         ),
-                        target_config["push_repo_url"]]
-        status = self.run_command(command, cwd=path,
+                        repo_config["push_repo_url"]]
+        status = self.run_command(command, cwd=repo_path,
                                   error_list=HgErrorList)
         if status:
             self.run_command(hg + ["rollback"],
-                             cwd=path)
+                             cwd=repo_path)
             self.run_command(hg + ["revert", "-a"],
-                             cwd=path)
+                             cwd=repo_path)
             return -1
 
     # Actions {{{1
-    def pull(self):
-        """ Prepopulate all the repos before going into the push-loop.
-            """
-        for repo_config in self.config['repo_list']:
-            self._pull_repos(repo_config)
-
     def push_loop(self):
         """ A bit of a misnomer since we pull and update and commit as well?
             """
         for repo_config in self.config['repo_list']:
-            repo_paths = self.get_repo_paths(repo_config)
-            self._pull_repos(repo_config, pull_targets=False)
-            revision = self.revision_dict[repo_paths[0]]['revision']
-            revision_info = self.get_revision_info(repo_paths[0], revision)
-            self.info("%s is revision %s" % (repo_config["repo"], revision))
-            for target_config in repo_config['target_repos']:
+            self._pull_target_repo(repo_config)
+            # TODO get revision list from json
+            revision_list = {}
+            for revision_config in revision_list:
+#                self.info("%s is revision %s" % (repo_config["repo"], revisionlist))
                 if self.retry(
                     self._do_looped_push,
-                    args=(repo_config, target_config, repo_paths, revision,
-                          revision_info),
+                    args=(repo_config, revision_config),
                 ):
                     self.add_summary(
-                        "Unable to push to %s" % target_config['push_repo_url'],
+                        "Unable to push to %s" % repo_config['push_repo_url'],
                         level=ERROR,
                     )
 
