@@ -24,7 +24,7 @@ except ImportError:
 sys.path.insert(1, os.path.dirname(sys.path[0]))
 
 from mozharness.base.errors import HgErrorList
-from mozharness.base.log import ERROR
+from mozharness.base.log import ERROR, FATAL
 from mozharness.base.vcs.vcsbase import MercurialScript
 
 
@@ -87,9 +87,24 @@ class BumpGaiaJson(MercurialScript):
         # limit the list to max_revisions
         return revision_list[-max_revisions:]
 
-    def build_commit_message(self, revision_config):
-        # TODO
-        pass
+    def build_commit_message(self, revision_config, repo_url):
+        revision_list = []
+        comments = ''
+        for changeset_config in revision_config['changesets']:
+            revision_list.append(changeset_config['node'])
+            if comments:
+                comments += "\n========\n\n"
+            comments += 'Mercurial revision: %s\nAuthor: %s\nDesc: %s\n' % (
+                changeset_config['node'],
+                changeset_config['author'],
+                changeset_config['desc'],
+            )
+        message = 'Bumping gaia.json for %d %s revision(s): %s\n' % (
+            len(revision_list),
+            repo_url,
+            ','.join(revision_list),
+        )
+        return message
 
     def query_repo_path(self, repo_config):
         dirs = self.query_abs_dirs()
@@ -156,10 +171,10 @@ class BumpGaiaJson(MercurialScript):
         repo_path = self.query_repo_path(repo_config)
         path = os.path.join(repo_path, self.config['revision_file'])
         revision = revision_config['changesets'][-1]['node']
-        status = self._update_json(path, revision, repo_config["repo"])
+        status = self._update_json(path, revision, repo_config["repo_url"])
         if status is not None:
             return status
-        message = self.build_commit_message(revision_config)
+        message = self.build_commit_message(revision_config, repo_config["repo_url"])
         command = hg + ["commit", "-u", self.config['hg_user'],
                         "-m", message]
         self.run_command(command, cwd=repo_path)
@@ -205,7 +220,7 @@ class BumpGaiaJson(MercurialScript):
                 ):
                     self.add_summary(
                         "Unable to push to %s" % repo_config['push_repo_url'],
-                        level=ERROR,
+                        level=FATAL,
                     )
 
 
