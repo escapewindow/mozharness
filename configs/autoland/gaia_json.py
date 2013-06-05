@@ -3,9 +3,8 @@
 config = {
     "ssh_key": "~/.ssh/id_rsa",
     "ssh_user": "asasaki@mozilla.com",
-    "hg_user": "Test Pusher <test@pusher.org>",
+    "hg_user": "Test Pusher <aki@escapewindow.com>",
     "revision_file": "b2g/config/gaia.json",
-    "push_wait": 3 * 60,
     "repo_list": [{
         "polling_url": "http://hg.mozilla.org/integration/gaia-central/json-pushes?full=1",
         "branch": "default",
