@@ -72,7 +72,7 @@ class BumpGaiaJson(MercurialScript):
         if self.retry(
             self.download_file,
             args=(url, ),
-            kwargs={file_name: file_name},
+            kwargs={'file_name': file_name},
             error_level=ERROR,
         ) != file_name:
             return None
@@ -214,10 +214,11 @@ class BumpGaiaJson(MercurialScript):
             # the pushes fail (stop trying to push this repo, but continue if
             # there's a list of additional repos)
             for revision_config in revision_list:
-                if self.retry(
-                    self._do_looped_push,
-                    args=(repo_config, revision_config),
-                ):
+#                if self.retry(
+#                    self._do_looped_push,
+#                    args=(repo_config, revision_config),
+#                ):
+                 if self._do_looped_push(repo_config, revision_config):
                     self.add_summary(
                         "Unable to push to %s" % repo_config['push_repo_url'],
                         level=FATAL,
