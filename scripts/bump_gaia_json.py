@@ -93,8 +93,8 @@ class BumpGaiaJson(MercurialScript):
         for changeset_config in revision_config['changesets']:
             revision_list.append(changeset_config['node'])
             if comments:
-                comments += "\n========\n\n"
-            comments += 'Mercurial revision: %s\nAuthor: %s\nDesc: %s\n' % (
+                comments += "\n========\n"
+            comments += '\nMercurial revision: %s\nAuthor: %s\nDesc: %s\n' % (
                 changeset_config['node'],
                 changeset_config['author'],
                 changeset_config['desc'],
@@ -104,7 +104,7 @@ class BumpGaiaJson(MercurialScript):
             repo_url,
             ','.join(revision_list),
         )
-        return message
+        return message + comments
 
     def query_repo_path(self, repo_config):
         dirs = self.query_abs_dirs()
@@ -191,6 +191,7 @@ class BumpGaiaJson(MercurialScript):
             self.run_command(hg + ["revert", "-a"],
                              cwd=repo_path)
             return -1
+        return 0
 
     # Actions {{{1
     def push_loop(self):
@@ -214,11 +215,11 @@ class BumpGaiaJson(MercurialScript):
             # the pushes fail (stop trying to push this repo, but continue if
             # there's a list of additional repos)
             for revision_config in revision_list:
-#                if self.retry(
-#                    self._do_looped_push,
-#                    args=(repo_config, revision_config),
-#                ):
-                 if self._do_looped_push(repo_config, revision_config):
+                if self.retry(
+                    self._do_looped_push,
+                    args=(repo_config, revision_config),
+                ):
+#                 if self._do_looped_push(repo_config, revision_config):
                     self.add_summary(
                         "Unable to push to %s" % repo_config['target_push_url'],
                         level=FATAL,
