@@ -93,7 +93,7 @@ class BumpGaiaJson(MercurialScript):
         for changeset_config in reversed(revision_config['changesets']):
             revision_list.append(changeset_config['node'])
             comments += "\n========\n"
-            comments += '\nMercurial revision: %s/rev/%s\nAuthor: %s\nDesc: %s\n' % (
+            comments += '\n%s/rev/%s\nAuthor: %s\nDesc: %s\n' % (
                 repo_url,
                 changeset_config['node'][:12],
                 changeset_config['author'],
