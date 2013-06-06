@@ -170,10 +170,10 @@ class BumpGaiaJson(MercurialScript):
         repo_path = self.query_repo_path(repo_config)
         path = os.path.join(repo_path, self.config['revision_file'])
         revision = revision_config['changesets'][-1]['node']
-        status = self._update_json(path, revision, repo_config["repo_name"])
+        status = self._update_json(path, revision, repo_config["repo_url"])
         if status is not None:
             return status
-        message = self.build_commit_message(revision_config, repo_config["repo_url"])
+        message = self.build_commit_message(revision_config, repo_config["repo_name"])
         command = hg + ["commit", "-u", self.config['hg_user'],
                         "-m", message]
         self.run_command(command, cwd=repo_path)
