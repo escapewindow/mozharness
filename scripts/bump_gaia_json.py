@@ -24,7 +24,7 @@ except ImportError:
 sys.path.insert(1, os.path.dirname(sys.path[0]))
 
 from mozharness.base.errors import HgErrorList
-from mozharness.base.log import ERROR, FATAL
+from mozharness.base.log import ERROR
 from mozharness.base.vcs.vcsbase import MercurialScript
 
 
@@ -211,18 +211,17 @@ class BumpGaiaJson(MercurialScript):
                     level=ERROR,
                 )
                 continue
-            # TODO get this loop in a helper method, so I can return if any of
-            # the pushes fail (stop trying to push this repo, but continue if
-            # there's a list of additional repos)
             for revision_config in revision_list:
                 if self.retry(
                     self._do_looped_push,
                     args=(repo_config, revision_config),
                 ):
+                    # Don't FATAL; we may have another repo to update
                     self.add_summary(
-                        "Unable to push to %s" % repo_config['target_push_url'],
-                        level=FATAL,
+                        "Unable to push to %s; breaking out of revision loop" % repo_config['target_push_url'],
+                        level=ERROR,
                     )
+                    break
 
 
 # __main__ {{{1
