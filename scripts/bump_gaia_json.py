@@ -87,7 +87,7 @@ class BumpGaiaJson(MercurialScript):
         # limit the list to max_revisions
         return revision_list[-max_revisions:]
 
-    def build_commit_message(self, revision_config, repo_url):
+    def build_commit_message(self, revision_config, repo_name):
         revision_list = []
         comments = ''
         for changeset_config in revision_config['changesets']:
@@ -99,10 +99,9 @@ class BumpGaiaJson(MercurialScript):
                 changeset_config['author'],
                 changeset_config['desc'],
             )
-        message = 'Bumping gaia.json for %d %s revision(s): %s\n' % (
+        message = 'Bumping gaia.json for %d %s revision(s)\n' % (
             len(revision_list),
-            repo_url,
-            ','.join(revision_list),
+            repo_name
         )
         return message + comments
 
@@ -171,7 +170,7 @@ class BumpGaiaJson(MercurialScript):
         repo_path = self.query_repo_path(repo_config)
         path = os.path.join(repo_path, self.config['revision_file'])
         revision = revision_config['changesets'][-1]['node']
-        status = self._update_json(path, revision, repo_config["repo_url"])
+        status = self._update_json(path, revision, repo_config["repo_name"])
         if status is not None:
             return status
         message = self.build_commit_message(revision_config, repo_config["repo_url"])
