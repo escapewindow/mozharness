@@ -6,7 +6,7 @@
 # ***** END LICENSE BLOCK *****
 """ bump_gaia_json.py
 
-    Polls [a] gaia hg repo(s), and updates a [set of] gecko repo(s) with the
+    Polls [a] gaia hg repo(s), and updates a gecko repo with the
     revision information and pushes.
 
     This is to tie the gaia revision to a visible TBPL gecko revision,
@@ -48,6 +48,8 @@ class BumpGaiaJson(MercurialScript):
                 'clobber',
                 'push-loop',
                 'summary',
+                # TODO
+                #'notify',
             ],
             default_actions=[
                 'push-loop',
