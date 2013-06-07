@@ -15,6 +15,7 @@
 
 import os
 import sys
+import urlparse
 try:
     import simplejson as json
     assert json
@@ -124,28 +125,28 @@ class BumpGaiaJson(MercurialScript):
         except ValueError:
             self.error("%s is invalid json!" % path)
 
-    def _update_json(self, path, revision, url):
-        """ Update path with url/revision.
+    def _update_json(self, path, revision, repo_path):
+        """ Update path with repo_path + revision.
 
             If the revision hasn't changed, don't do anything.
-            If the url changes or the current json is invalid, error but don't fail.
+            If the repo_path changes or the current json is invalid, error but don't fail.
             """
         if not os.path.exists(path):
             self.add_summary(
-                "%s doesn't exist; can't update with repo %s revision %s!" % (path, url, revision),
+                "%s doesn't exist; can't update with repo_path %s revision %s!" % (path, repo_path, revision),
                 level=ERROR,
             )
             return -1
         contents = self._read_json(path)
         if contents:
-            if contents.get("repo") != url:
-                self.error("Current repo %s differs from %s!" % (str(contents.get("repo")), url))
+            if contents.get("repo_path") != repo_path:
+                self.error("Current repo_path %s differs from %s!" % (str(contents.get("repo_path")), repo_path))
             if contents.get("revision") == revision:
                 self.info("Revision %s is the same.  No action needed." % revision)
-                self.add_summary("%s is unchanged." % url)
+                self.add_summary("Revision %s is unchanged for repo_path %s." % (revision, repo_path))
                 return 0
         contents = {
-            "repo": url,
+            "repo_path": repo_path,
             "revision": revision
         }
         if self.write_to_file(path, json.dumps(contents, indent=4) + "\n") != path:
@@ -170,7 +171,9 @@ class BumpGaiaJson(MercurialScript):
         repo_path = self.query_repo_path(repo_config)
         path = os.path.join(repo_path, self.config['revision_file'])
         revision = revision_config['changesets'][-1]['node']
-        status = self._update_json(path, revision, repo_config["repo_url"])
+        parts = urlparse.urlparse(repo_config["repo_url"])
+        json_repo_path = parts.path
+        status = self._update_json(path, revision, json_repo_path)
         if status is not None:
             return status
         message = self.build_commit_message(
