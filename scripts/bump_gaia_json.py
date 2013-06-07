@@ -31,6 +31,7 @@ from mozharness.base.vcs.vcsbase import MercurialScript
 
 # BumpGaiaJson {{{1
 class BumpGaiaJson(MercurialScript):
+    truncated_revisions = False
     config_options = [
         [['--max-revisions', ], {
             "action": "store",
@@ -84,10 +85,15 @@ class BumpGaiaJson(MercurialScript):
         if not revision_dict:
             return []
         # Discard any revisions not on the branch we care about.
-        for k, v in sorted(revision_dict.items()):
+        for k in sorted(revision_dict, key=int):  # numeric sort
+            v = revision_dict[k]
             if v['changesets'][-1]['branch'] == branch:
                 revision_list.append(v)
-        # limit the list to max_revisions
+        # Limit the list to max_revisions.
+        # Set a flag, so we can update the commit message with a warning
+        # that we've truncated the list.
+        if len(revision_list) > max_revisions:
+            self.truncated_revisions = True
         return revision_list[-max_revisions:]
 
     def build_commit_message(self, revision_config, repo_name, repo_url):
@@ -106,6 +112,9 @@ class BumpGaiaJson(MercurialScript):
             len(revision_list),
             repo_name
         )
+        if self.truncated_revisions:
+            message += "Truncated some number of revisions since the previous bump.\n"
+            self.truncated_revisions = False
         return message + comments
 
     def query_repo_path(self, repo_config):
@@ -171,11 +180,11 @@ class BumpGaiaJson(MercurialScript):
         hg = self.query_exe("hg", return_type="list")
         self._pull_target_repo(repo_config)
         repo_path = self.query_repo_path(repo_config)
-        path = os.path.join(repo_path, self.config['revision_file'])
+        gaia_config_file = os.path.join(repo_path, self.config['revision_file'])
         revision = revision_config['changesets'][-1]['node']
         parts = urlparse.urlparse(repo_config["repo_url"])
         json_repo_path = parts.path
-        status = self._update_json(path, revision, json_repo_path)
+        status = self._update_json(gaia_config_file, revision, json_repo_path)
         if status is not None:
             return status
         message = self.build_commit_message(
@@ -193,9 +202,15 @@ class BumpGaiaJson(MercurialScript):
         status = self.run_command(command, cwd=repo_path,
                                   error_list=HgErrorList)
         if status:
-            self.run_command(hg + ["rollback"],
+            # We failed; get back to a known state so we can either retry
+            # or fail out and continue later.
+            self.run_command(hg + ["--config", "extensions.mq=",
+                                   "strip", "outgoing()"],
                              cwd=repo_path)
-            self.run_command(hg + ["revert", "-a"],
+            self.run_command(hg + ["up", "-C"],
+                             cwd=repo_path)
+            self.run_command(hg + ["--config", "extensions.purge=",
+                                   "purge", "--all"],
                              cwd=repo_path)
             return -1
         return 0
