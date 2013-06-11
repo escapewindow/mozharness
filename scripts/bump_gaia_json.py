@@ -205,7 +205,7 @@ class BumpGaiaJson(MercurialScript):
             # We failed; get back to a known state so we can either retry
             # or fail out and continue later.
             self.run_command(hg + ["--config", "extensions.mq=",
-                                   "strip", "outgoing()"],
+                                   "strip", "--no-backup", "outgoing()"],
                              cwd=repo_path)
             self.run_command(hg + ["up", "-C"],
                              cwd=repo_path)
