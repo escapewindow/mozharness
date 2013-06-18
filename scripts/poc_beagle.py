@@ -545,7 +545,7 @@ intree=1
                  '3ec464b55782fb94dbbb9b5784aac141f3e3ac01..%s' % branch],
                 partial_env=env,
                 cwd=git_conversion_dir,
-                halt_on_failure=True
+#                halt_on_failure=True
             )
             if os.path.exists(map_dir):
                 self.run_command(
