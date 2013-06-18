@@ -541,7 +541,7 @@ intree=1
                 continue
             branch = branch.strip()
             self.run_command(
-                [git_filter_branch, '-f', '--',
+                [git_filter_branch, '--',
                  '3ec464b55782fb94dbbb9b5784aac141f3e3ac01..%s' % branch],
                 partial_env=env,
                 cwd=git_conversion_dir,
