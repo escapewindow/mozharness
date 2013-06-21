@@ -406,10 +406,26 @@ class HgGitScript(VirtualenvMixin, TooltoolMixin, TransferMixin, VCSScript):
         source_dest = os.path.join(
             dirs['abs_source_dir'], repo_config['repo_name'])
         if not os.path.exists(work_dest):
-            self.run_command(hg + ["init", work_dest])
+            self.run_command(hg + ["init", work_dest],
+                             halt_on_failure=True)
         self.run_command(hg + ["pull", source_dest],
                          cwd=work_dest,
-                         error_list=HgErrorList)
+                         error_list=HgErrorList,
+                         halt_on_failure=True)
+        # The revision 82e4f1b7bbb6e30a635b49bf2107b41a8c26e3d2
+        # reacts poorly to git-filter-branch-keep-rewrites (in
+        # prepend-cvs), resulting in diverging shas.
+        # To avoid this, strip this revision + all following revisions,
+        # so the initial conversion doesn't include it, and
+        # git-filter-branch-keep-rewrites is never run against this
+        # revision.
+        # https://bugzilla.mozilla.org/show_bug.cgi?id=847727#c40 through
+        # https://bugzilla.mozilla.org/show_bug.cgi?id=847727#c55
+        self.run_command(hg + ["--config", "extensions.mq=", "strip", "-n",
+                               "82e4f1b7bbb6e30a635b49bf2107b41a8c26e3d2"],
+                         cwd=work_dest,
+                         error_list=HgErrorList,
+                         halt_on_failure=True)
         # Create .git for conversion, if it doesn't exist
         git_dir = os.path.join(work_dest, '.git')
         if not os.path.exists(git_dir):
@@ -527,6 +543,9 @@ intree=1
             cwd=conversion_dir,
             halt_on_failure=True
         )
+        # The self.move() will break if this dir already exists.
+        # This rmtree() could move up to a preflight_prepend_cvs() method, or
+        # near the beginning, if desired.
         self.rmtree(dirs['abs_git_rewrite_dir'])
         self.move(os.path.join(conversion_dir, '.git-rewrite'),
                   dirs['abs_git_rewrite_dir'],
@@ -591,6 +610,15 @@ intree=1
                     self.debug("%s exists; skipping." % target_dest)
 
     def update_stage_mirror(self):
+        """ The stage mirror is a buffer clean clone of repositories.
+            The logic behind this is that we get occasional corruption from
+            |hg pull|.  It's much less time-consuming to detect this in
+            a clean clone, and reclone, than to detect this in a working
+            conversion directory, and try to repair or reclone+reconvert.
+
+            We pull the stage mirror into the work mirror, where the conversion
+            is done.
+            """
         for repo_config in self.query_all_repos():
             self._update_stage_repo(repo_config)
 
