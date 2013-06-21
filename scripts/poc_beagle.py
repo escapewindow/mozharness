@@ -457,11 +457,9 @@ intree=1
         dest = dirs['abs_conversion_dir']
         for (branch, target_branch) in repo_config.get('branches', {}).items():
             output = self.get_output_from_command(
-                hg + ['id', '-r', branch], cwd=source)
+                hg + ['id', '-r', branch], cwd=dest)
             if output:
                 rev = output.split(' ')[0]
-            self.run_command(hg + ['pull', '-r', rev, source], cwd=dest,
-                             error_list=HgErrorList, halt_on_failure=True)
             self.run_command(
                 hg + ['bookmark', '-f', '-r', rev, target_branch],
                 cwd=dest,
