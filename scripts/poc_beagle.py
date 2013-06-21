@@ -421,6 +421,7 @@ class HgGitScript(VirtualenvMixin, TooltoolMixin, TransferMixin, VCSScript):
         # revision.
         # https://bugzilla.mozilla.org/show_bug.cgi?id=847727#c40 through
         # https://bugzilla.mozilla.org/show_bug.cgi?id=847727#c55
+        # Also, yay hardcodes!
         self.run_command(hg + ["--config", "extensions.mq=", "strip", "-n",
                                "82e4f1b7bbb6e30a635b49bf2107b41a8c26e3d2"],
                          cwd=work_dest,
