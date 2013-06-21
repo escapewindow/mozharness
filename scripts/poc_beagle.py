@@ -541,11 +541,11 @@ intree=1
                 continue
             branch = branch.strip()
             self.run_command(
-                [git_filter_branch, '--',
+                [git_filter_branch, '-f', '--',
                  '3ec464b55782fb94dbbb9b5784aac141f3e3ac01..%s' % branch],
                 partial_env=env,
                 cwd=git_conversion_dir,
-#                halt_on_failure=True
+                halt_on_failure=True
             )
             if os.path.exists(map_dir):
                 self.run_command(
@@ -560,18 +560,18 @@ intree=1
 
     def fix_tags(self):
         dirs = self.query_abs_dirs()
-#        git = self.query_exe("git", return_type="list")
+        git = self.query_exe("git", return_type="list")
         conversion_dir = dirs['abs_conversion_dir']
         self._fix_tags(
             os.path.join(conversion_dir, '.git'),
             dirs['abs_git_rewrite_dir']
         )
-#        self.run_command(
-#            git + ['gc', '--aggressive'],
-#            cwd=os.path.join(conversion_dir, '.git'),
-#            error_list=GitErrorList,
-#            halt_on_failure=True,
-#        )
+        self.run_command(
+            git + ['gc', '--aggressive'],
+            cwd=os.path.join(conversion_dir, '.git'),
+            error_list=GitErrorList,
+            halt_on_failure=True,
+        )
 
     def create_test_targets(self):
         dirs = self.query_abs_dirs()
