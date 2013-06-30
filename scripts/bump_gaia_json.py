@@ -102,7 +102,7 @@ class BumpGaiaJson(MercurialScript):
         for changeset_config in reversed(revision_config['changesets']):
             revision_list.append(changeset_config['node'])
             comments += "\n========\n"
-            comments += '\n%s/rev/%s\nAuthor: %s\nDesc: %s\n' % (
+            comments += u'\n%s/rev/%s\nAuthor: %s\nDesc: %s\n' % (
                 repo_url,
                 changeset_config['node'][:12],
                 changeset_config['author'],
@@ -115,7 +115,9 @@ class BumpGaiaJson(MercurialScript):
         if self.truncated_revisions:
             message += "Truncated some number of revisions since the previous bump.\n"
             self.truncated_revisions = False
-        return message + comments
+        message += comments
+        message = message.encode("utf-8")
+        return message
 
     def query_repo_path(self, repo_config):
         dirs = self.query_abs_dirs()
@@ -190,13 +192,14 @@ class BumpGaiaJson(MercurialScript):
         status = self._update_json(gaia_config_file, revision, json_repo_path)
         if status is not None:
             return status
+        env = self.query_env(partial_env={'LANG': 'en_US.UTF-8'})
         message = self.build_commit_message(
             revision_config, repo_config["repo_name"],
             repo_config["repo_url"],
         )
         command = hg + ["commit", "-u", self.config['hg_user'],
                         "-m", message]
-        self.run_command(command, cwd=repo_path)
+        self.run_command(command, cwd=repo_path, env=env)
         command = hg + ["push", "-e",
                         "ssh -oIdentityFile=%s -l %s" % (
                             self.config["ssh_key"], self.config["ssh_user"],
@@ -230,11 +233,14 @@ class BumpGaiaJson(MercurialScript):
             if contents:
                 prev_revision = contents.get('revision')
             revision_list = self.get_revision_list(repo_config, prev_revision=prev_revision)
-            if not revision_list:
+            if revision_list is None:
                 self.add_summary(
                     "Unable to get revision_list for %s" % repo_config['repo_url'],
                     level=ERROR,
                 )
+                continue
+            if not revision_list:
+                self.add_summary("No new changes for %s" % repo_config['repo_url'])
                 continue
             for revision_config in revision_list:
                 if self.retry(
