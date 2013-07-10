@@ -415,19 +415,19 @@ class HgGitScript(VirtualenvMixin, TooltoolMixin, TransferMixin, VCSScript):
         # The revision 82e4f1b7bbb6e30a635b49bf2107b41a8c26e3d2
         # reacts poorly to git-filter-branch-keep-rewrites (in
         # prepend-cvs), resulting in diverging shas.
-        # To avoid this, strip this revision + all following revisions,
-        # so the initial conversion doesn't include it, and
+        # To avoid this, strip back to 317fe0f314ab so the initial conversion
+        # doesn't include 82e4f1b7bbb6e30a635b49bf2107b41a8c26e3d2, and
         # git-filter-branch-keep-rewrites is never run against this
-        # revision.
-        # https://bugzilla.mozilla.org/show_bug.cgi?id=847727#c40 through
-        # https://bugzilla.mozilla.org/show_bug.cgi?id=847727#c55
+        # revision.  This takes 4 strips, due to forking/merging.
+        # See https://bugzilla.mozilla.org/show_bug.cgi?id=847727#c40 through
+        # https://bugzilla.mozilla.org/show_bug.cgi?id=847727#c60
         # Also, yay hardcodes!
-        self.run_command(hg + ["--config", "extensions.mq=", "strip",
-                               "--no-backup",
-                               "82e4f1b7bbb6e30a635b49bf2107b41a8c26e3d2"],
-                         cwd=work_dest,
-                         error_list=HgErrorList,
-                         halt_on_failure=True)
+        for hg_revision in ("26cb30a532a1", "aad29aa89237", "eb1d7f3cd1d7", "9f2fa4839e98"):
+            self.run_command(hg + ["--config", "extensions.mq=", "strip",
+                                   "--no-backup", hg_revision],
+                             cwd=work_dest,
+                             error_list=HgErrorList,
+                             halt_on_failure=True)
         # Create .git for conversion, if it doesn't exist
         git_dir = os.path.join(work_dest, '.git')
         if not os.path.exists(git_dir):
