@@ -418,11 +418,11 @@ class HgGitScript(VirtualenvMixin, TooltoolMixin, TransferMixin, VCSScript):
         # To avoid this, strip back to 317fe0f314ab so the initial conversion
         # doesn't include 82e4f1b7bbb6e30a635b49bf2107b41a8c26e3d2, and
         # git-filter-branch-keep-rewrites is never run against this
-        # revision.  This takes 4 strips, due to forking/merging.
+        # revision.  This takes 3 strips, due to forking/merging.
         # See https://bugzilla.mozilla.org/show_bug.cgi?id=847727#c40 through
         # https://bugzilla.mozilla.org/show_bug.cgi?id=847727#c60
         # Also, yay hardcodes!
-        for hg_revision in ("26cb30a532a1", "aad29aa89237", "eb1d7f3cd1d7", "9f2fa4839e98"):
+        for hg_revision in ("26cb30a532a1", "aad29aa89237", "9f2fa4839e98"):
             self.run_command(hg + ["--config", "extensions.mq=", "strip",
                                    "--no-backup", hg_revision],
                              cwd=work_dest,
