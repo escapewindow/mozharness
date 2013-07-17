@@ -15,7 +15,6 @@ import re
 from mozharness.base.config import parse_config_file
 from mozharness.base.errors import PythonErrorList
 from mozharness.base.log import OutputParser, DEBUG, ERROR, CRITICAL, FATAL
-from mozharness.base.script import BaseScript
 from mozharness.mozilla.testing.testbase import TestingMixin, testing_config_options, INSTALLER_SUFFIXES
 from mozharness.base.vcs.vcsbase import MercurialScript
 
@@ -126,7 +125,7 @@ class Talos(TestingMixin, MercurialScript):
                                              ])
         kwargs.setdefault('config', {})
         kwargs['config'].setdefault('virtualenv_modules', ["talos", "mozinstall"])
-        BaseScript.__init__(self, **kwargs)
+        super(Talos, self).__init__(**kwargs)
 
         self.workdir = self.query_abs_dirs()['abs_work_dir'] # convenience
 
@@ -443,6 +442,7 @@ class Talos(TestingMixin, MercurialScript):
         """VirtualenvMixin.create_virtualenv() assuemes we're using
         self.config['virtualenv_modules']. Since we are installing
         talos from its source, we have to wrap that method here."""
+        # XXX This method could likely be replaced with a PreScriptAction hook.
         if self.has_cloned_talos:
             virtualenv_modules = self.config.get('virtualenv_modules', [])[:]
             if 'talos' in virtualenv_modules:
