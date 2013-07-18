@@ -39,6 +39,7 @@ config = {
             "default": "master",
         },
     },
+    "backup_dir": "/mnt/netapp/github_sync/aki",
     "cvs_manifest": CVS_MANIFEST,
     "tooltool_servers": ["http://runtime-binaries.pvt.build.mozilla.org/tooltool/"],
     "env": {

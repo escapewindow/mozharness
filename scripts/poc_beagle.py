@@ -567,6 +567,13 @@ intree=1
                 halt_on_failure=True
             )
             if os.path.exists(map_dir):
+                if self.config.get("backup_dir"):
+                    self.run_command(
+                        ["tar", "cjvf",
+                         os.path.join(self.config["backup_dir"],
+                                      "prepend-cvs-%s.tar.bz2" % branch),
+                         map_dir],
+                    )
                 self.run_command(
                     ['rsync', '-azv', os.path.join(map_dir, '.'),
                      os.path.join(dirs['abs_git_rewrite_dir'], 'map', '.')],
