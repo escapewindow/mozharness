@@ -41,6 +41,15 @@ from mozharness.mozilla.tooltool import TooltoolMixin
 
 # HgGitScript {{{1
 class HgGitScript(VirtualenvMixin, TooltoolMixin, TransferMixin, VCSScript):
+    """ Beagle-oriented hg->git script (lots of mozilla-central hardcodes;
+        assumption that we're going to be importing lots of branches).
+
+        Beagle is a git repo of mozilla-central, with full cvs history,
+        and a number of developer-oriented repositories and branches added.
+
+        The partner-oriented gecko.git could also be incorporated into this
+        script with some changes.
+        """
 
     mapfile_binary_search = None
 
@@ -62,6 +71,9 @@ class HgGitScript(VirtualenvMixin, TooltoolMixin, TransferMixin, VCSScript):
                 'upload',
                 'notify',
             ],
+            # These default actions are the update loop that we run after the
+            # initial steps to create the work mirror with all the branches +
+            # cvs history have been run.
             default_actions=[
                 'create-virtualenv',
                 'update-stage-mirror',
