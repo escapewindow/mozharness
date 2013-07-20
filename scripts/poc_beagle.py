@@ -734,7 +734,7 @@ intree=1
             for (branch, target_branch) in repo_config.get('branches', {}).items():
                 git_revision = self._query_mapped_revision(
                     revision=rev, mapfile=generated_mapfile)
-                repo_map[repo_name]['branches'][branch]['git_revision'] = git_revision
+                repo_map['repos'][repo_name]['branches'][branch]['git_revision'] = git_revision
         self._write_repo_update_json(repo_map)
         self.copy_to_upload_dir(generated_mapfile, dest="gecko-mapfile", log_level=INFO)
 
@@ -742,15 +742,22 @@ intree=1
         self.create_test_targets()
         repo_map = self._read_repo_update_json()
         failure_msg = ""
+        timestamp = int(time.time())
+        datetime = time.strftime('%Y-%m-%d %H:%M %Z')
+        repo_map['last_push_timestamp'] = timestamp
+        repo_map['last_push_datetime'] = datetime
         for repo_config in self.query_all_repos():
             timestamp = int(time.time())
             datetime = time.strftime('%Y-%m-%d %H:%M %Z')
             if self._push_repo(repo_config) == 0:
                 repo_name = repo_config['repo_name']
-                repo_map.setdefault(repo_name, {})['push_timestamp'] = timestamp
-                repo_map[repo_name]['push_datetime'] = datetime
+                repo_map.setdefault('repos', {}).setdefault(repo_name, {})['push_timestamp'] = timestamp
+                repo_map['repos'][repo_name]['push_datetime'] = datetime
             else:
                 failure_msg += "  %s\n" % repo_config['repo_name']
+        if not failure_msg:
+            repo_map['last_successful_push_timestamp'] = repo_map['last_push_timestamp']
+            repo_map['last_successful_push_datetime'] = repo_map['last_push_datetime']
         self._write_repo_update_json(repo_map)
         if failure_msg:
             self.fatal("Unable to push these repos:\n%s" % failure_msg)
