@@ -135,8 +135,7 @@ class HgGitScript(VirtualenvMixin, TooltoolMixin, TransferMixin, VCSScript):
         return [self.config['initial_repo']] + self.config['conversion_repos']
 
     def _update_stage_repo(self, repo_config, retry=True, clobber=False):
-        """
-            Update a stage repo.
+        """ Update a stage repo.
             See update_stage_mirror() for a description of the stage repos.
             """
         hg = self.query_exe('hg', return_type='list')
@@ -185,6 +184,12 @@ class HgGitScript(VirtualenvMixin, TooltoolMixin, TransferMixin, VCSScript):
 
     def _check_initial_git_revisions(self, repo_path, expected_sha1,
                                      expected_sha2):
+        """ Verify that specific git revisions match expected shas.
+
+            This involves some hardcodes, which is unfortunate, but they save
+            time, especially since we're hardcoding mozilla-central behavior
+            anyway.
+            """
         git = self.query_exe('git', return_type='list')
         output = self.get_output_from_command(
             git + ['log', '--oneline', '--grep', '374866'],
@@ -239,6 +244,9 @@ class HgGitScript(VirtualenvMixin, TooltoolMixin, TransferMixin, VCSScript):
                                 log_level=INFO)
 
     def make_repo_bare(self, path, tmpdir=None):
+        """ Since we do a |git checkout| in prepend_cvs(), and later want
+            a bare repo.
+            """
         self.info("Making %s/.git a bare repo..." % path)
         for p in (path, os.path.join(path, ".git")):
             if not os.path.exists(p):
@@ -294,7 +302,6 @@ class HgGitScript(VirtualenvMixin, TooltoolMixin, TransferMixin, VCSScript):
                 path = os.path.join(git_rewrite_dir, 'map', old_sha1)
                 if os.path.exists(path):
                     new_sha1 = self.read_from_file(path).rstrip()
-#                    self.info("Would have run: %s" % ' '.join(git + ['update-ref', name, new_sha1, old_sha1]))
                     self.run_command(
                         git + ['update-ref', name,
                                new_sha1, old_sha1],
@@ -304,6 +311,11 @@ class HgGitScript(VirtualenvMixin, TooltoolMixin, TransferMixin, VCSScript):
                     )
 
     def _push_repo(self, repo_config):
+        """ Push a repo to a path ("test_push") or remote server.
+
+            This was meant to be a cross-vcs method, but currently only
+            covers git pushes.
+            """
         dirs = self.query_abs_dirs()
         conversion_dir = dirs['abs_conversion_dir']
         git = self.query_exe('git', return_type='list')
@@ -322,14 +334,21 @@ class HgGitScript(VirtualenvMixin, TooltoolMixin, TransferMixin, VCSScript):
                     if not remote_config:
                         self.fatal("Can't find %s in remote_targets!" % target_name)
                     command.append(remote_config['repo'])
+                    # Allow for using a custom git ssh key.
                     env['GIT_SSH_KEY'] = remote_config['ssh_key']
                     env['GIT_SSH'] = os.path.join(external_tools_path, 'git-ssh-wrapper.sh')
+                # Allow for pushing a subset of repo branches to the target.
+                # If we specify that subset, we can also specify different
+                # names for those branches (e.g. b2g18 -> master for a
+                # standalone b2g18 repo)
                 if target_config.get("branches"):
                     for (branch, target_branch) in target_config['branches'].items():
                         command += ['+refs/heads/%s:refs/heads/%s' % (branch, target_branch)]
                 else:
                     for (branch, target_branch) in repo_config.get('branches', {}).items():
                         command += ['+refs/heads/%s:refs/heads/%s' % (target_branch, target_branch)]
+                # Allow for pushing a subset of tags to the target, via name or
+                # regex.
                 tag_config = target_config.get('tag_config', repo_config.get('tag_config', {}))
                 if tag_config.get('tags'):
                     for (tag, target_tag) in tag_config['tags'].items():
@@ -347,6 +366,7 @@ class HgGitScript(VirtualenvMixin, TooltoolMixin, TransferMixin, VCSScript):
                             if regex.search(tag_name) is not None:
                                 command += ['tag', tag_name]
                                 continue
+                # Do the push, with retry!
                 if self.retry(
                     self.run_command,
                     args=(command, ),
@@ -366,6 +386,9 @@ class HgGitScript(VirtualenvMixin, TooltoolMixin, TransferMixin, VCSScript):
         return return_status
 
     def _query_mapped_revision(self, revision=None, mapfile=None):
+        """ Use the virtualenv mapper module to search a mapfile for a
+            revision.
+            """
         if not callable(self.mapfile_binary_search):
             site_packages_path = self.query_python_site_packages_path()
             sys.path.append(os.path.join(site_packages_path, 'mapper'))
@@ -382,11 +405,22 @@ class HgGitScript(VirtualenvMixin, TooltoolMixin, TransferMixin, VCSScript):
         return self.mapfile_binary_search(m, revision)
 
     def _post_fatal(self, message=None, exit_code=None):
+        """ After we call fatal(), run this method before exiting.
+            """
         if 'notify' in self.actions:
             self.notify(message=message, fatal=True)
         self.copy_logs_to_upload_dir()
 
     def _read_repo_update_json(self):
+        """ repo_update.json is a file we create with information about each
+            repo we're converting: git/hg branch names, git/hg revisions,
+            pull datetime/timestamp, and push datetime/timestamp.
+
+            Since we want to be able to incrementally update portions of this
+            file as we pull/push each branch, we need to be able to read the
+            json into memory, so we can update the dict and re-write the json
+            to disk.
+            """
         repo_map = {}
         dirs = self.query_abs_dirs()
         path = os.path.join(dirs['abs_upload_dir'], 'repo_update.json')
@@ -397,6 +431,8 @@ class HgGitScript(VirtualenvMixin, TooltoolMixin, TransferMixin, VCSScript):
         return repo_map
 
     def _write_repo_update_json(self, repo_map):
+        """ The write portion of _read_repo_update_json().
+            """
         dirs = self.query_abs_dirs()
         contents = json.dumps(repo_map, sort_keys=True, indent=4)
         self.write_to_file(
@@ -407,6 +443,14 @@ class HgGitScript(VirtualenvMixin, TooltoolMixin, TransferMixin, VCSScript):
 
     # Actions {{{1
     def create_stage_mirror(self):
+        """ Rather than duplicate the logic here and in update_stage_mirror(),
+            just call it.
+
+            We could just create the initial_repo stage mirror here, but
+            there's no real harm in cloning all repos here either.  Putting
+            the time hit in the one-time-setup, rather than the first update
+            loop, makes sense.
+            """
         self.update_stage_mirror()
 
     def create_work_mirror(self):
