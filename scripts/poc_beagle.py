@@ -138,7 +138,7 @@ class HgGitScript(VirtualenvMixin, TooltoolMixin, TransferMixin, VCSScript):
                 args=(hg + ['clone', '--noupdate', repo_config['repo'],
                       source_dest], ),
                 kwargs={
-#                   'idle_timeout': 15 * 60,
+                    'output_timeout': 15 * 60,
                     'cwd': dirs['abs_work_dir'],
                     'error_list': HgErrorList,
                 },
@@ -153,7 +153,7 @@ class HgGitScript(VirtualenvMixin, TooltoolMixin, TransferMixin, VCSScript):
             self.run_command,
             args=(cmd, ),
             kwargs={
-                #'idle_timeout': 15 * 60,
+                'output_timeout': 15 * 60,
                 'cwd': source_dest,
             },
         ):
@@ -338,7 +338,7 @@ class HgGitScript(VirtualenvMixin, TooltoolMixin, TransferMixin, VCSScript):
                     self.run_command,
                     args=(command, ),
                     kwargs={
-#                        'idle_timeout': target_config.get("idle_timeout", 30 * 60),
+                        'output_timeout': target_config.get("output_timeout", 30 * 60),
                         'cwd': os.path.join(conversion_dir, '.git'),
                         'error_list': GitErrorList,
                         'partial_env': env,
@@ -482,7 +482,7 @@ intree=1
             self.run_command,
             args=(hg + ['-v', 'gexport'], ),
             kwargs={
-#                'idle_timeout': 15 * 60,
+                'output_timeout': 15 * 60,
                 'cwd': dest,
                 'error_list': HgErrorList,
             },
@@ -664,7 +664,7 @@ intree=1
             self.run_command,
             args=(hg + ['-v', 'gexport'], ),
             kwargs={
-#                'idle_timeout': 15 * 60,
+                'output_timeout': 15 * 60,
                 'cwd': dest,
                 'error_list': HgErrorList,
             },
