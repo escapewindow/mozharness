@@ -537,7 +537,7 @@ class ScriptMixin(object):
             self.log("Unknown return_type type %s requested in query_exe!" % return_type, level=error_level)
         return exe
 
-    def run_command(self, command, cwd=None, error_list=None, parse_at_end=False,
+    def run_command(self, command, cwd=None, error_list=None,
                     halt_on_failure=False, success_codes=None,
                     env=None, partial_env=None, return_type='status',
                     throw_exception=False, output_parser=None,
@@ -548,7 +548,7 @@ class ScriptMixin(object):
         is killed; it requires that mozprocess is installed in the script's
         virtualenv.
 
-        TODO: parse_at_end, context_lines
+        TODO: context_lines
         TODO: error_level_override?
 
         output_parser lets you provide an instance of your own OutputParser
