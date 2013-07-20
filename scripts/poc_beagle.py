@@ -86,19 +86,6 @@ class HgGitScript(VirtualenvMixin, TooltoolMixin, TransferMixin, VCSScript):
         )
 
     # Helper methods {{{1
-    def _init_hg_repo(self, path, additional_args=None):
-        hg = self.query_exe("hg", return_type="list")
-        cmd = hg + ['init']
-        if additional_args:
-            cmd.extend(additional_args)
-        cmd.append(path)
-        return self.retry(
-            self.run_command,
-            args=(cmd, ),
-            error_level=FATAL,
-            error_message="Can't set up %s!" % path,
-        )
-
     def query_abs_dirs(self):
         if self.abs_dirs:
             return self.abs_dirs
