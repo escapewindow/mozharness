@@ -87,6 +87,8 @@ class HgGitScript(VirtualenvMixin, TooltoolMixin, TransferMixin, VCSScript):
 
     # Helper methods {{{1
     def query_abs_dirs(self):
+        """ Define paths.
+            """
         if self.abs_dirs:
             return self.abs_dirs
         abs_dirs = super(HgGitScript, self).query_abs_dirs()
@@ -108,6 +110,11 @@ class HgGitScript(VirtualenvMixin, TooltoolMixin, TransferMixin, VCSScript):
         return self.abs_dirs
 
     def init_git_repo(self, path, additional_args=None):
+        """ Create a git repo, with retries.
+
+            We call this with additional_args=['--bare'] to save disk +
+            make things cleaner.
+            """
         git = self.query_exe("git", return_type="list")
         cmd = git + ['init']
         # generally for --bare
@@ -122,9 +129,16 @@ class HgGitScript(VirtualenvMixin, TooltoolMixin, TransferMixin, VCSScript):
         )
 
     def query_all_repos(self):
+        """ Very simple method, but we need this concatenated list many times
+            throughout the script.
+            """
         return [self.config['initial_repo']] + self.config['conversion_repos']
 
     def _update_stage_repo(self, repo_config, retry=True, clobber=False):
+        """
+            Update a stage repo.
+            See update_stage_mirror() for a description of the stage repos.
+            """
         hg = self.query_exe('hg', return_type='list')
         dirs = self.query_abs_dirs()
         source_dest = os.path.join(dirs['abs_source_dir'],
@@ -503,6 +517,7 @@ intree=1
             #if self.tooltool_fetch(manifest_path, output_dir=dirs['abs_work_dir']):
             #    self.fatal("Unable to download cvs history via tooltool!")
             # Temporary workaround
+            # TODO unhardcode
             self.copyfile(
                 "/home/asasaki/mozilla-cvs-history.tar.bz2",
                 os.path.join(dirs['abs_work_dir'], "mozilla-cvs-history.tar.bz2")
