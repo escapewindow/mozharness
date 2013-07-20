@@ -454,6 +454,9 @@ class HgGitScript(VirtualenvMixin, TooltoolMixin, TransferMixin, VCSScript):
         self.update_stage_mirror()
 
     def create_work_mirror(self):
+        """ Create the work_mirror, initial_repo only, from the stage_mirror.
+            This is where the conversion will occur.
+            """
         # TODO share logic with update_work_mirror?
         hg = self.query_exe("hg", return_type="list")
         git = self.query_exe("git", return_type="list")
@@ -507,12 +510,16 @@ intree=1
             self.write_to_file(hgrc, hgrc_update, open_mode='a')
 
     def initial_conversion(self):
+        """ Run the initial hg-git conversion of the work_mirror.
+            This will create a git m-c repository without cvs history.
+            """
         hg = self.query_exe("hg", return_type="list")
         dirs = self.query_abs_dirs()
-        # TODO more error checking
         repo_config = self.config['initial_repo']
         source = os.path.join(dirs['abs_source_dir'], repo_config['repo_name'])
         dest = dirs['abs_conversion_dir']
+        # bookmark all the branches in the repo_config, potentially
+        # renaming them.
         for (branch, target_branch) in repo_config.get('branches', {}).items():
             output = self.get_output_from_command(
                 hg + ['id', '-r', branch], cwd=dest)
@@ -524,6 +531,7 @@ intree=1
                 error_list=HgErrorList,
                 halt_on_failure=True,
             )
+        # bookmark all the other branches, with the same name.
         output = self.get_output_from_command(hg + ['branches', '-c'], cwd=source)
         for line in output.splitlines():
             branch_name = line.split(' ')[0]
@@ -535,6 +543,7 @@ intree=1
                 error_list=HgErrorList,
                 halt_on_failure=True,
             )
+        # Do the conversion!  This will take a day or so.
         self.retry(
             self.run_command,
             args=(hg + ['-v', 'gexport'], ),
@@ -545,6 +554,7 @@ intree=1
             },
             error_level=FATAL,
         )
+        # Save the pre-cvs mapfile.
         self.copy_to_upload_dir(os.path.join(dest, '.hg', 'git-mapfile'),
                                 dest="pre-cvs-mapfile", log_level=INFO)
 
@@ -687,6 +697,8 @@ intree=1
             self._update_stage_repo(repo_config)
 
     def update_work_mirror(self):
+        """
+            """
         hg = self.query_exe("hg", return_type="list")
         dirs = self.query_abs_dirs()
         dest = dirs['abs_conversion_dir']
