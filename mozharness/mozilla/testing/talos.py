@@ -113,12 +113,14 @@ class Talos(TestingMixin, MercurialScript):
         kwargs.setdefault('all_actions', ['clobber',
                                           'read-buildbot-config',
                                           'download-and-extract',
+                                          'clone-talos',
                                           'create-virtualenv',
                                           'install',
                                           'run-tests',
                                          ])
         kwargs.setdefault('default_actions', ['clobber',
                                               'download-and-extract',
+                                              'clone-talos',
                                               'create-virtualenv',
                                               'install',
                                               'run-tests',
@@ -248,14 +250,24 @@ class Talos(TestingMixin, MercurialScript):
             options += c['talos_extra_options']
         return options
 
-    def query_talos_url(self):
+    def query_talos_repo(self):
         """Where do we install the talos python package from?
         This needs to be overrideable by the talos json.
         """
+        default_repo = "http://hg.mozilla.org/build/talos"
         if self.query_talos_json_config():
-            return self.talos_json_config['global']['talos_url']
+            return self.talos_json_config.get('global', {}).get('talos_repo', default_repo)
         else:
-            return self.config.get('talos_url')
+            return self.config.get('talos_repo', default_repo)
+
+    def query_talos_revision(self):
+        """Which talos revision do we want to use?
+        This needs to be overrideable by the talos json.
+        """
+        if self.query_talos_json_config():
+            return self.talos_json_config['global']['talos_revision']
+        else:
+            return self.config.get('talos_revision')
 
     def query_pagesets_url(self):
         """Certain suites require external pagesets to be downloaded and
@@ -378,9 +390,10 @@ class Talos(TestingMixin, MercurialScript):
     def _populate_webroot(self):
         """Populate the production test slaves' webroots"""
         c = self.config
-        talos_url = self.query_talos_url()
-        if not c.get('webroot') or not talos_url:
-            self.fatal("Both webroot and talos_url need to be set to populate_webroot!")
+        talos_repo = self.query_talos_repo()
+        talos_revision = self.query_talos_revision()
+        if not c.get('webroot') or not talos_repo:
+            self.fatal("Both webroot and talos_repo need to be set to populate_webroot!")
         self.info("Populating webroot %s..." % c['webroot'])
         talos_webdir = os.path.join(c['webroot'], 'talos')
         self.mkdir_p(c['webroot'], error_level=FATAL)
@@ -388,10 +401,10 @@ class Talos(TestingMixin, MercurialScript):
 
         # clone talos' repo
         repo = {
-            'repo': 'http://hg.mozilla.org/build/talos',
+            'repo': talos_repo,
             'vcs': 'hg',
             'dest': self.talos_path,
-            'revision': self.talos_json_config['global']['talos_revision']
+            'revision': talos_revision
             }
         self.vcs_checkout(**repo)
         self.has_cloned_talos = True
@@ -431,9 +444,9 @@ class Talos(TestingMixin, MercurialScript):
     # Action methods. {{{1
     # clobber defined in BaseScript
     # read_buildbot_config defined in BuildbotMixin
+    # download_and_extract defined in TestingMixin
 
-    def download_and_extract(self):
-        super(Talos, self).download_and_extract()
+    def clone_talos(self):
         c = self.config
         if not c.get('python_webserver', True) and c.get('populate_webroot'):
             self._populate_webroot()
