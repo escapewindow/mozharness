@@ -517,9 +517,8 @@ intree=1
             #if self.tooltool_fetch(manifest_path, output_dir=dirs['abs_work_dir']):
             #    self.fatal("Unable to download cvs history via tooltool!")
             # Temporary workaround
-            # TODO unhardcode
             self.copyfile(
-                "/home/asasaki/mozilla-cvs-history.tar.bz2",
+                self.config['cvs_history_tarball'],
                 os.path.join(dirs['abs_work_dir'], "mozilla-cvs-history.tar.bz2")
             )
             self.run_command(
