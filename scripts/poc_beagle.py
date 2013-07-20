@@ -691,6 +691,10 @@ intree=1
         dirs = self.query_abs_dirs()
         dest = dirs['abs_conversion_dir']
         repo_map = self._read_repo_update_json()
+        timestamp = int(time.time())
+        datetime = time.strftime('%Y-%m-%d %H:%M %Z')
+        repo_map['last_pull_timestamp'] = timestamp
+        repo_map['last_pull_datetime'] = datetime
         for repo_config in self.query_all_repos():
             repo_name = repo_config['repo_name']
             source = os.path.join(dirs['abs_source_dir'], repo_name)
@@ -710,7 +714,7 @@ intree=1
                     hg + ['bookmark', '-f', '-r', rev, target_branch],
                     cwd=dest
                 )
-                repo_map.setdefault(repo_name, {}).setdefault('branches', {})[branch] = {
+                repo_map.setdefault('repos').setdefault(repo_name, {}).setdefault('branches', {})[branch] = {
                     'hg_branch': branch,
                     'hg_revision': rev,
                     'git_branch': target_branch,
