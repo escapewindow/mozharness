@@ -559,6 +559,12 @@ intree=1
                                 dest="pre-cvs-mapfile", log_level=INFO)
 
     def prepend_cvs(self):
+        """ Prepend converted CVS history to the converted git repository,
+            then munge the branches with git-filter-branch-keep-rewrites
+            to adjust the shas.
+
+            This step can take on the order of a week of compute time.
+            """
         dirs = self.query_abs_dirs()
         git = self.query_exe('git', return_type='list')
         conversion_dir = dirs['abs_conversion_dir']
@@ -598,6 +604,10 @@ intree=1
         # This script is modified from git-filter-branch from git.
         # https://people.mozilla.com/~hwine/tmp/vcs2vcs/notes.html#initial-conversion
         # We may need to update this script if we update git.
+        # Currently, due to the way the script outputs (with \r but not \n),
+        # mozharness doesn't output anything for a number of ours.  This
+        # prevents using the output_timeout run_command() option (or, if we
+        # did, it would have to be many hours long).
         env = self.config.get('env', {})
         git_filter_branch = os.path.join(
             dirs['abs_repo_sync_tools_dir'],
@@ -624,6 +634,7 @@ intree=1
         )
         for branch in branch_list.splitlines():
             if branch.startswith('*'):
+                # specifically deal with |* master|
                 continue
             branch = branch.strip()
             self.run_command(
@@ -633,6 +644,7 @@ intree=1
                 cwd=git_conversion_dir,
                 halt_on_failure=True
             )
+            # tar backup after mid-prepend-cvs gd2 reboot in bug 894225.
             if os.path.exists(map_dir):
                 if self.config.get("backup_dir"):
                     self.run_command(
@@ -652,6 +664,14 @@ intree=1
         self.munge_mapfile()
 
     def fix_tags(self):
+        """ Fairly fast action that points each existing tag to the new
+            cvs-prepended sha.
+
+            Then we git gc to get rid of old shas.  This doesn't specifically
+            belong in this action, though it's the right spot in the workflow.
+            We have to gc to get rid of the <h<surkov email issue that
+            git-filter-branch-keep-rewrites gets rid of in the new shas.
+            """
         dirs = self.query_abs_dirs()
         git = self.query_exe("git", return_type="list")
         conversion_dir = dirs['abs_conversion_dir']
@@ -667,6 +687,8 @@ intree=1
         )
 
     def create_test_targets(self):
+        """ This action creates local directories to do test pushes to.
+            """
         dirs = self.query_abs_dirs()
         for repo_config in self.query_all_repos():
             for target_config in repo_config['targets']:
@@ -697,7 +719,9 @@ intree=1
             self._update_stage_repo(repo_config)
 
     def update_work_mirror(self):
-        """
+        """ Pull the latest changes into the work mirror, update the repo_map
+            json, and run |hg gexport| to convert those latest changes into
+            the git conversion repo.
             """
         hg = self.query_exe("hg", return_type="list")
         dirs = self.query_abs_dirs()
@@ -755,6 +779,9 @@ intree=1
         self.copy_to_upload_dir(generated_mapfile, dest="gecko-mapfile", log_level=INFO)
 
     def push(self):
+        """ Push to all targets.  test_targets are local directory test repos;
+            the rest are remote.  Updates the repo_map json.
+            """
         self.create_test_targets()
         repo_map = self._read_repo_update_json()
         failure_msg = ""
@@ -779,6 +806,8 @@ intree=1
             self.fatal("Unable to push these repos:\n%s" % failure_msg)
 
     def upload(self):
+        """ Upload the upload_dir according to teh upload_config.
+            """
         failure_msg = ''
         dirs = self.query_abs_dirs()
         for upload_config in self.config.get('upload_config', []):
@@ -795,6 +824,8 @@ intree=1
             self.fatal("Unable to upload to this location:\n%s" % failure_msg)
 
     def notify(self, message=None, fatal=False):
+        """ Email people in the notify_config (depending on status and failure_only)
+            """
         c = self.config
         subject = "Successful conversion for %s <EOM>" % c['conversion_dir']
         text = ''
