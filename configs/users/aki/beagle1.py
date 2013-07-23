@@ -162,7 +162,7 @@ config = {
 
     "virtualenv_modules": [
         "http://puppetagain.pub.build.mozilla.org/data/python/packages/hg-git-0.4.0-moz2.tar.gz",
-        "mercurial==2.2.1",
+        "mercurial==2.6.3",
         "http://puppetagain.pub.build.mozilla.org/data/python/packages/mapper-0.1.tar.gz",
         "mozprocess",
     ],
