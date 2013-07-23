@@ -647,6 +647,7 @@ intree=1
             # tar backup after mid-prepend-cvs gd2 reboot in bug 894225.
             if os.path.exists(map_dir):
                 if self.config.get("backup_dir"):
+                    self.mkdir_p(self.config['backup_dir'])
                     self.run_command(
                         ["tar", "cjvf",
                          os.path.join(self.config["backup_dir"],

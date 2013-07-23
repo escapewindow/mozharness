@@ -1,5 +1,6 @@
 import os
 import socket
+hostname = socket.gethostname()
 
 CVS_MANIFEST = """[{
 "size": 1301484692,
@@ -39,7 +40,7 @@ config = {
             "default": "master",
         },
     },
-    "backup_dir": "/mnt/netapp/github_sync/aki",
+    "backup_dir": "/mnt/netapp/github_sync/aki/%s" % hostname,
     "cvs_manifest": CVS_MANIFEST,
     "tooltool_servers": ["http://runtime-binaries.pvt.build.mozilla.org/tooltool/"],
     "cvs_history_tarball": "/home/asasaki/mozilla-cvs-history.tar.bz2",
@@ -175,7 +176,7 @@ config = {
         "remote_path": "/home/gituser/upload/beagle-upload",
     }],
 
-    "default_notify_from": "vcs2vcs@%s" % socket.gethostname(),
+    "default_notify_from": "vcs2vcs@%s" % hostname,
     "notify_config": [{
         "to": "aki@mozilla.com",
         "failure_only": False,
