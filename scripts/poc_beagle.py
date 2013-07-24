@@ -751,7 +751,7 @@ intree=1
                     hg + ['bookmark', '-f', '-r', rev, target_branch],
                     cwd=dest
                 )
-                repo_map.setdefault('repos').setdefault(repo_name, {}).setdefault('branches', {})[branch] = {
+                repo_map.setdefault('repos', {}).setdefault(repo_name, {}).setdefault('branches', {})[branch] = {
                     'hg_branch': branch,
                     'hg_revision': rev,
                     'git_branch': target_branch,
