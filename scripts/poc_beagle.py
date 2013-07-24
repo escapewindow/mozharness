@@ -807,7 +807,7 @@ intree=1
             self.fatal("Unable to push these repos:\n%s" % failure_msg)
 
     def upload(self):
-        """ Upload the upload_dir according to teh upload_config.
+        """ Upload the upload_dir according to the upload_config.
             """
         failure_msg = ''
         dirs = self.query_abs_dirs()
