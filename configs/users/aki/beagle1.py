@@ -89,6 +89,28 @@ config = {
             ],
         },
     }, {
+        "repo": "https://hg.mozilla.org/releases/mozilla-b2g18_v1_1_0_hd",
+        "revision": "default",
+        "repo_name": "mozilla-b2g18_v1_1_0_hd",
+        "targets": [{
+            "target_dest": "beagle/.git",
+            "vcs": "git",
+            "test_push": True,
+        }, {
+            "target_dest": "github-beagle",
+            "vcs": "git",
+        }],
+        "bare_checkout": True,
+        "vcs": "hg",
+        "branches": {
+            "default": "b2g18_v1_1_0_hd",
+        },
+        "tag_config": {
+            "tag_regexes": [
+                "^B2G_",
+            ],
+        },
+    }, {
         "repo": "https://hg.mozilla.org/releases/mozilla-b2g18_v1_0_1",
         "revision": "default",
         "repo_name": "mozilla-b2g18_v1_0_1",
