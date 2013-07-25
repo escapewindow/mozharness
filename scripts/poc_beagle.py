@@ -768,7 +768,6 @@ intree=1
             },
             error_level=FATAL,
         )
-        # TODO get git rev/branch data into the repo_map
         generated_mapfile = os.path.join(dest, '.hg', 'git-mapfile')
         for repo_config in self.query_all_repos():
             repo_name = repo_config['repo_name']
