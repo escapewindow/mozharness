@@ -176,6 +176,28 @@ config = {
                 "^B2G_",
             ],
         },
+    }, {
+        "repo": "https://hg.mozilla.org/releases/mozilla-beta",
+        "revision": "default",
+        "repo_name": "mozilla-beta",
+        "targets": [{
+            "target_dest": "beagle/.git",
+            "vcs": "git",
+            "test_push": True,
+        }, {
+            "target_dest": "github-beagle",
+            "vcs": "git",
+        }],
+        "bare_checkout": True,
+        "vcs": "hg",
+        "branches": {
+            "default": "beta",
+        },
+        "tag_config": {
+            "tag_regexes": [
+                "^B2G_",
+            ],
+        },
     }],
     "remote_targets": {
         "github-beagle": {
