@@ -195,7 +195,8 @@ config = {
         },
         "tag_config": {
             "tag_regexes": [
-                "^(B2G|FIREFOX|FENNEC|THUNDERBIRD|RELEASE_BASE|CALENDAR|SEAMONKEY)_",
+#                "^(B2G|FIREFOX|FENNEC|THUNDERBIRD|RELEASE_BASE|CALENDAR|SEAMONKEY)_",
+                "^B2G_",
             ],
         },
     }, {
@@ -205,15 +206,9 @@ config = {
         "targets": [{
             "target_dest": "beagle/.git",
             "vcs": "git",
-            "tag_config": {
-                "tags": {'*': '*'},
-            },
             "test_push": True,
         }, {
             "target_dest": "github-beagle",
-            "tag_config": {
-                "tags": {'*': '*'},
-            },
             "vcs": "git",
         }],
         "bare_checkout": True,
@@ -223,7 +218,8 @@ config = {
         },
         "tag_config": {
             "tag_regexes": [
-                "^(B2G|FIREFOX|FENNEC|THUNDERBIRD|RELEASE_BASE|CALENDAR|SEAMONKEY)_",
+#                "^(B2G|FIREFOX|FENNEC|THUNDERBIRD|RELEASE_BASE|CALENDAR|SEAMONKEY)_",
+                "^B2G_",
             ],
         },
     }, {
@@ -233,15 +229,9 @@ config = {
         "targets": [{
             "target_dest": "beagle/.git",
             "vcs": "git",
-            "tag_config": {
-                "tags": {'*': '*'},
-            },
             "test_push": True,
         }, {
             "target_dest": "github-beagle",
-            "tag_config": {
-                "tags": {'*': '*'},
-            },
             "vcs": "git",
         }],
         "bare_checkout": True,
@@ -251,7 +241,8 @@ config = {
         },
         "tag_config": {
             "tag_regexes": [
-                "^(B2G|FIREFOX|FENNEC|THUNDERBIRD|RELEASE_BASE|CALENDAR|SEAMONKEY)_",
+#                "^(B2G|FIREFOX|FENNEC|THUNDERBIRD|RELEASE_BASE|CALENDAR|SEAMONKEY)_",
+                "^B2G_",
             ],
         },
     }],
