@@ -195,7 +195,7 @@ config = {
         },
         "tag_config": {
             "tag_regexes": [
-                "^B2G_",
+                "^(B2G|FIREFOX|FENNEC|THUNDERBIRD|RELEASE_BASE|CALENDAR|SEAMONKEY)_",
             ],
         },
     }, {
@@ -217,7 +217,7 @@ config = {
         },
         "tag_config": {
             "tag_regexes": [
-                "^B2G_",
+                "^(B2G|FIREFOX|FENNEC|THUNDERBIRD|RELEASE_BASE|CALENDAR|SEAMONKEY)_",
             ],
         },
     }],
