@@ -205,15 +205,49 @@ config = {
         "targets": [{
             "target_dest": "beagle/.git",
             "vcs": "git",
+            "tag_config": {
+                "tags": {'*': '*'},
+            },
             "test_push": True,
         }, {
             "target_dest": "github-beagle",
+            "tag_config": {
+                "tags": {'*': '*'},
+            },
             "vcs": "git",
         }],
         "bare_checkout": True,
         "vcs": "hg",
         "branches": {
             "default": "release",
+        },
+        "tag_config": {
+            "tag_regexes": [
+                "^(B2G|FIREFOX|FENNEC|THUNDERBIRD|RELEASE_BASE|CALENDAR|SEAMONKEY)_",
+            ],
+        },
+    }, {
+        "repo": "https://hg.mozilla.org/releases/mozilla-esr17",
+        "revision": "default",
+        "repo_name": "mozilla-esr17",
+        "targets": [{
+            "target_dest": "beagle/.git",
+            "vcs": "git",
+            "tag_config": {
+                "tags": {'*': '*'},
+            },
+            "test_push": True,
+        }, {
+            "target_dest": "github-beagle",
+            "tag_config": {
+                "tags": {'*': '*'},
+            },
+            "vcs": "git",
+        }],
+        "bare_checkout": True,
+        "vcs": "hg",
+        "branches": {
+            "default": "esr17",
         },
         "tag_config": {
             "tag_regexes": [
