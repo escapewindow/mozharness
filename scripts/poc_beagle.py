@@ -6,7 +6,8 @@
 # ***** END LICENSE BLOCK *****
 """poc_beagle.py
 
-Proof of concept for multi-repo m-c hg<->gitmo conversions with cvs prepending.
+Multi-repo m-c hg->git conversions with cvs prepending, specifically for
+gecko.git and beagle support.
 """
 
 import mmap
