@@ -29,6 +29,7 @@ from optparse import OptionParser, Option, OptionGroup
 import os
 import sys
 import urllib2
+import socket
 import time
 try:
     import simplejson as json
@@ -144,21 +145,26 @@ def download_config_file(url, file_name):
     attempts = 5
     sleeptime = 60
     max_sleeptime = 5 * 60
-    while n < attempts:
+    while True:
+        if n >= attempts:
+            print "Failed to download from url %s after %d attempts, quiting..." % (url, attempts)
+            raise SystemError(-1)
         try:
-            contents = urllib2.urlopen(url).read()
+            contents = urllib2.urlopen(url, timeout=30).read()
             break
         except urllib2.URLError, e:
             print "Error downloading from url %s: %s" % (url, str(e))
-            print "Sleeping %d seconds before retrying" % sleeptime
-            time.sleep(sleeptime)
-            sleeptime = sleeptime * 2
-            if sleeptime > max_sleeptime:
-                sleeptime = max_sleeptime
-            n += 1
-    else:
-        print "Failed to download from url %s after %d attempts, quiting..." % (url, attempts)
-        raise SystemError(-1)
+        except socket.timeout, e:
+            print "Time out accessing %s: %s" % (url, str(e))
+        except socket.error, e:
+            print "Socket error when accessing %s: %s" % (url, str(e))
+        print "Sleeping %d seconds before retrying" % sleeptime
+        time.sleep(sleeptime)
+        sleeptime = sleeptime * 2
+        if sleeptime > max_sleeptime:
+            sleeptime = max_sleeptime
+        n += 1
+
     try:
         f = open(file_name, 'w')
         f.write(contents)
@@ -225,6 +231,11 @@ class BaseConfig(object):
         self.config_parser.add_option(
             "-c", "--config-file", "--cfg", action="extend", dest="config_files",
             type="string", help="Specify the config files"
+        )
+        self.config_parser.add_option(
+            "-C", "--opt-config-file", "--opt-cfg", action="extend",
+            dest="opt_config_files", type="string", default=[],
+            help="Specify the optional config files"
         )
 
         # Logging
@@ -345,14 +356,22 @@ class BaseConfig(object):
                 raise SystemExit(-1)
         else:
             config = {}
-            for cf in options.config_files:
-                if '://' in cf: # config file is an url
-                    file_name = os.path.basename(cf)
-                    file_path = os.path.join(os.getcwd(), file_name)
-                    download_config_file(cf, file_path)
-                    config.update(parse_config_file(file_path))
-                else:
-                    config.update(parse_config_file(cf))
+            # append opt_config to allow them to overwrite previous configs
+            all_config_files = options.config_files + options.opt_config_files
+            for cf in all_config_files:
+                try:
+                    if '://' in cf: # config file is an url
+                        file_name = os.path.basename(cf)
+                        file_path = os.path.join(os.getcwd(), file_name)
+                        download_config_file(cf, file_path)
+                        config.update(parse_config_file(file_path))
+                    else:
+                        config.update(parse_config_file(cf))
+                except Exception:
+                    if cf in options.opt_config_files:
+                        print("WARNING: optional config file not found %s" % cf)
+                    else:
+                        raise
             self.set_config(config)
         for key in defaults.keys():
             value = getattr(options, key)
