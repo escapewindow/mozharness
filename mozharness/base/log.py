@@ -335,9 +335,10 @@ class BaseLogger(object):
         for line in message.splitlines():
             self.logger.log(self.get_logger_level(level), line)
         if level == FATAL:
-            self.logger.log(FATAL_LEVEL, 'Exiting %d' % exit_code)
             if callable(post_fatal_callback):
+                self.logger.log(FATAL_LEVEL, "Running post_fatal callback...")
                 post_fatal_callback(message=message, exit_code=exit_code)
+            self.logger.log(FATAL_LEVEL, 'Exiting %d' % exit_code)
             raise SystemExit(exit_code)
 
 

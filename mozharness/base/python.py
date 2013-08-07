@@ -73,7 +73,7 @@ class VirtualenvMixin(object):
         super(VirtualenvMixin, self).__init__(*args, **kwargs)
 
     def register_virtualenv_module(self, name, url=None, method=None,
-            requirements=None, optional=False):
+                                   requirements=None, optional=False):
         """Register a module to be installed with the virtualenv.
 
         This method can be called up until create_virtualenv() to register
@@ -83,7 +83,7 @@ class VirtualenvMixin(object):
         applied.
         """
         self._virtualenv_modules.append((name, url, method, requirements,
-            optional))
+                                         optional))
 
     def query_virtualenv_path(self):
         c = self.config
@@ -244,7 +244,7 @@ class VirtualenvMixin(object):
                             cwd=dirs['abs_work_dir']) != 0:
             if optional:
                 self.warning("Unable to install optional package %s." %
-                    module_url)
+                             module_url)
             else:
                 self.fatal("Unable to install %s!" % module_url)
 
@@ -344,7 +344,7 @@ class VirtualenvMixin(object):
                                 install_method='pip')
         for module in modules:
             module_url = module
-            global_options= []
+            global_options = []
             if isinstance(module, dict):
                 if module.get('name', None):
                     module_name = module['name']
@@ -365,11 +365,13 @@ class VirtualenvMixin(object):
                                 requirements=requirements,
                                 global_options=global_options)
 
-        for module, url, method, requirements,optional in \
-            self._virtualenv_modules:
-            self.install_module(module=module, module_url=url,
+        for module, url, method, requirements, optional in \
+                self._virtualenv_modules:
+            self.install_module(
+                module=module, module_url=url,
                 install_method=method, requirements=requirements or (),
-                optional=optional)
+                optional=optional
+            )
 
         self.info("Done creating virtualenv %s." % venv_path)
 
@@ -400,9 +402,9 @@ class ResourceMonitoringMixin(object):
         super(ResourceMonitoringMixin, self).__init__(*args, **kwargs)
 
         self.register_virtualenv_module('psutil==0.7.1', method='pip',
-            optional=True)
+                                        optional=True)
         self.register_virtualenv_module('mozsystemmonitor==0.0.0',
-            method='pip', optional=True)
+                                        method='pip', optional=True)
         self._resource_monitor = None
 
     @PostScriptAction('create-virtualenv')
@@ -417,7 +419,7 @@ class ResourceMonitoringMixin(object):
             self._resource_monitor.start()
         except Exception:
             self.warning("Unable to start resource monitor: %s" %
-                traceback.format_exc())
+                         traceback.format_exc())
 
     @PreScriptAction
     def _resource_record_pre_action(self, action):
@@ -447,7 +449,7 @@ class ResourceMonitoringMixin(object):
             self._log_resource_usage()
         except Exception:
             self.warning("Exception when reporting resource usage: %s" %
-                traceback.format_exc())
+                         traceback.format_exc())
 
     def _log_resource_usage(self):
         rm = self._resource_monitor
@@ -472,13 +474,17 @@ class ResourceMonitoringMixin(object):
             # being fed into a 'f' formatter. This will help diagnose the
             # issue.
             try:
-                self.info(message.format(prefix=prefix, duration=duration,
-                    cpu_percent=cpu_percent, io_read_bytes=io.read_bytes,
-                    io_write_bytes=io.write_bytes, io_read_time=io.read_time,
-                    io_write_time=io.write_time))
+                self.info(
+                    message.format(
+                        prefix=prefix, duration=duration,
+                        cpu_percent=cpu_percent, io_read_bytes=io.read_bytes,
+                        io_write_bytes=io.write_bytes, io_read_time=io.read_time,
+                        io_write_time=io.write_time
+                    )
+                )
             except ValueError:
                 self.warning("Exception when formatting: %s" %
-                    traceback.format_exc())
+                             traceback.format_exc())
 
         cpu_percent, cpu_times, io = resources(None)
         duration = rm.end_time - rm.start_time
