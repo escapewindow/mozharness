@@ -267,10 +267,10 @@ config = {
 #    "find_links": ["http://puppetagain.pub.build.mozilla.org/data/python/packages/", ],
 
     "upload_config": [{
-        "ssh_key": "~/.ssh/spork1_rsa",
-        "ssh_user": "gituser",
-        "remote_host": "spork.escapewindow.com",
-        "remote_path": "/home/gituser/upload/beagle-upload",
+        "ssh_key": "~/.ssh/id_rsa",
+        "ssh_user": "asasaki",
+        "remote_host": "github-sync3",
+        "remote_path": "/home/asasaki/beagle1/beagle-upload",
     }],
 
     "default_notify_from": "vcs2vcs@%s" % hostname,
