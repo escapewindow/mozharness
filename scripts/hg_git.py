@@ -35,7 +35,7 @@ external_tools_path = os.path.join(
 
 from mozharness.base.errors import HgErrorList, GitErrorList, SSHErrorList, \
     TarErrorList
-from mozharness.base.log import INFO, FATAL
+from mozharness.base.log import INFO, ERROR, FATAL
 from mozharness.base.python import VirtualenvMixin, virtualenv_config_options
 from mozharness.base.transfer import TransferMixin
 from mozharness.base.vcs.vcsbase import VCSScript
@@ -835,11 +835,16 @@ intree=1
         """ Email people in the notify_config (depending on status and failure_only)
             """
         c = self.config
+        dirs = self.query_abs_dirs()
         subject = "Successful conversion for %s <EOM>" % c['conversion_dir']
         text = ''
         if fatal:
             subject = "Failed conversion for %s" % c['conversion_dir']
             text = message
+            error_log = os.path.join(dirs['abs_log_dir'], self.log_obj.log_files[ERROR])
+            contents = self.read_from_file(error_log)
+            if contents:
+                text += '\n\n' + contents
         for notify_config in c.get('notify_config', []):
             if not fatal and notify_config.get('failure_only'):
                 continue
