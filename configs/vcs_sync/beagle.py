@@ -257,6 +257,24 @@ config = {
             "default": "inbound",
         },
         "tag_config": {},
+    }, {
+        "repo": "https://hg.mozilla.org/integration/b2g-inbound",
+        "revision": "default",
+        "repo_name": "b2g-inbound",
+        "targets": [{
+            "target_dest": "beagle/.git",
+            "vcs": "git",
+            "test_push": True,
+        }, {
+            "target_dest": "github-beagle",
+            "vcs": "git",
+        }],
+        "bare_checkout": True,
+        "vcs": "hg",
+        "branches": {
+            "default": "b2g-inbound",
+        },
+        "tag_config": {},
     }],
     "remote_targets": {
         "github-beagle": {
