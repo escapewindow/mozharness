@@ -33,7 +33,8 @@ external_tools_path = os.path.join(
     'external_tools',
 )
 
-from mozharness.base.errors import HgErrorList, GitErrorList, TarErrorList
+from mozharness.base.errors import HgErrorList, GitErrorList, SSHErrorList, \
+    TarErrorList
 from mozharness.base.log import INFO, FATAL
 from mozharness.base.python import VirtualenvMixin, virtualenv_config_options
 from mozharness.base.transfer import TransferMixin
@@ -327,9 +328,9 @@ class HgGitScript(VirtualenvMixin, TooltoolMixin, TransferMixin, VCSScript):
                 command = git + ['push']
                 env = {}
                 if target_config.get("test_push"):
-                    target_dest = os.path.join(
+                    target_name = os.path.join(
                         dirs['abs_target_dir'], target_config['target_dest'])
-                    command.append(target_dest)
+                    command.append(target_name)
                 else:
                     target_name = target_config['target_dest']
                     remote_config = self.config.get('remote_targets', {}).get(target_name)
@@ -375,15 +376,19 @@ class HgGitScript(VirtualenvMixin, TooltoolMixin, TransferMixin, VCSScript):
                     kwargs={
                         'output_timeout': target_config.get("output_timeout", 30 * 60),
                         'cwd': os.path.join(conversion_dir, '.git'),
-                        'error_list': GitErrorList,
+                        'error_list': GitErrorList + SSHErrorList,
                         'partial_env': env,
                     },
                 ):
-                    self.error("Can't push %s to %s!" % (conversion_dir, target_dest))
-                    return_status = -1
+                    error_msg = "%s: Can't push %s to %s!" % (
+                        repo_config['repo_name'], conversion_dir, target_name)
+                    self.error(error_msg)
+                    return_status = error_msg
             else:
-                self.error("Don't know how to deal with vcs %s!" % target_config['vcs'])
-                return_status = -2
+                error_msg = "%s: Don't know how to deal with vcs %s!" % (
+                    target_config['target_dest'], target_config['vcs'])
+                self.error(error_msg)
+                return_status = error_msg
                 # TODO hg
         return return_status
 
@@ -794,12 +799,13 @@ intree=1
         for repo_config in self.query_all_repos():
             timestamp = int(time.time())
             datetime = time.strftime('%Y-%m-%d %H:%M %Z')
-            if self._push_repo(repo_config) == 0:
+            status = self._push_repo(repo_config)
+            if status == 0:
                 repo_name = repo_config['repo_name']
                 repo_map.setdefault('repos', {}).setdefault(repo_name, {})['push_timestamp'] = timestamp
                 repo_map['repos'][repo_name]['push_datetime'] = datetime
             else:
-                failure_msg += "  %s\n" % repo_config['repo_name']
+                failure_msg += status
         if not failure_msg:
             repo_map['last_successful_push_timestamp'] = repo_map['last_push_timestamp']
             repo_map['last_successful_push_datetime'] = repo_map['last_push_datetime']
