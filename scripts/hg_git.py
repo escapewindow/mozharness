@@ -836,10 +836,10 @@ intree=1
             """
         c = self.config
         dirs = self.query_abs_dirs()
-        subject = "Successful conversion for %s <EOM>" % c['conversion_dir']
+        subject = "[vcs2vcs] Successful conversion for %s <EOM>" % c['conversion_dir']
         text = ''
         if fatal:
-            subject = "Failed conversion for %s" % c['conversion_dir']
+            subject = "[vcs2vcs] Failed conversion for %s" % c['conversion_dir']
             text = message
             error_log = os.path.join(dirs['abs_log_dir'], self.log_obj.log_files[ERROR])
             contents = self.read_from_file(error_log)
