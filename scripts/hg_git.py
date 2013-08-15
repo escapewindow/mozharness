@@ -10,6 +10,7 @@ Multi-repo m-c hg->git conversions with cvs prepending, specifically for
 gecko.git and beagle support.
 """
 
+from copy import deepcopy
 import mmap
 import os
 import re
@@ -133,7 +134,7 @@ class HgGitScript(VirtualenvMixin, TooltoolMixin, TransferMixin, VCSScript):
         """ Very simple method, but we need this concatenated list many times
             throughout the script.
             """
-        return [self.config['initial_repo']] + self.config['conversion_repos']
+        return [self.config['initial_repo']] + list(self.config['conversion_repos'])
 
     def _update_stage_repo(self, repo_config, retry=True, clobber=False):
         """ Update a stage repo.
@@ -462,7 +463,7 @@ class HgGitScript(VirtualenvMixin, TooltoolMixin, TransferMixin, VCSScript):
         hg = self.query_exe("hg", return_type="list")
         git = self.query_exe("git", return_type="list")
         dirs = self.query_abs_dirs()
-        repo_config = self.config['initial_repo']
+        repo_config = deepcopy(self.config['initial_repo'])
         work_dest = dirs['abs_conversion_dir']
         source_dest = os.path.join(
             dirs['abs_source_dir'], repo_config['repo_name'])
@@ -516,7 +517,7 @@ intree=1
             """
         hg = self.query_exe("hg", return_type="list")
         dirs = self.query_abs_dirs()
-        repo_config = self.config['initial_repo']
+        repo_config = deepcopy(self.config['initial_repo'])
         source = os.path.join(dirs['abs_source_dir'], repo_config['repo_name'])
         dest = dirs['abs_conversion_dir']
         # bookmark all the branches in the repo_config, potentially
@@ -609,7 +610,7 @@ intree=1
         # mozharness doesn't output anything for a number of ours.  This
         # prevents using the output_timeout run_command() option (or, if we
         # did, it would have to be many hours long).
-        env = self.config.get('env', {})
+        env = deepcopy(self.config.get('env', {}))
         git_filter_branch = os.path.join(
             dirs['abs_repo_sync_tools_dir'],
             'git-filter-branch-keep-rewrites'
