@@ -275,6 +275,24 @@ config = {
             "default": "b2g-inbound",
         },
         "tag_config": {},
+    }, {
+        "repo": "https://hg.mozilla.org/integration/fx-team",
+        "revision": "default",
+        "repo_name": "fx-team",
+        "targets": [{
+            "target_dest": "beagle/.git",
+            "vcs": "git",
+            "test_push": True,
+        }, {
+            "target_dest": "github-beagle",
+            "vcs": "git",
+        }],
+        "bare_checkout": True,
+        "vcs": "hg",
+        "branches": {
+            "default": "fx-team",
+        },
+        "tag_config": {},
     }],
     "remote_targets": {
         "github-beagle": {
