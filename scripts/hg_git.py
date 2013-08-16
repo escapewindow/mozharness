@@ -33,8 +33,7 @@ external_tools_path = os.path.join(
     'external_tools',
 )
 
-from mozharness.base.errors import HgErrorList, GitErrorList, SSHErrorList, \
-    TarErrorList
+from mozharness.base.errors import HgErrorList, GitErrorList, TarErrorList
 from mozharness.base.log import INFO, ERROR, FATAL
 from mozharness.base.python import VirtualenvMixin, virtualenv_config_options
 from mozharness.base.transfer import TransferMixin
@@ -376,7 +375,7 @@ class HgGitScript(VirtualenvMixin, TooltoolMixin, TransferMixin, VCSScript):
                     kwargs={
                         'output_timeout': target_config.get("output_timeout", 30 * 60),
                         'cwd': os.path.join(conversion_dir, '.git'),
-                        'error_list': GitErrorList + SSHErrorList,
+                        'error_list': GitErrorList,
                         'partial_env': env,
                     },
                 ):
