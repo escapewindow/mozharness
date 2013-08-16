@@ -804,7 +804,7 @@ intree=1
                 repo_map.setdefault('repos', {}).setdefault(repo_name, {})['push_timestamp'] = timestamp
                 repo_map['repos'][repo_name]['push_datetime'] = datetime
             else:
-                failure_msg += status
+                failure_msg += status + "\n"
         if not failure_msg:
             repo_map['last_successful_push_timestamp'] = repo_map['last_push_timestamp']
             repo_map['last_successful_push_datetime'] = repo_map['last_push_datetime']
