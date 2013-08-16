@@ -4,7 +4,7 @@
 # License, v. 2.0. If a copy of the MPL was not distributed with this file,
 # You can obtain one at http://mozilla.org/MPL/2.0/.
 # ***** END LICENSE BLOCK *****
-"""poc_beagle.py
+"""hg_git.py
 
 Multi-repo m-c hg->git conversions with cvs prepending, specifically for
 gecko.git and beagle support.
