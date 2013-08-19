@@ -348,25 +348,6 @@ config = {
         "failure_only": False,
     }],
 
-    ## .ssh/config
-    #Host git.m.o
-    #    HostName git.mozilla.org
-    #    IdentityFile $HOME/.ssh/vcs-sync_rsa
-    #    User vcs-sync@mozilla.com
-    #Host hg.m.o
-    #    HostName hg.mozilla.org
-    #    IdentityFile $HOME/.ssh/vcs-sync_rsa
-    #    User vcs-sync@mozilla.com
-    #Host mirror_writer
-    #    # staging server
-    #    HostName git1.stage.dmz.scl3.mozilla.com
-    #    User gitolite
-    #Host *
-    #    # avoid disconnects on large pushes
-    #    ServerAliveInterval 300
-    #
-    # _ known_hosts will have to be prepopulated.
-
     # Disallow sharing.  We may need a better way of doing this.
     "vcs_share_base": None,
     "hg_share_base": None,
