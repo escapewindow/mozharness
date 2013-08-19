@@ -333,6 +333,7 @@ config = {
         "http://releng-puppet2.build.scl1.mozilla.com/python/packages/",
         "http://puppetagain.pub.build.mozilla.org/data/python/packages/",
     ],
+#    "pip_index": False,
 
     "upload_config": [{
         "ssh_key": "~/.ssh/id_rsa",
