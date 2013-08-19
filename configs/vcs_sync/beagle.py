@@ -313,12 +313,26 @@ config = {
     },
 
     "virtualenv_modules": [
-        "http://puppetagain.pub.build.mozilla.org/data/python/packages/hg-git-0.4.0-moz2.tar.gz",
+        "bottle==0.11.6",
+        "dulwich==1.9.0",
+        "ordereddict==3.1",
+        "hg-git==0.4.0-moz2",
+        "mapper==0.1",
         "mercurial==2.6.3",
-        "http://puppetagain.pub.build.mozilla.org/data/python/packages/mapper-0.1.tar.gz",
-        "mozprocess",
+        "mozfile==0.9",
+        "mozinfo==0.5",
+        "mozprocess==0.11",
     ],
-#    "find_links": ["http://puppetagain.pub.build.mozilla.org/data/python/packages/", ],
+    "find_links": [
+        "http://releng-puppet2.srv.releng.use1.mozilla.com/python/packages/",
+        "http://releng-puppet1.srv.releng.use1.mozilla.com/python/packages/",
+        "http://releng-puppet2.build.mtv1.mozilla.com/python/packages/",
+        "http://releng-puppet2.srv.releng.usw2.mozilla.com/python/packages/",
+        "http://releng-puppet1.srv.releng.usw2.mozilla.com/python/packages/",
+        "http://releng-puppet2.srv.releng.scl3.mozilla.com/python/packages/",
+        "http://releng-puppet2.build.scl1.mozilla.com/python/packages/",
+        "http://puppetagain.pub.build.mozilla.org/data/python/packages/",
+    ],
 
     "upload_config": [{
         "ssh_key": "~/.ssh/id_rsa",
