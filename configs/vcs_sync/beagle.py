@@ -330,10 +330,7 @@ config = {
     "default_notify_from": "vcs2vcs@%s" % hostname,
     "notify_config": [{
         "to": "aki@mozilla.com",
-        "failure_only": True,
-    }, {
-        "to": "aki@escapewindow.com",
-        "failure_only": True,
+        "failure_only": False,
     }],
 
     ## .ssh/config
