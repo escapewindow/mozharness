@@ -315,7 +315,7 @@ config = {
     "virtualenv_modules": [
         "bottle==0.11.6",
         "dulwich==0.9.0",
-        "ordereddict==3.1",
+        "ordereddict==1.1",
         "hg-git==0.4.0-moz2",
         "mapper==0.1",
         "mercurial==2.6.3",
