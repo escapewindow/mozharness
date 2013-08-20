@@ -17,6 +17,7 @@ config = {
         "repo": "https://hg.mozilla.org/users/hwine_mozilla.com/repo-sync-tools",
         "vcs": "hg",
     }],
+    "job_name": "beagle",
     "conversion_dir": "beagle",
     "initial_repo": {
         "repo": "https://hg.mozilla.org/mozilla-central",
