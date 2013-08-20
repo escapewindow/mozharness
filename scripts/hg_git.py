@@ -326,6 +326,8 @@ class HgGitScript(VirtualenvMixin, TooltoolMixin, TransferMixin, VCSScript):
             if target_config.get("vcs", "git") == "git":
                 command = git + ['push']
                 env = {}
+                if target_config.get("force_push"):
+                    command.append("-f")
                 if target_config.get("test_push"):
                     target_name = os.path.join(
                         dirs['abs_target_dir'], target_config['target_dest'])

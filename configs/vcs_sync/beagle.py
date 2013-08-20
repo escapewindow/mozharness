@@ -33,6 +33,7 @@ config = {
             "target_dest": "m-c1/.git",
             "vcs": "git",
             "test_push": True,
+            "force_push": True,
         }],
         "bare_checkout": True,
         "vcs": "hg",
