@@ -844,13 +844,15 @@ intree=1
         job_name = c.get('job_name', c.get('conversion_dir', os.getcwd()))
         subject = "[vcs2vcs] Successful conversion for %s <EOM>" % job_name
         text = ''
+        error_log = os.path.join(dirs['abs_log_dir'], self.log_obj.log_files[ERROR])
+        error_contents = self.read_from_file(error_log)
         if fatal:
             subject = "[vcs2vcs] Failed conversion for %s" % job_name
-            text = message
-            error_log = os.path.join(dirs['abs_log_dir'], self.log_obj.log_files[ERROR])
-            contents = self.read_from_file(error_log)
-            if contents:
-                text += '\n\n' + contents
+            text = message + '\n\n'
+        elif error_contents:
+            text += 'Error log is non-zero!'
+        if error_contents:
+            text += '\n\n' + error_contents
         for notify_config in c.get('notify_config', []):
             if not fatal and notify_config.get('failure_only'):
                 continue
