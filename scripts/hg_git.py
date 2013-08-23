@@ -324,7 +324,9 @@ class HgGitScript(VirtualenvMixin, TooltoolMixin, TransferMixin, VCSScript):
             """
         dirs = self.query_abs_dirs()
         conversion_dir = dirs['abs_conversion_dir']
+        source_dir = os.path.join(dirs['abs_source_dir'], repo_config['repo_name'])
         git = self.query_exe('git', return_type='list')
+        hg = self.query_exe('hg', return_type='list')
         return_status = 0
         for target_config in repo_config['targets']:
             if target_config.get("vcs", "git") == "git":
@@ -349,20 +351,28 @@ class HgGitScript(VirtualenvMixin, TooltoolMixin, TransferMixin, VCSScript):
                 # If we specify that subset, we can also specify different
                 # names for those branches (e.g. b2g18 -> master for a
                 # standalone b2g18 repo)
-# TODO query hg for these!!!
+                # We query hg for these because the conversion dir will have
+                # branches from multiple hg repos, and the regexes may match
+                # too many things.
                 branch_map = self.query_branches(
                     target_config.get('branch_config', repo_config.get('branch_config', {})),
-                    conversion_dir,
-                    vcs='git',
+                    source_dir,
                 )
+                # If the target_config has a branch_config, the key is the
+                # local git branch and the value is the target git branch.
                 if target_config.get("branch_config"):
                     for (branch, target_branch) in branch_map.items():
                         command += ['+refs/heads/%s:refs/heads/%s' % (branch, target_branch)]
+                # Otherwise the key is the hg branch and the value is the git
+                # branch; use the git branch for both local and target git
+                # branch names.
                 else:
-                    for (branch, target_branch) in branch_map.items():
-                        command += ['+refs/heads/%s:refs/heads/%s' % (target_branch, target_branch)]
+                    for (hg_branch, git_branch) in branch_map.items():
+                        command += ['+refs/heads/%s:refs/heads/%s' % (git_branch, git_branch)]
                 # Allow for pushing a subset of tags to the target, via name or
-                # regex.
+                # regex.  Again, query hg for this list because the conversion
+                # dir will contain tags from multiple hg repos, and the regexes
+                # may match too many things.
                 tag_config = target_config.get('tag_config', repo_config.get('tag_config', {}))
                 if tag_config.get('tags'):
                     for (tag, target_tag) in tag_config['tags'].items():
@@ -372,8 +382,8 @@ class HgGitScript(VirtualenvMixin, TooltoolMixin, TransferMixin, VCSScript):
                     for regex in tag_config['tag_regexes']:
                         regex_list.append(re.compile(regex))
                     tag_list = self.get_output_from_command(
-                        git + ['tag', '-l'],
-                        cwd=os.path.join(conversion_dir, '.git')
+                        hg + ['tags'],
+                        cwd=source_dir,
                     )
                     for tag_name in tag_list:
                         for regex in regex_list:
