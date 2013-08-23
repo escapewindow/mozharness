@@ -349,11 +349,17 @@ class HgGitScript(VirtualenvMixin, TooltoolMixin, TransferMixin, VCSScript):
                 # If we specify that subset, we can also specify different
                 # names for those branches (e.g. b2g18 -> master for a
                 # standalone b2g18 repo)
-                if target_config.get("branches"):
-                    for (branch, target_branch) in target_config['branches'].items():
+# TODO query hg for these!!!
+                branch_map = self.query_branches(
+                    target_config.get('branch_config', repo_config.get('branch_config', {})),
+                    conversion_dir,
+                    vcs='git',
+                )
+                if target_config.get("branch_config"):
+                    for (branch, target_branch) in branch_map.items():
                         command += ['+refs/heads/%s:refs/heads/%s' % (branch, target_branch)]
                 else:
-                    for (branch, target_branch) in repo_config.get('branches', {}).items():
+                    for (branch, target_branch) in branch_map.items():
                         command += ['+refs/heads/%s:refs/heads/%s' % (target_branch, target_branch)]
                 # Allow for pushing a subset of tags to the target, via name or
                 # regex.
@@ -394,7 +400,6 @@ class HgGitScript(VirtualenvMixin, TooltoolMixin, TransferMixin, VCSScript):
                     target_config['target_dest'], target_config['vcs'])
                 self.error(error_msg)
                 return_status = error_msg
-                # TODO hg
         return return_status
 
     def _query_mapped_revision(self, revision=None, mapfile=None):
@@ -453,6 +458,44 @@ class HgGitScript(VirtualenvMixin, TooltoolMixin, TransferMixin, VCSScript):
             create_parent_dir=True
         )
 
+    def query_branches(self, branch_config, repo_path, vcs='hg'):
+        """ Given a branch_config of branches and branch_regexes, return
+            a dict of existing branch names to target branch names.
+            """
+        branch_map = {}
+        if "branches" in branch_config:
+            branch_map = deepcopy(branch_config['branches'])
+        if "branch_regexes" in branch_config:
+            regex_list = list(branch_config['branch_regexes'])
+            full_branch_list = []
+            if vcs == 'hg':
+                hg = self.query_exe("hg", return_type="list")
+                # This assumes we always want closed branches as well.
+                # If not we may need more options.
+                output = self.get_output_from_command(
+                    hg + ['branches', '-a'],
+                    cwd=repo_path
+                )
+                if output:
+                    for line in output.splitlines():
+                        full_branch_list.append(line.split()[0])
+            elif vcs == 'git':
+                git = self.query_exe("git", return_type="list")
+                output = self.get_output_from_command(
+                    git + ['branch', '-l'],
+                    cwd=repo_path
+                )
+                if output:
+                    for line in output.splitlines():
+                        full_branch_list.append(line.replace('*', '').split()[0])
+            for regex in regex_list:
+                for branch in full_branch_list:
+                    m = re.search(regex, branch)
+                    if m:
+                        # Don't overwrite branch_map[branch] if it exists
+                        branch_map.setdefault(branch, branch)
+        return branch_map
+
     # Actions {{{1
     def create_stage_mirror(self):
         """ Rather than duplicate the logic here and in update_stage_mirror(),
@@ -469,7 +512,6 @@ class HgGitScript(VirtualenvMixin, TooltoolMixin, TransferMixin, VCSScript):
         """ Create the work_mirror, initial_repo only, from the stage_mirror.
             This is where the conversion will occur.
             """
-        # TODO share logic with update_work_mirror?
         hg = self.query_exe("hg", return_type="list")
         git = self.query_exe("git", return_type="list")
         dirs = self.query_abs_dirs()
@@ -532,7 +574,9 @@ intree=1
         dest = dirs['abs_conversion_dir']
         # bookmark all the branches in the repo_config, potentially
         # renaming them.
-        for (branch, target_branch) in repo_config.get('branches', {}).items():
+        # This follows a slightly different workflow than elsewhere; I don't
+        # want to fiddle with this logic more than I have to.
+        for (branch, target_branch) in repo_config.get('branch_config', {}).get('branches', {}).items():
             output = self.get_output_from_command(
                 hg + ['id', '-r', branch], cwd=dest)
             if output:
@@ -714,7 +758,6 @@ intree=1
                         self.init_git_repo(target_dest, additional_args=['--bare'])
                     else:
                         self.fatal("Don't know how to deal with vcs %s!" % target_config['vcs'])
-                        # TODO hg
                 else:
                     self.debug("%s exists; skipping." % target_dest)
 
@@ -747,7 +790,12 @@ intree=1
         for repo_config in self.query_all_repos():
             repo_name = repo_config['repo_name']
             source = os.path.join(dirs['abs_source_dir'], repo_name)
-            for (branch, target_branch) in repo_config.get('branches', {}).items():
+            # Build branch map.
+            branch_map = self.query_branches(
+                repo_config.get('branch_config', {}),
+                source,
+            )
+            for (branch, target_branch) in branch_map.items():
                 output = self.get_output_from_command(
                     hg + ['id', '-r', branch],
                     cwd=source
@@ -763,6 +811,7 @@ intree=1
                     hg + ['bookmark', '-f', '-r', rev, target_branch],
                     cwd=dest
                 )
+                # This might get a little large.
                 repo_map.setdefault('repos', {}).setdefault(repo_name, {}).setdefault('branches', {})[branch] = {
                     'hg_branch': branch,
                     'hg_revision': rev,
@@ -783,7 +832,12 @@ intree=1
         generated_mapfile = os.path.join(dest, '.hg', 'git-mapfile')
         for repo_config in self.query_all_repos():
             repo_name = repo_config['repo_name']
-            for (branch, target_branch) in repo_config.get('branches', {}).items():
+            branch_map = self.query_branches(
+                repo_config.get('branch_config', {}),
+                dest,
+                vcs='git',
+            )
+            for (branch, target_branch) in branch_map.items():
                 git_revision = self._query_mapped_revision(
                     revision=rev, mapfile=generated_mapfile)
                 repo_map['repos'][repo_name]['branches'][branch]['git_revision'] = git_revision

@@ -38,8 +38,10 @@ config = {
         }],
         "bare_checkout": True,
         "vcs": "hg",
-        "branches": {
-            "default": "master",
+        "branch_config": {
+            "branches": {
+                "default": "master",
+            },
         },
     },
     "backup_dir": "/mnt/netapp/github_sync/aki/%s" % hostname,
@@ -70,14 +72,18 @@ config = {
             "target_dest": "m-b2g18/.git",
             "vcs": "git",
             "test_push": True,
-            "branches": {
-                "b2g18": "master",
+            "branch_config": {
+                "branches": {
+                    "b2g18": "master",
+                },
             },
         }],
         "bare_checkout": True,
         "vcs": "hg",
-        "branches": {
-            "default": "b2g18",
+        "branch_config": {
+            "branches": {
+                "default": "b2g18",
+            },
         },
         "tag_config": {
             "tag_regexes": [
@@ -98,8 +104,10 @@ config = {
         }],
         "bare_checkout": True,
         "vcs": "hg",
-        "branches": {
-            "default": "b2g18_v1_1_0_hd",
+        "branch_config": {
+            "branches": {
+                "default": "b2g18_v1_1_0_hd",
+            },
         },
         "tag_config": {
             "tag_regexes": [
@@ -120,8 +128,10 @@ config = {
         }],
         "bare_checkout": True,
         "vcs": "hg",
-        "branches": {
-            "default": "b2g18_v1_0_1",
+        "branch_config": {
+            "branches": {
+                "default": "b2g18_v1_0_1",
+            },
         },
         "tag_config": {
             "tag_regexes": [
@@ -142,8 +152,10 @@ config = {
         }],
         "bare_checkout": True,
         "vcs": "hg",
-        "branches": {
-            "default": "b2g18_v1_0_0",
+        "branch_config": {
+            "branches": {
+                "default": "b2g18_v1_0_0",
+            },
         },
         "tag_config": {
             "tag_regexes": [
@@ -164,8 +176,10 @@ config = {
         }],
         "bare_checkout": True,
         "vcs": "hg",
-        "branches": {
-            "default": "aurora",
+        "branch_config": {
+            "branches": {
+                "default": "aurora",
+            },
         },
         "tag_config": {
             "tag_regexes": [
@@ -186,8 +200,10 @@ config = {
         }],
         "bare_checkout": True,
         "vcs": "hg",
-        "branches": {
-            "default": "beta",
+        "branch_config": {
+            "branches": {
+                "default": "beta",
+            },
         },
         "tag_config": {
             "tag_regexes": [
@@ -209,8 +225,10 @@ config = {
         }],
         "bare_checkout": True,
         "vcs": "hg",
-        "branches": {
-            "default": "release",
+        "branch_config": {
+            "branches": {
+                "default": "release",
+            },
         },
         "tag_config": {
             "tag_regexes": [
@@ -232,8 +250,10 @@ config = {
         }],
         "bare_checkout": True,
         "vcs": "hg",
-        "branches": {
-            "default": "esr17",
+        "branch_config": {
+            "branches": {
+                "default": "esr17",
+            },
         },
         "tag_config": {
             "tag_regexes": [
@@ -255,8 +275,10 @@ config = {
         }],
         "bare_checkout": True,
         "vcs": "hg",
-        "branches": {
-            "default": "inbound",
+        "branch_config": {
+            "branches": {
+                "default": "inbound",
+            },
         },
         "tag_config": {},
     }, {
@@ -273,8 +295,10 @@ config = {
         }],
         "bare_checkout": True,
         "vcs": "hg",
-        "branches": {
-            "default": "b2g-inbound",
+        "branch_config": {
+            "branches": {
+                "default": "b2g-inbound",
+            },
         },
         "tag_config": {},
     }, {
@@ -291,8 +315,10 @@ config = {
         }],
         "bare_checkout": True,
         "vcs": "hg",
-        "branches": {
-            "default": "fx-team",
+        "branch_config": {
+            "branches": {
+                "default": "fx-team",
+            },
         },
         "tag_config": {},
     }],
