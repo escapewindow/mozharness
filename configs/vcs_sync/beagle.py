@@ -347,7 +347,7 @@ config = {
     "default_notify_from": "vcs2vcs@%s" % hostname,
     "notify_config": [{
         "to": "aki@mozilla.com",
-        "failure_only": False,
+        "failure_only": True,
     }],
 
     # Disallow sharing.  We may need a better way of doing this.
