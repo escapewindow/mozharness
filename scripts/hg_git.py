@@ -377,7 +377,7 @@ class HgGitScript(VirtualenvMixin, TooltoolMixin, TransferMixin, VCSScript):
                 if tag_config.get('tags'):
                     for (tag, target_tag) in tag_config['tags'].items():
                         command += ['+refs/tags/%s:refs/tags/%s' % (tag, target_tag)]
-                elif tag_config.get('tag_regexes'):
+                if tag_config.get('tag_regexes'):
                     regex_list = []
                     for regex in tag_config['tag_regexes']:
                         regex_list.append(re.compile(regex))
@@ -388,7 +388,7 @@ class HgGitScript(VirtualenvMixin, TooltoolMixin, TransferMixin, VCSScript):
                     for tag_name in tag_list:
                         for regex in regex_list:
                             if regex.search(tag_name) is not None:
-                                command += ['tag', tag_name]
+                                command += ['+refs/tags/%s:refs/tags/%s', (tag_name, tag_name)]
                                 continue
                 # Do the push, with retry!
                 if self.retry(
