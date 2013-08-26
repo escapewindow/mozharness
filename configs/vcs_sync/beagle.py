@@ -362,6 +362,7 @@ config = {
         "mozprocess==0.11",
     ],
     "find_links": [
+        "http://puppetagain.pub.build.mozilla.org/data/python/packages/",
         "http://releng-puppet2.srv.releng.use1.mozilla.com/python/packages/",
         "http://releng-puppet1.srv.releng.use1.mozilla.com/python/packages/",
         "http://releng-puppet2.build.mtv1.mozilla.com/python/packages/",
@@ -369,7 +370,6 @@ config = {
         "http://releng-puppet1.srv.releng.usw2.mozilla.com/python/packages/",
         "http://releng-puppet2.srv.releng.scl3.mozilla.com/python/packages/",
         "http://releng-puppet2.build.scl1.mozilla.com/python/packages/",
-        "http://puppetagain.pub.build.mozilla.org/data/python/packages/",
     ],
     "pip_index": False,
 

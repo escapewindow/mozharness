@@ -842,10 +842,11 @@ intree=1
         generated_mapfile = os.path.join(dest, '.hg', 'git-mapfile')
         for repo_config in self.query_all_repos():
             repo_name = repo_config['repo_name']
+            source = os.path.join(dirs['abs_source_dir'], repo_name)
             branch_map = self.query_branches(
                 repo_config.get('branch_config', {}),
-                dest,
-                vcs='git',
+                source,
+                vcs='hg',
             )
             for (branch, target_branch) in branch_map.items():
                 git_revision = self._query_mapped_revision(
