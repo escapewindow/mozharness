@@ -204,11 +204,15 @@ config = {
             "branches": {
                 "default": "beta",
             },
+            "branch_regexes": [
+                "^GECKO[0-9_]*RELBRANCH$",
+                "^MOBILE[0-9_]*RELBRANCH$",
+            ],
         },
         "tag_config": {
             "tag_regexes": [
-#                "^(B2G|FIREFOX|FENNEC|THUNDERBIRD|RELEASE_BASE|CALENDAR|SEAMONKEY)_",
-                "^B2G_",
+                "^(B2G|FIREFOX|FENNEC|THUNDERBIRD|RELEASE_BASE|CALENDAR|SEAMONKEY)_",
+#                "^B2G_",
             ],
         },
     }, {
@@ -324,7 +328,7 @@ config = {
     }],
     "remote_targets": {
         "github-beagle": {
-            "repo": "git@github.com:escapewindow/test-beagle.git",
+            "repo": "git@github.com:escapewindow/test-beagle2.git",
             "ssh_key": "~/.ssh/github1_rsa",
             "vcs": "git",
         },
