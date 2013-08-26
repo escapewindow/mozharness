@@ -66,7 +66,9 @@ config = {
             "target_dest": "github-beagle",
             "vcs": "git",
             "tag_config": {
-                "tags": {'*': '*'},
+                "tag_regexes": [
+                    "^B2G_",
+                ],
             },
         }, {
             "target_dest": "m-b2g18/.git",
@@ -233,11 +235,15 @@ config = {
             "branches": {
                 "default": "release",
             },
+            "branch_regexes": [
+                "^GECKO[0-9_]*RELBRANCH$",
+                "^MOBILE[0-9_]*RELBRANCH$",
+            ],
         },
         "tag_config": {
             "tag_regexes": [
-#                "^(B2G|FIREFOX|FENNEC|THUNDERBIRD|RELEASE_BASE|CALENDAR|SEAMONKEY)_",
-                "^B2G_",
+                "^(B2G|RELEASE_BASE)_",
+                "^(FIREFOX|FENNEC)[0-9_b]*BUILD\d+",
             ],
         },
     }, {
