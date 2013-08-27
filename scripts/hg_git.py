@@ -385,7 +385,7 @@ class HgGitScript(VirtualenvMixin, TooltoolMixin, TransferMixin, VCSScript):
                         hg + ['tags'],
                         cwd=source_dir,
                     )
-                    for tag_line in tag_list:
+                    for tag_line in tag_list.splitlines():
                         if not tag_line:
                             continue
                         tag_parts = tag_line.split()
