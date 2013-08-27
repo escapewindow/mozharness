@@ -25,7 +25,18 @@ config = {
     "xpcshell_name": XPCSHELL_NAME,
     "virtualenv_path": 'venv',
     "virtualenv_python_dll": os.path.join(os.path.dirname(sys.executable), "python27.dll"),
-    "simplejson_url": "http://repos/python/packages/simplejson-2.1.3.tar.gz",
+    "find_links": [
+        "http://repos/python/packages",
+        "http://releng-puppet2.srv.releng.use1.mozilla.com/python/packages/",
+        "http://releng-puppet1.srv.releng.use1.mozilla.com/python/packages/",
+        "http://releng-puppet2.build.mtv1.mozilla.com/python/packages/",
+        "http://releng-puppet2.srv.releng.usw2.mozilla.com/python/packages/",
+        "http://releng-puppet1.srv.releng.usw2.mozilla.com/python/packages/",
+        "http://releng-puppet2.srv.releng.scl3.mozilla.com/python/packages/",
+        "http://releng-puppet2.build.scl1.mozilla.com/python/packages/",
+        "http://puppetagain.pub.build.mozilla.org/data/python/packages/",
+    ],
+    "pip_index": False,
     "run_file_names": {
         "mochitest": "runtests.py",
         "reftest": "runreftest.py",
@@ -122,4 +133,7 @@ config = {
     "minidump_stackwalk_path": "%(abs_work_dir)s/tools/breakpad/win32/minidump_stackwalk.exe",
     "minidump_save_path": "%(abs_work_dir)s/../minidumps",
     "buildbot_max_log_size": 52428800,
+    "default_blob_upload_servers": [
+         "http://10.134.48.49:8080",
+    ],
 }

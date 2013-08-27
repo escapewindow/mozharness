@@ -189,7 +189,10 @@ class VirtualenvMixin(object):
             if not module_url and not requirements:
                 self.fatal("Must specify module and/or requirements")
             pip = self.query_python_path("pip")
-            command = [pip, "-v", "install"]
+            if c.get("verbose_pip"):
+                command = [pip, "-v", "install"]
+            else:
+                command = [pip, "install"]
             pypi_url = c.get("pypi_url")
             if pypi_url:
                 command += ["--pypi-url", pypi_url]
