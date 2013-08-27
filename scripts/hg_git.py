@@ -385,7 +385,8 @@ class HgGitScript(VirtualenvMixin, TooltoolMixin, TransferMixin, VCSScript):
                         hg + ['tags'],
                         cwd=source_dir,
                     )
-                    for tag_name in tag_list:
+                    for tag_line in tag_list:
+                        tag_name = tag_line.split()[0]
                         for regex in regex_list:
                             if regex.search(tag_name) is not None:
                                 command += ['+refs/tags/%s:refs/tags/%s', (tag_name, tag_name)]
