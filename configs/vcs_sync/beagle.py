@@ -267,7 +267,6 @@ config = {
         },
         "tag_config": {
             "tag_regexes": [
-#                "^(B2G|FIREFOX|FENNEC|THUNDERBIRD|RELEASE_BASE|CALENDAR|SEAMONKEY)_",
                 "^B2G_",
             ],
         },
