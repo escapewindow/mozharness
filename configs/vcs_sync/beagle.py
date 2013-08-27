@@ -38,8 +38,10 @@ config = {
         }],
         "bare_checkout": True,
         "vcs": "hg",
-        "branches": {
-            "default": "master",
+        "branch_config": {
+            "branches": {
+                "default": "master",
+            },
         },
     },
     "backup_dir": "/mnt/netapp/github_sync/aki/%s" % hostname,
@@ -64,20 +66,26 @@ config = {
             "target_dest": "github-beagle",
             "vcs": "git",
             "tag_config": {
-                "tags": {'*': '*'},
+                "tag_regexes": [
+                    "^B2G_",
+                ],
             },
         }, {
             "target_dest": "m-b2g18/.git",
             "vcs": "git",
             "test_push": True,
-            "branches": {
-                "b2g18": "master",
+            "branch_config": {
+                "branches": {
+                    "b2g18": "master",
+                },
             },
         }],
         "bare_checkout": True,
         "vcs": "hg",
-        "branches": {
-            "default": "b2g18",
+        "branch_config": {
+            "branches": {
+                "default": "b2g18",
+            },
         },
         "tag_config": {
             "tag_regexes": [
@@ -98,8 +106,10 @@ config = {
         }],
         "bare_checkout": True,
         "vcs": "hg",
-        "branches": {
-            "default": "b2g18_v1_1_0_hd",
+        "branch_config": {
+            "branches": {
+                "default": "b2g18_v1_1_0_hd",
+            },
         },
         "tag_config": {
             "tag_regexes": [
@@ -120,8 +130,10 @@ config = {
         }],
         "bare_checkout": True,
         "vcs": "hg",
-        "branches": {
-            "default": "b2g18_v1_0_1",
+        "branch_config": {
+            "branches": {
+                "default": "b2g18_v1_0_1",
+            },
         },
         "tag_config": {
             "tag_regexes": [
@@ -142,8 +154,10 @@ config = {
         }],
         "bare_checkout": True,
         "vcs": "hg",
-        "branches": {
-            "default": "b2g18_v1_0_0",
+        "branch_config": {
+            "branches": {
+                "default": "b2g18_v1_0_0",
+            },
         },
         "tag_config": {
             "tag_regexes": [
@@ -164,8 +178,10 @@ config = {
         }],
         "bare_checkout": True,
         "vcs": "hg",
-        "branches": {
-            "default": "aurora",
+        "branch_config": {
+            "branches": {
+                "default": "aurora",
+            },
         },
         "tag_config": {
             "tag_regexes": [
@@ -186,13 +202,18 @@ config = {
         }],
         "bare_checkout": True,
         "vcs": "hg",
-        "branches": {
-            "default": "beta",
+        "branch_config": {
+            "branches": {
+                "default": "beta",
+            },
+            "branch_regexes": [
+                "^GECKO[0-9_]*RELBRANCH$",
+                "^MOBILE[0-9_]*RELBRANCH$",
+            ],
         },
         "tag_config": {
             "tag_regexes": [
-#                "^(B2G|FIREFOX|FENNEC|THUNDERBIRD|RELEASE_BASE|CALENDAR|SEAMONKEY)_",
-                "^B2G_",
+                "^(B2G|RELEASE_BASE)_",
             ],
         },
     }, {
@@ -209,13 +230,18 @@ config = {
         }],
         "bare_checkout": True,
         "vcs": "hg",
-        "branches": {
-            "default": "release",
+        "branch_config": {
+            "branches": {
+                "default": "release",
+            },
+            "branch_regexes": [
+                "^GECKO[0-9_]*RELBRANCH$",
+                "^MOBILE[0-9_]*RELBRANCH$",
+            ],
         },
         "tag_config": {
             "tag_regexes": [
-#                "^(B2G|FIREFOX|FENNEC|THUNDERBIRD|RELEASE_BASE|CALENDAR|SEAMONKEY)_",
-                "^B2G_",
+                "^(B2G|RELEASE_BASE)_",
             ],
         },
     }, {
@@ -232,12 +258,13 @@ config = {
         }],
         "bare_checkout": True,
         "vcs": "hg",
-        "branches": {
-            "default": "esr17",
+        "branch_config": {
+            "branches": {
+                "default": "esr17",
+            },
         },
         "tag_config": {
             "tag_regexes": [
-#                "^(B2G|FIREFOX|FENNEC|THUNDERBIRD|RELEASE_BASE|CALENDAR|SEAMONKEY)_",
                 "^B2G_",
             ],
         },
@@ -255,8 +282,10 @@ config = {
         }],
         "bare_checkout": True,
         "vcs": "hg",
-        "branches": {
-            "default": "inbound",
+        "branch_config": {
+            "branches": {
+                "default": "inbound",
+            },
         },
         "tag_config": {},
     }, {
@@ -273,8 +302,10 @@ config = {
         }],
         "bare_checkout": True,
         "vcs": "hg",
-        "branches": {
-            "default": "b2g-inbound",
+        "branch_config": {
+            "branches": {
+                "default": "b2g-inbound",
+            },
         },
         "tag_config": {},
     }, {
@@ -291,14 +322,16 @@ config = {
         }],
         "bare_checkout": True,
         "vcs": "hg",
-        "branches": {
-            "default": "fx-team",
+        "branch_config": {
+            "branches": {
+                "default": "fx-team",
+            },
         },
         "tag_config": {},
     }],
     "remote_targets": {
         "github-beagle": {
-            "repo": "git@github.com:escapewindow/test-beagle.git",
+            "repo": "git@github.com:escapewindow/test-beagle2.git",
             "ssh_key": "~/.ssh/github1_rsa",
             "vcs": "git",
         },
@@ -326,6 +359,7 @@ config = {
         "mozprocess==0.11",
     ],
     "find_links": [
+        "http://puppetagain.pub.build.mozilla.org/data/python/packages/",
         "http://releng-puppet2.srv.releng.use1.mozilla.com/python/packages/",
         "http://releng-puppet1.srv.releng.use1.mozilla.com/python/packages/",
         "http://releng-puppet2.build.mtv1.mozilla.com/python/packages/",
@@ -333,7 +367,6 @@ config = {
         "http://releng-puppet1.srv.releng.usw2.mozilla.com/python/packages/",
         "http://releng-puppet2.srv.releng.scl3.mozilla.com/python/packages/",
         "http://releng-puppet2.build.scl1.mozilla.com/python/packages/",
-        "http://puppetagain.pub.build.mozilla.org/data/python/packages/",
     ],
     "pip_index": False,
 

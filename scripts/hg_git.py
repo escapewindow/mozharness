@@ -324,24 +324,26 @@ class HgGitScript(VirtualenvMixin, TooltoolMixin, TransferMixin, VCSScript):
             """
         dirs = self.query_abs_dirs()
         conversion_dir = dirs['abs_conversion_dir']
+        source_dir = os.path.join(dirs['abs_source_dir'], repo_config['repo_name'])
         git = self.query_exe('git', return_type='list')
-        return_status = 0
+        hg = self.query_exe('hg', return_type='list')
+        return_status = ''
         for target_config in repo_config['targets']:
             if target_config.get("vcs", "git") == "git":
-                command = git + ['push']
+                base_command = git + ['push']
                 env = {}
                 if target_config.get("force_push"):
-                    command.append("-f")
+                    base_command.append("-f")
                 if target_config.get("test_push"):
                     target_name = os.path.join(
                         dirs['abs_target_dir'], target_config['target_dest'])
-                    command.append(target_name)
+                    base_command.append(target_name)
                 else:
                     target_name = target_config['target_dest']
                     remote_config = self.config.get('remote_targets', {}).get(target_name)
                     if not remote_config:
                         self.fatal("Can't find %s in remote_targets!" % target_name)
-                    command.append(remote_config['repo'])
+                    base_command.append(remote_config['repo'])
                     # Allow for using a custom git ssh key.
                     env['GIT_SSH_KEY'] = remote_config['ssh_key']
                     env['GIT_SSH'] = os.path.join(external_tools_path, 'git-ssh-wrapper.sh')
@@ -349,52 +351,82 @@ class HgGitScript(VirtualenvMixin, TooltoolMixin, TransferMixin, VCSScript):
                 # If we specify that subset, we can also specify different
                 # names for those branches (e.g. b2g18 -> master for a
                 # standalone b2g18 repo)
-                if target_config.get("branches"):
-                    for (branch, target_branch) in target_config['branches'].items():
-                        command += ['+refs/heads/%s:refs/heads/%s' % (branch, target_branch)]
+                # We query hg for these because the conversion dir will have
+                # branches from multiple hg repos, and the regexes may match
+                # too many things.
+                commands = []
+                refs_list = []
+                branch_map = self.query_branches(
+                    target_config.get('branch_config', repo_config.get('branch_config', {})),
+                    source_dir,
+                )
+                # If the target_config has a branch_config, the key is the
+                # local git branch and the value is the target git branch.
+                if target_config.get("branch_config"):
+                    for (branch, target_branch) in branch_map.items():
+                        refs_list += ['+refs/heads/%s:refs/heads/%s' % (branch, target_branch)]
+                # Otherwise the key is the hg branch and the value is the git
+                # branch; use the git branch for both local and target git
+                # branch names.
                 else:
-                    for (branch, target_branch) in repo_config.get('branches', {}).items():
-                        command += ['+refs/heads/%s:refs/heads/%s' % (target_branch, target_branch)]
+                    for (hg_branch, git_branch) in branch_map.items():
+                        refs_list += ['+refs/heads/%s:refs/heads/%s' % (git_branch, git_branch)]
                 # Allow for pushing a subset of tags to the target, via name or
-                # regex.
+                # regex.  Again, query hg for this list because the conversion
+                # dir will contain tags from multiple hg repos, and the regexes
+                # may match too many things.
                 tag_config = target_config.get('tag_config', repo_config.get('tag_config', {}))
                 if tag_config.get('tags'):
                     for (tag, target_tag) in tag_config['tags'].items():
-                        command += ['+refs/tags/%s:refs/tags/%s' % (tag, target_tag)]
-                elif tag_config.get('tag_regexes'):
+                        refs_list += ['+refs/tags/%s:refs/tags/%s' % (tag, target_tag)]
+                if tag_config.get('tag_regexes'):
                     regex_list = []
                     for regex in tag_config['tag_regexes']:
                         regex_list.append(re.compile(regex))
                     tag_list = self.get_output_from_command(
-                        git + ['tag', '-l'],
-                        cwd=os.path.join(conversion_dir, '.git')
+                        hg + ['tags'],
+                        cwd=source_dir,
                     )
-                    for tag_name in tag_list:
+                    for tag_line in tag_list.splitlines():
+                        if not tag_line:
+                            continue
+                        tag_parts = tag_line.split()
+                        if not tag_parts:
+                            self.warning("Bogus tag_line? %s" % str(tag_line))
+                            continue
+                        tag_name = tag_parts[0]
                         for regex in regex_list:
                             if regex.search(tag_name) is not None:
-                                command += ['tag', tag_name]
+                                refs_list += ['+refs/tags/%s:refs/tags/%s' % (tag_name, tag_name)]
                                 continue
-                # Do the push, with retry!
-                if self.retry(
-                    self.run_command,
-                    args=(command, ),
-                    kwargs={
-                        'output_timeout': target_config.get("output_timeout", 30 * 60),
-                        'cwd': os.path.join(conversion_dir, '.git'),
-                        'error_list': GitErrorList,
-                        'partial_env': env,
-                    },
-                ):
-                    error_msg = "%s: Can't push %s to %s!" % (
-                        repo_config['repo_name'], conversion_dir, target_name)
-                    self.error(error_msg)
-                    return_status = error_msg
+                if refs_list:
+                    while len(refs_list) > 10:
+                        commands.append(base_command + refs_list[0:10])
+                        refs_list = refs_list[10:]
+                    commands.append(base_command + refs_list)
+                else:
+                    commands = [base_command]
+                for command in commands:
+                    # Do the push, with retry!
+                    if self.retry(
+                        self.run_command,
+                        args=(command, ),
+                        kwargs={
+                            'output_timeout': target_config.get("output_timeout", 30 * 60),
+                            'cwd': os.path.join(conversion_dir, '.git'),
+                            'error_list': GitErrorList,
+                            'partial_env': env,
+                        },
+                    ):
+                        error_msg = "%s: Can't push %s to %s!" % (
+                            repo_config['repo_name'], conversion_dir, target_name)
+                        self.error(error_msg)
+                        return_status = error_msg
             else:
                 error_msg = "%s: Don't know how to deal with vcs %s!" % (
                     target_config['target_dest'], target_config['vcs'])
                 self.error(error_msg)
                 return_status = error_msg
-                # TODO hg
         return return_status
 
     def _query_mapped_revision(self, revision=None, mapfile=None):
@@ -453,6 +485,44 @@ class HgGitScript(VirtualenvMixin, TooltoolMixin, TransferMixin, VCSScript):
             create_parent_dir=True
         )
 
+    def query_branches(self, branch_config, repo_path, vcs='hg'):
+        """ Given a branch_config of branches and branch_regexes, return
+            a dict of existing branch names to target branch names.
+            """
+        branch_map = {}
+        if "branches" in branch_config:
+            branch_map = deepcopy(branch_config['branches'])
+        if "branch_regexes" in branch_config:
+            regex_list = list(branch_config['branch_regexes'])
+            full_branch_list = []
+            if vcs == 'hg':
+                hg = self.query_exe("hg", return_type="list")
+                # This assumes we always want closed branches as well.
+                # If not we may need more options.
+                output = self.get_output_from_command(
+                    hg + ['branches', '-a'],
+                    cwd=repo_path
+                )
+                if output:
+                    for line in output.splitlines():
+                        full_branch_list.append(line.split()[0])
+            elif vcs == 'git':
+                git = self.query_exe("git", return_type="list")
+                output = self.get_output_from_command(
+                    git + ['branch', '-l'],
+                    cwd=repo_path
+                )
+                if output:
+                    for line in output.splitlines():
+                        full_branch_list.append(line.replace('*', '').split()[0])
+            for regex in regex_list:
+                for branch in full_branch_list:
+                    m = re.search(regex, branch)
+                    if m:
+                        # Don't overwrite branch_map[branch] if it exists
+                        branch_map.setdefault(branch, branch)
+        return branch_map
+
     # Actions {{{1
     def create_stage_mirror(self):
         """ Rather than duplicate the logic here and in update_stage_mirror(),
@@ -469,7 +539,6 @@ class HgGitScript(VirtualenvMixin, TooltoolMixin, TransferMixin, VCSScript):
         """ Create the work_mirror, initial_repo only, from the stage_mirror.
             This is where the conversion will occur.
             """
-        # TODO share logic with update_work_mirror?
         hg = self.query_exe("hg", return_type="list")
         git = self.query_exe("git", return_type="list")
         dirs = self.query_abs_dirs()
@@ -532,7 +601,9 @@ intree=1
         dest = dirs['abs_conversion_dir']
         # bookmark all the branches in the repo_config, potentially
         # renaming them.
-        for (branch, target_branch) in repo_config.get('branches', {}).items():
+        # This follows a slightly different workflow than elsewhere; I don't
+        # want to fiddle with this logic more than I have to.
+        for (branch, target_branch) in repo_config.get('branch_config', {}).get('branches', {}).items():
             output = self.get_output_from_command(
                 hg + ['id', '-r', branch], cwd=dest)
             if output:
@@ -714,7 +785,6 @@ intree=1
                         self.init_git_repo(target_dest, additional_args=['--bare'])
                     else:
                         self.fatal("Don't know how to deal with vcs %s!" % target_config['vcs'])
-                        # TODO hg
                 else:
                     self.debug("%s exists; skipping." % target_dest)
 
@@ -747,7 +817,12 @@ intree=1
         for repo_config in self.query_all_repos():
             repo_name = repo_config['repo_name']
             source = os.path.join(dirs['abs_source_dir'], repo_name)
-            for (branch, target_branch) in repo_config.get('branches', {}).items():
+            # Build branch map.
+            branch_map = self.query_branches(
+                repo_config.get('branch_config', {}),
+                source,
+            )
+            for (branch, target_branch) in branch_map.items():
                 output = self.get_output_from_command(
                     hg + ['id', '-r', branch],
                     cwd=source
@@ -763,6 +838,7 @@ intree=1
                     hg + ['bookmark', '-f', '-r', rev, target_branch],
                     cwd=dest
                 )
+                # This might get a little large.
                 repo_map.setdefault('repos', {}).setdefault(repo_name, {}).setdefault('branches', {})[branch] = {
                     'hg_branch': branch,
                     'hg_revision': rev,
@@ -783,7 +859,13 @@ intree=1
         generated_mapfile = os.path.join(dest, '.hg', 'git-mapfile')
         for repo_config in self.query_all_repos():
             repo_name = repo_config['repo_name']
-            for (branch, target_branch) in repo_config.get('branches', {}).items():
+            source = os.path.join(dirs['abs_source_dir'], repo_name)
+            branch_map = self.query_branches(
+                repo_config.get('branch_config', {}),
+                source,
+                vcs='hg',
+            )
+            for (branch, target_branch) in branch_map.items():
                 git_revision = self._query_mapped_revision(
                     revision=rev, mapfile=generated_mapfile)
                 repo_map['repos'][repo_name]['branches'][branch]['git_revision'] = git_revision
@@ -805,7 +887,7 @@ intree=1
             timestamp = int(time.time())
             datetime = time.strftime('%Y-%m-%d %H:%M %Z')
             status = self._push_repo(repo_config)
-            if status == 0:
+            if not status:  # good
                 repo_name = repo_config['repo_name']
                 repo_map.setdefault('repos', {}).setdefault(repo_name, {})['push_timestamp'] = timestamp
                 repo_map['repos'][repo_name]['push_datetime'] = datetime
