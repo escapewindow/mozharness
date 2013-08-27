@@ -214,7 +214,6 @@ config = {
         "tag_config": {
             "tag_regexes": [
                 "^(B2G|RELEASE_BASE)_",
-                "^(FIREFOX|FENNEC)[0-9_b]*BUILD\d+",
             ],
         },
     }, {
@@ -243,7 +242,6 @@ config = {
         "tag_config": {
             "tag_regexes": [
                 "^(B2G|RELEASE_BASE)_",
-                "^(FIREFOX|FENNEC)[0-9_b]*BUILD\d+",
             ],
         },
     }, {
