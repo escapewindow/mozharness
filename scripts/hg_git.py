@@ -327,23 +327,23 @@ class HgGitScript(VirtualenvMixin, TooltoolMixin, TransferMixin, VCSScript):
         source_dir = os.path.join(dirs['abs_source_dir'], repo_config['repo_name'])
         git = self.query_exe('git', return_type='list')
         hg = self.query_exe('hg', return_type='list')
-        return_status = 0
+        return_status = ''
         for target_config in repo_config['targets']:
             if target_config.get("vcs", "git") == "git":
-                command = git + ['push']
+                base_command = git + ['push']
                 env = {}
                 if target_config.get("force_push"):
-                    command.append("-f")
+                    base_command.append("-f")
                 if target_config.get("test_push"):
                     target_name = os.path.join(
                         dirs['abs_target_dir'], target_config['target_dest'])
-                    command.append(target_name)
+                    base_command.append(target_name)
                 else:
                     target_name = target_config['target_dest']
                     remote_config = self.config.get('remote_targets', {}).get(target_name)
                     if not remote_config:
                         self.fatal("Can't find %s in remote_targets!" % target_name)
-                    command.append(remote_config['repo'])
+                    base_command.append(remote_config['repo'])
                     # Allow for using a custom git ssh key.
                     env['GIT_SSH_KEY'] = remote_config['ssh_key']
                     env['GIT_SSH'] = os.path.join(external_tools_path, 'git-ssh-wrapper.sh')
@@ -354,6 +354,8 @@ class HgGitScript(VirtualenvMixin, TooltoolMixin, TransferMixin, VCSScript):
                 # We query hg for these because the conversion dir will have
                 # branches from multiple hg repos, and the regexes may match
                 # too many things.
+                commands = []
+                refs_list = []
                 branch_map = self.query_branches(
                     target_config.get('branch_config', repo_config.get('branch_config', {})),
                     source_dir,
@@ -362,13 +364,13 @@ class HgGitScript(VirtualenvMixin, TooltoolMixin, TransferMixin, VCSScript):
                 # local git branch and the value is the target git branch.
                 if target_config.get("branch_config"):
                     for (branch, target_branch) in branch_map.items():
-                        command += ['+refs/heads/%s:refs/heads/%s' % (branch, target_branch)]
+                        refs_list += ['+refs/heads/%s:refs/heads/%s' % (branch, target_branch)]
                 # Otherwise the key is the hg branch and the value is the git
                 # branch; use the git branch for both local and target git
                 # branch names.
                 else:
                     for (hg_branch, git_branch) in branch_map.items():
-                        command += ['+refs/heads/%s:refs/heads/%s' % (git_branch, git_branch)]
+                        refs_list += ['+refs/heads/%s:refs/heads/%s' % (git_branch, git_branch)]
                 # Allow for pushing a subset of tags to the target, via name or
                 # regex.  Again, query hg for this list because the conversion
                 # dir will contain tags from multiple hg repos, and the regexes
@@ -376,7 +378,7 @@ class HgGitScript(VirtualenvMixin, TooltoolMixin, TransferMixin, VCSScript):
                 tag_config = target_config.get('tag_config', repo_config.get('tag_config', {}))
                 if tag_config.get('tags'):
                     for (tag, target_tag) in tag_config['tags'].items():
-                        command += ['+refs/tags/%s:refs/tags/%s' % (tag, target_tag)]
+                        refs_list += ['+refs/tags/%s:refs/tags/%s' % (tag, target_tag)]
                 if tag_config.get('tag_regexes'):
                     regex_list = []
                     for regex in tag_config['tag_regexes']:
@@ -395,23 +397,31 @@ class HgGitScript(VirtualenvMixin, TooltoolMixin, TransferMixin, VCSScript):
                         tag_name = tag_parts[0]
                         for regex in regex_list:
                             if regex.search(tag_name) is not None:
-                                command += ['+refs/tags/%s:refs/tags/%s' % (tag_name, tag_name)]
+                                refs_list += ['+refs/tags/%s:refs/tags/%s' % (tag_name, tag_name)]
                                 continue
-                # Do the push, with retry!
-                if self.retry(
-                    self.run_command,
-                    args=(command, ),
-                    kwargs={
-                        'output_timeout': target_config.get("output_timeout", 30 * 60),
-                        'cwd': os.path.join(conversion_dir, '.git'),
-                        'error_list': GitErrorList,
-                        'partial_env': env,
-                    },
-                ):
-                    error_msg = "%s: Can't push %s to %s!" % (
-                        repo_config['repo_name'], conversion_dir, target_name)
-                    self.error(error_msg)
-                    return_status = error_msg
+                if refs_list:
+                    while len(refs_list) > 10:
+                        commands.append(base_command + refs_list[0:10])
+                        refs_list = refs_list[10:]
+                    commands.append(base_command + refs_list)
+                else:
+                    commands = [base_command]
+                for command in commands:
+                    # Do the push, with retry!
+                    if self.retry(
+                        self.run_command,
+                        args=(command, ),
+                        kwargs={
+                            'output_timeout': target_config.get("output_timeout", 30 * 60),
+                            'cwd': os.path.join(conversion_dir, '.git'),
+                            'error_list': GitErrorList,
+                            'partial_env': env,
+                        },
+                    ):
+                        error_msg = "%s: Can't push %s to %s!" % (
+                            repo_config['repo_name'], conversion_dir, target_name)
+                        self.error(error_msg)
+                        return_status = error_msg
             else:
                 error_msg = "%s: Don't know how to deal with vcs %s!" % (
                     target_config['target_dest'], target_config['vcs'])
@@ -877,7 +887,7 @@ intree=1
             timestamp = int(time.time())
             datetime = time.strftime('%Y-%m-%d %H:%M %Z')
             status = self._push_repo(repo_config)
-            if status == 0:
+            if not status:  # good
                 repo_name = repo_config['repo_name']
                 repo_map.setdefault('repos', {}).setdefault(repo_name, {})['push_timestamp'] = timestamp
                 repo_map['repos'][repo_name]['push_datetime'] = datetime
