@@ -621,7 +621,7 @@ intree=1
             if branch_name in repo_config.get('branches', {}):
                 continue
             self.run_command(
-                hg + ['bookmarks', '-f', '-r', branch_name, branch_name],
+                hg + ['bookmark', '-f', '-r', branch_name, branch_name],
                 cwd=dest,
                 error_list=HgErrorList,
                 halt_on_failure=True,
