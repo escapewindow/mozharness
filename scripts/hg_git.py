@@ -763,12 +763,12 @@ intree=1
             os.path.join(conversion_dir, '.git'),
             dirs['abs_git_rewrite_dir']
         )
-#        self.run_command(
-#            git + ['gc', '--aggressive'],
-#            cwd=os.path.join(conversion_dir, '.git'),
-#            error_list=GitErrorList,
-#            halt_on_failure=True,
-#        )
+        self.run_command(
+            git + ['gc', '--aggressive'],
+            cwd=os.path.join(conversion_dir, '.git'),
+            error_list=GitErrorList,
+            halt_on_failure=True,
+        )
 
     def create_test_targets(self):
         """ This action creates local directories to do test pushes to.
