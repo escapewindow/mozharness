@@ -17,7 +17,19 @@ from mozharness.base.log import FATAL
 
 
 class VCSSyncMixin(object):
-    def init_git_repo(self, path, additional_args=None, error_level=FATAL):
+
+    def query_all_repos(self):
+        """ Very simple method, but we need this concatenated list many times
+            throughout the script.
+            """
+        if self.config.get('initial_repo'):
+            all_repos = [self.config['initial_repo']] + list(self.config['conversion_repos'])
+        else:
+            all_repos = list(self.config['conversion_repos'])
+        return all_repos
+
+    # Git specific {{{1
+    def init_git_repo(self, path, additional_args=None):
         """ Create a git repo, with retries.
 
             We call this with additional_args=['--bare'] to save disk +
@@ -32,10 +44,46 @@ class VCSSyncMixin(object):
         return self.retry(
             self.run_command,
             args=(cmd, ),
-            error_level=error_level,
+            error_level=FATAL,
             error_message="Can't set up %s!" % path
         )
 
+    def make_git_repo_bare(self, path, tmpdir=None):
+        """ Since we do a |git checkout| in prepend_cvs(), and later want
+            a bare repo.
+            """
+        self.info("Making %s/.git a bare repo..." % path)
+        for p in (path, os.path.join(path, ".git")):
+            if not os.path.exists(p):
+                self.error("%s doesn't exist! Skipping..." % p)
+        if tmpdir is None:
+            tmpdir = os.path.dirname(os.path.abspath(path))
+        git = self.query_exe("git", return_type="list")
+        # Hardcode: assumes only git + hg
+        for dirname in (".git", ".hg"):
+            if os.path.exists(os.path.join(path, dirname)):
+                self.move(
+                    os.path.join(path, dirname),
+                    os.path.join(tmpdir, dirname),
+                    error_level=FATAL,
+                )
+        self.rmtree(path, error_level=FATAL)
+        self.mkdir_p(path)
+        # Hardcode: assumes only git + hg
+        for dirname in (".git", ".hg"):
+            if os.path.exists(os.path.join(tmpdir, dirname)):
+                self.move(
+                    os.path.join(tmpdir, dirname),
+                    os.path.join(path, dirname),
+                    error_level=FATAL,
+                )
+        self.run_command(
+            git + ['--git-dir', os.path.join(path, ".git"),
+                   'config', '--bool', 'core.bare', 'true'],
+            halt_on_failure=True,
+        )
+
+    # HG specific {{{1
     def _update_hg_stage_repo(self, repo_config, retry=True, clobber=False,
                               verify=False):
         """ Update a stage repo.

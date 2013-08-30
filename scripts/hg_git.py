@@ -113,23 +113,13 @@ class HgGitScript(VirtualenvMixin, TooltoolMixin, TransferMixin, VCSSyncMixin, V
         self.abs_dirs = abs_dirs
         return self.abs_dirs
 
-    def query_all_repos(self):
-        """ Very simple method, but we need this concatenated list many times
-            throughout the script.
-            """
-        if self.config.get('initial_repo'):
-            all_repos = [self.config['initial_repo']] + list(self.config['conversion_repos'])
-        else:
-            all_repos = list(self.config['conversion_repos'])
-        return all_repos
-
     def _check_initial_git_revisions(self, repo_path, expected_sha1,
                                      expected_sha2):
         """ Verify that specific git revisions match expected shas.
 
-            This involves some hardcodes, which is unfortunate, but they save
-            time, especially since we're hardcoding mozilla-central behavior
-            anyway.
+            This involves some mozilla CVS specific hardcodes, which is
+            unfortunate, but they save time, especially since we're hardcoding
+            mozilla-central behavior anyway.
             """
         git = self.query_exe('git', return_type='list')
         output = self.get_output_from_command(
@@ -183,39 +173,6 @@ class HgGitScript(VirtualenvMixin, TooltoolMixin, TransferMixin, VCSSyncMixin, V
         )
         self.copy_to_upload_dir(mapfile, dest="post-cvs-mapfile",
                                 log_level=INFO)
-
-    def make_repo_bare(self, path, tmpdir=None):
-        """ Since we do a |git checkout| in prepend_cvs(), and later want
-            a bare repo.
-            """
-        self.info("Making %s/.git a bare repo..." % path)
-        for p in (path, os.path.join(path, ".git")):
-            if not os.path.exists(p):
-                self.error("%s doesn't exist! Skipping..." % p)
-        if tmpdir is None:
-            tmpdir = os.path.dirname(os.path.abspath(path))
-        git = self.query_exe("git", return_type="list")
-        for dirname in (".git", ".hg"):
-            if os.path.exists(os.path.join(path, dirname)):
-                self.move(
-                    os.path.join(path, dirname),
-                    os.path.join(tmpdir, dirname),
-                    error_level=FATAL,
-                )
-        self.rmtree(path, error_level=FATAL)
-        self.mkdir_p(path)
-        for dirname in (".git", ".hg"):
-            if os.path.exists(os.path.join(tmpdir, dirname)):
-                self.move(
-                    os.path.join(tmpdir, dirname),
-                    os.path.join(path, dirname),
-                    error_level=FATAL,
-                )
-        self.run_command(
-            git + ['--git-dir', os.path.join(path, ".git"),
-                   'config', '--bool', 'core.bare', 'true'],
-            halt_on_failure=True,
-        )
 
     def _fix_tags(self, conversion_dir, git_rewrite_dir):
         """ Ehsan's git tag fixer, ported from bash.
@@ -645,7 +602,7 @@ intree=1
         self.move(os.path.join(conversion_dir, '.git-rewrite'),
                   dirs['abs_git_rewrite_dir'],
                   error_level=FATAL)
-        self.make_repo_bare(conversion_dir)
+        self.make_git_repo_bare(conversion_dir)
         branch_list = self.get_output_from_command(
             git + ['branch'],
             cwd=git_conversion_dir,
