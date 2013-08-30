@@ -674,8 +674,8 @@ intree=1
         # without committing
         self.run_command(git + ["checkout"], cwd=conversion_dir)
         self.run_command(
-            'ln -s ' + os.path.join(dirs['abs_cvs_history_dir'], 'objects',
-                                    'pack', '*') + ' .',
+            'cp ' + os.path.join(dirs['abs_cvs_history_dir'], 'objects',
+                                 'pack', '*') + ' .',
             cwd=os.path.join(git_conversion_dir, 'objects', 'pack')
         )
         self._check_initial_git_revisions(dirs['abs_cvs_history_dir'], 'e230b03',
