@@ -38,11 +38,12 @@ from mozharness.base.log import INFO, ERROR, FATAL
 from mozharness.base.python import VirtualenvMixin, virtualenv_config_options
 from mozharness.base.transfer import TransferMixin
 from mozharness.base.vcs.vcsbase import VCSScript
+from mozharness.base.vcs.vcssync import VCSSyncMixin
 from mozharness.mozilla.tooltool import TooltoolMixin
 
 
 # HgGitScript {{{1
-class HgGitScript(VirtualenvMixin, TooltoolMixin, TransferMixin, VCSScript):
+class HgGitScript(VirtualenvMixin, TooltoolMixin, TransferMixin, VCSSyncMixin, VCSScript):
     """ Beagle-oriented hg->git script (lots of mozilla-central hardcodes;
         assumption that we're going to be importing lots of branches).
 
@@ -96,6 +97,7 @@ class HgGitScript(VirtualenvMixin, TooltoolMixin, TransferMixin, VCSScript):
         abs_dirs = super(HgGitScript, self).query_abs_dirs()
         abs_dirs['abs_cvs_history_dir'] = os.path.join(
             abs_dirs['abs_work_dir'], 'mozilla-cvs-history')
+# TODO remove concept of conversion_dir, since this will be per-repo.
         abs_dirs['abs_conversion_dir'] = os.path.join(
             abs_dirs['abs_work_dir'], 'conversion',
             self.config['conversion_dir']
@@ -111,25 +113,6 @@ class HgGitScript(VirtualenvMixin, TooltoolMixin, TransferMixin, VCSScript):
         self.abs_dirs = abs_dirs
         return self.abs_dirs
 
-    def init_git_repo(self, path, additional_args=None):
-        """ Create a git repo, with retries.
-
-            We call this with additional_args=['--bare'] to save disk +
-            make things cleaner.
-            """
-        git = self.query_exe("git", return_type="list")
-        cmd = git + ['init']
-        # generally for --bare
-        if additional_args:
-            cmd.extend(additional_args)
-        cmd.append(path)
-        return self.retry(
-            self.run_command,
-            args=(cmd, ),
-            error_level=FATAL,
-            error_message="Can't set up %s!" % path
-        )
-
     def query_all_repos(self):
         """ Very simple method, but we need this concatenated list many times
             throughout the script.
@@ -139,54 +122,6 @@ class HgGitScript(VirtualenvMixin, TooltoolMixin, TransferMixin, VCSScript):
         else:
             all_repos = list(self.config['conversion_repos'])
         return all_repos
-
-    def _update_stage_repo(self, repo_config, retry=True, clobber=False):
-        """ Update a stage repo.
-            See update_stage_mirror() for a description of the stage repos.
-            """
-        hg = self.query_exe('hg', return_type='list')
-        dirs = self.query_abs_dirs()
-        source_dest = os.path.join(dirs['abs_source_dir'],
-                                   repo_config['repo_name'])
-        if clobber:
-            self.rmtree(source_dest)
-        if not os.path.exists(source_dest):
-            if self.retry(
-                self.run_command,
-                args=(hg + ['clone', '--noupdate', repo_config['repo'],
-                      source_dest], ),
-                kwargs={
-                    'output_timeout': 15 * 60,
-                    'cwd': dirs['abs_work_dir'],
-                    'error_list': HgErrorList,
-                },
-            ):
-                if retry:
-                    return self._update_stage_repo(
-                        repo_config, retry=False, clobber=True)
-                else:
-                    self.fatal("Can't clone %s!" % repo_config['repo'])
-        cmd = hg + ['pull']
-        if self.retry(
-            self.run_command,
-            args=(cmd, ),
-            kwargs={
-                'output_timeout': 15 * 60,
-                'cwd': source_dest,
-            },
-        ):
-            if retry:
-                return self._update_stage_repo(
-                    repo_config, retry=False, clobber=True)
-            else:
-                self.fatal("Can't pull %s!" % repo_config['repo'])
-        # commenting out hg verify since it takes ~5min per repo; hopefully
-        # exit codes will save us
-#        if self.run_command(hg + ["verify"], cwd=source_dest):
-#            if retry:
-#                return self._update_stage_repo(repo_config, retry=False, clobber=True)
-#            else:
-#                self.fatal("Can't verify %s!" % source_dest)
 
     def _check_initial_git_revisions(self, repo_path, expected_sha1,
                                      expected_sha2):
@@ -799,7 +734,7 @@ intree=1
             is done.
             """
         for repo_config in self.query_all_repos():
-            self._update_stage_repo(repo_config)
+            self._update_hg_stage_repo(repo_config)
 
     def update_work_mirror(self):
         """ Pull the latest changes into the work mirror, update the repo_map
