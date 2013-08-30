@@ -782,7 +782,7 @@ intree=1
                 if not os.path.exists(target_dest):
                     self.info("Creating local target repo %s." % target_dest)
                     if target_config.get("vcs", "git") == "git":
-                        self.init_git_repo(target_dest, additional_args=['--bare'])
+                        self.init_git_repo(target_dest, additional_args=['--bare', '--shared=true'])
                     else:
                         self.fatal("Don't know how to deal with vcs %s!" % target_config['vcs'])
                 else:
