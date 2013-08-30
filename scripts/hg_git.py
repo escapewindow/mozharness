@@ -418,15 +418,19 @@ class HgGitScript(VirtualenvMixin, TooltoolMixin, TransferMixin, VCSScript):
                             'partial_env': env,
                         },
                     ):
-                        error_msg = "%s: Can't push %s to %s!" % (
+                        error_msg = "%s: Can't push %s to %s!\n" % (
                             repo_config['repo_name'], conversion_dir, target_name)
                         self.error(error_msg)
-                        return_status = error_msg
+                        return_status += error_msg
+                        if target_config.get("test_push"):
+                            self.error("This was a test push that failed; not proceeding any further!")
+                            break
             else:
-                error_msg = "%s: Don't know how to deal with vcs %s!" % (
+                # TODO write hg
+                error_msg = "%s: Don't know how to deal with vcs %s!\n" % (
                     target_config['target_dest'], target_config['vcs'])
                 self.error(error_msg)
-                return_status = error_msg
+                return_status += error_msg
         return return_status
 
     def _query_mapped_revision(self, revision=None, mapfile=None):
