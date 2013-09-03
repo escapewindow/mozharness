@@ -15,7 +15,6 @@ import mmap
 import os
 import re
 import smtplib
-import string
 import sys
 import time
 
@@ -939,7 +938,7 @@ intree=1
             if not fatal and notify_config.get('failure_only'):
                 continue
             fromaddr = notify_config.get('from', c['default_notify_from'])
-            message = string.join((
+            message = '\r\n'.join((
                 "From: %s" % fromaddr,
                 "To: %s" % notify_config['to'],
                 "CC: %s" % ','.join(notify_config.get('cc', [])),
