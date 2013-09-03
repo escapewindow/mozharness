@@ -945,7 +945,7 @@ intree=1
                 "Subject: %s" % subject,
                 "",
                 text
-            ), "\r\n")
+            ))
             toaddrs = [notify_config['to']] + notify_config.get('cc', [])
             # TODO allow for a different smtp server
             # TODO deal with failures
