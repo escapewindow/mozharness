@@ -334,7 +334,7 @@ class HgGitScript(VirtualenvMixin, TooltoolMixin, TransferMixin, VCSScript):
 #                args=(command, ),
 #                kwargs=kwargs,
 #            ):
-            if self.run_command(command, **kwargs):
+            if self.run_command(command, kwargs):
                 return -1
 
     def _push_repo(self, repo_config):
