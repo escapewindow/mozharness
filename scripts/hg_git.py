@@ -431,10 +431,11 @@ class HgGitScript(VirtualenvMixin, TooltoolMixin, TransferMixin, VCSScript):
                         'partial_env': env,
                     }
                 ):
+                    if target_config.get("test_push"):
+                        error_msg += "This was a test push that failed; not proceeding any further with %s!\n" % repo_config['repo_name']
                     self.error(error_msg)
                     return_status += error_msg
                     if target_config.get("test_push"):
-                        self.error("This was a test push that failed; not proceeding any further!")
                         break
             else:
                 # TODO write hg
