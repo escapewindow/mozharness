@@ -329,13 +329,13 @@ class HgGitScript(VirtualenvMixin, TooltoolMixin, TransferMixin, VCSScript):
             commands = [base_command]
         for command in commands:
             # Do the push, with retry!
-#            if self.retry(
-#                self.run_command,
-#                args=(command, ),
-#                kwargs=kwargs,
-#            ):
-            if self.run_command(command, **kwargs):
-                return -1
+            if self.retry(
+                self.run_command,
+                args=(command, ),
+                kwargs=kwargs,
+            ):
+#            if self.run_command(command, **kwargs):
+#                return -1
 
     def _push_repo(self, repo_config):
         """ Push a repo to a path ("test_push") or remote server.
@@ -423,7 +423,6 @@ class HgGitScript(VirtualenvMixin, TooltoolMixin, TransferMixin, VCSScript):
                 if self._do_push_repo(
                     base_command,
                     refs_list=refs_list,
-                    error_msg=error_msg,
                     kwargs={
                         'output_timeout': target_config.get("output_timeout", 30 * 60),
                         'cwd': os.path.join(conversion_dir, '.git'),
