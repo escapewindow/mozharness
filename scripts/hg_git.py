@@ -329,11 +329,12 @@ class HgGitScript(VirtualenvMixin, TooltoolMixin, TransferMixin, VCSScript):
             commands = [base_command]
         for command in commands:
             # Do the push, with retry!
-            if self.retry(
-                self.run_command,
-                args=(command, ),
-                kwargs=kwargs,
-            ):
+#            if self.retry(
+#                self.run_command,
+#                args=(command, ),
+#                kwargs=kwargs,
+#            ):
+            if self.run_command(command, **kwargs):
                 return -1
 
     def _push_repo(self, repo_config):
