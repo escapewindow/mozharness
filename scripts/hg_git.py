@@ -315,7 +315,7 @@ class HgGitScript(VirtualenvMixin, TooltoolMixin, TransferMixin, VCSScript):
                         halt_on_failure=True,
                     )
 
-    def _do_push_repo(self, base_command, refs_list=None, **kwargs):
+    def _do_push_repo(self, base_command, refs_list=None, kwargs=None):
         """ Helper method for _push_repo() since it has to be able to break
             out of the target_repo list loop, and the commands loop borks that.
             """
@@ -327,6 +327,8 @@ class HgGitScript(VirtualenvMixin, TooltoolMixin, TransferMixin, VCSScript):
                 commands.append(base_command + refs_list)
         else:
             commands = [base_command]
+        if kwargs is None:
+            kwargs = {}
         for command in commands:
             # Do the push, with retry!
             if self.retry(
