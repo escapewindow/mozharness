@@ -18,12 +18,6 @@ import smtplib
 import sys
 import time
 
-try:
-    import simplejson as json
-    assert json
-except ImportError:
-    import json
-
 sys.path.insert(1, os.path.dirname(sys.path[0]))
 
 import mozharness
@@ -66,10 +60,7 @@ class HgGitScript(VirtualenvMixin, TooltoolMixin, TransferMixin, VCSScript):
                 'initial-conversion',
                 'prepend-cvs',
                 'fix-tags',
-                'update-stage-mirror',
                 'update-work-mirror',
-                'push',
-                'upload',
                 'notify',
             ],
             # These default actions are the update loop that we run after the
@@ -77,10 +68,7 @@ class HgGitScript(VirtualenvMixin, TooltoolMixin, TransferMixin, VCSScript):
             # cvs history have been run.
             default_actions=[
                 'create-virtualenv',
-                'update-stage-mirror',
                 'update-work-mirror',
-                'push',
-                'upload',
                 'notify',
             ],
             require_config_file=require_config_file
@@ -110,25 +98,6 @@ class HgGitScript(VirtualenvMixin, TooltoolMixin, TransferMixin, VCSScript):
         self.abs_dirs = abs_dirs
         return self.abs_dirs
 
-    def init_git_repo(self, path, additional_args=None):
-        """ Create a git repo, with retries.
-
-            We call this with additional_args=['--bare'] to save disk +
-            make things cleaner.
-            """
-        git = self.query_exe("git", return_type="list")
-        cmd = git + ['init']
-        # generally for --bare
-        if additional_args:
-            cmd.extend(additional_args)
-        cmd.append(path)
-        return self.retry(
-            self.run_command,
-            args=(cmd, ),
-            error_level=FATAL,
-            error_message="Can't set up %s!" % path
-        )
-
     def query_all_repos(self):
         """ Very simple method, but we need this concatenated list many times
             throughout the script.
@@ -141,7 +110,15 @@ class HgGitScript(VirtualenvMixin, TooltoolMixin, TransferMixin, VCSScript):
 
     def _update_stage_repo(self, repo_config, retry=True, clobber=False):
         """ Update a stage repo.
-            See update_stage_mirror() for a description of the stage repos.
+            The stage mirror is a buffer clean clone of repositories.
+            The logic behind this is that we get occasional corruption from
+            |hg pull|.  It's much less time-consuming to detect this in
+            a clean clone, and reclone, than to detect this in a working
+            conversion directory, and try to repair or reclone+reconvert.
+
+            We pull the stage mirror into the work mirror, where the
+            conversion
+            is done.
             """
         hg = self.query_exe('hg', return_type='list')
         dirs = self.query_abs_dirs()
@@ -471,36 +448,6 @@ class HgGitScript(VirtualenvMixin, TooltoolMixin, TransferMixin, VCSScript):
             self.notify(message=message, fatal=True)
         self.copy_logs_to_upload_dir()
 
-    def _read_repo_update_json(self):
-        """ repo_update.json is a file we create with information about each
-            repo we're converting: git/hg branch names, git/hg revisions,
-            pull datetime/timestamp, and push datetime/timestamp.
-
-            Since we want to be able to incrementally update portions of this
-            file as we pull/push each branch, we need to be able to read the
-            json into memory, so we can update the dict and re-write the json
-            to disk.
-            """
-        repo_map = {}
-        dirs = self.query_abs_dirs()
-        path = os.path.join(dirs['abs_upload_dir'], 'repo_update.json')
-        if os.path.exists(path):
-            fh = open(path, 'r')
-            repo_map = json.load(fh)
-            fh.close()
-        return repo_map
-
-    def _write_repo_update_json(self, repo_map):
-        """ The write portion of _read_repo_update_json().
-            """
-        dirs = self.query_abs_dirs()
-        contents = json.dumps(repo_map, sort_keys=True, indent=4)
-        self.write_to_file(
-            os.path.join(dirs['abs_upload_dir'], 'repo_update.json'),
-            contents,
-            create_parent_dir=True
-        )
-
     def query_branches(self, branch_config, repo_path, vcs='hg'):
         """ Given a branch_config of branches and branch_regexes, return
             a dict of existing branch names to target branch names.
@@ -549,7 +496,8 @@ class HgGitScript(VirtualenvMixin, TooltoolMixin, TransferMixin, VCSScript):
             the time hit in the one-time-setup, rather than the first update
             loop, makes sense.
             """
-        self.update_stage_mirror()
+        for repo_config in self.query_all_repos():
+            self._update_stage_repo(repo_config)
 
     def create_work_mirror(self):
         """ Create the work_mirror, initial_repo only, from the stage_mirror.
@@ -786,37 +734,6 @@ intree=1
             halt_on_failure=True,
         )
 
-    def create_test_targets(self):
-        """ This action creates local directories to do test pushes to.
-            """
-        dirs = self.query_abs_dirs()
-        for repo_config in self.query_all_repos():
-            for target_config in repo_config['targets']:
-                if not target_config.get('test_push'):
-                    continue
-                target_dest = os.path.join(dirs['abs_target_dir'], target_config['target_dest'])
-                if not os.path.exists(target_dest):
-                    self.info("Creating local target repo %s." % target_dest)
-                    if target_config.get("vcs", "git") == "git":
-                        self.init_git_repo(target_dest, additional_args=['--bare', '--shared=true'])
-                    else:
-                        self.fatal("Don't know how to deal with vcs %s!" % target_config['vcs'])
-                else:
-                    self.debug("%s exists; skipping." % target_dest)
-
-    def update_stage_mirror(self):
-        """ The stage mirror is a buffer clean clone of repositories.
-            The logic behind this is that we get occasional corruption from
-            |hg pull|.  It's much less time-consuming to detect this in
-            a clean clone, and reclone, than to detect this in a working
-            conversion directory, and try to repair or reclone+reconvert.
-
-            We pull the stage mirror into the work mirror, where the conversion
-            is done.
-            """
-        for repo_config in self.query_all_repos():
-            self._update_stage_repo(repo_config)
-
     def update_work_mirror(self):
         """ Pull the latest changes into the work mirror, update the repo_map
             json, and run |hg gexport| to convert those latest changes into
@@ -887,52 +804,6 @@ intree=1
                 repo_map['repos'][repo_name]['branches'][branch]['git_revision'] = git_revision
         self._write_repo_update_json(repo_map)
         self.copy_to_upload_dir(generated_mapfile, dest="gecko-mapfile", log_level=INFO)
-
-    def push(self):
-        """ Push to all targets.  test_targets are local directory test repos;
-            the rest are remote.  Updates the repo_map json.
-            """
-        self.create_test_targets()
-        repo_map = self._read_repo_update_json()
-        failure_msg = ""
-        timestamp = int(time.time())
-        datetime = time.strftime('%Y-%m-%d %H:%M %Z')
-        repo_map['last_push_timestamp'] = timestamp
-        repo_map['last_push_datetime'] = datetime
-        for repo_config in self.query_all_repos():
-            timestamp = int(time.time())
-            datetime = time.strftime('%Y-%m-%d %H:%M %Z')
-            status = self._push_repo(repo_config)
-            if not status:  # good
-                repo_name = repo_config['repo_name']
-                repo_map.setdefault('repos', {}).setdefault(repo_name, {})['push_timestamp'] = timestamp
-                repo_map['repos'][repo_name]['push_datetime'] = datetime
-            else:
-                failure_msg += status + "\n"
-        if not failure_msg:
-            repo_map['last_successful_push_timestamp'] = repo_map['last_push_timestamp']
-            repo_map['last_successful_push_datetime'] = repo_map['last_push_datetime']
-        self._write_repo_update_json(repo_map)
-        if failure_msg:
-            self.fatal("Unable to push these repos:\n%s" % failure_msg)
-
-    def upload(self):
-        """ Upload the upload_dir according to the upload_config.
-            """
-        failure_msg = ''
-        dirs = self.query_abs_dirs()
-        for upload_config in self.config.get('upload_config', []):
-            if self.retry(
-                self.rsync_upload_directory,
-                args=(
-                    dirs['abs_upload_dir'],
-                ),
-                kwargs=upload_config,
-            ):
-                failure_msg += '%s:%s' % (upload_config['remote_host'],
-                                          upload_config['remote_path'])
-        if failure_msg:
-            self.fatal("Unable to upload to this location:\n%s" % failure_msg)
 
     def notify(self, message=None, fatal=False):
         """ Email people in the notify_config (depending on status and failure_only)
