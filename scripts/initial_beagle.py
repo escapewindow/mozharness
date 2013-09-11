@@ -4,10 +4,13 @@
 # License, v. 2.0. If a copy of the MPL was not distributed with this file,
 # You can obtain one at http://mozilla.org/MPL/2.0/.
 # ***** END LICENSE BLOCK *****
-"""hg_git.py
+"""initial_beagle.py
 
-Multi-repo m-c hg->git conversions with cvs prepending, specifically for
+Multi-repo m-c hg->git initial conversion with cvs prepending, specifically for
 gecko.git and beagle support.
+
+Separated from hg_git.py for a) simplifying hg_git.py for its main purpose,
+and b) somewhat protecting the initial conversion steps from future edits.
 """
 
 from copy import deepcopy
