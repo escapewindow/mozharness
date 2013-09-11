@@ -61,8 +61,6 @@ class HgGitScript(VirtualenvMixin, TooltoolMixin, TransferMixin, VCSScript):
                 'clobber',
                 'create-virtualenv',
                 'pull',
-                'prepend-cvs',
-                'fix-tags',
                 'update-stage-mirror',
                 'update-work-mirror',
                 'push',
@@ -409,29 +407,6 @@ class HgGitScript(VirtualenvMixin, TooltoolMixin, TransferMixin, VCSScript):
         return branch_map
 
     # Actions {{{1
-    def fix_tags(self):
-        """ Fairly fast action that points each existing tag to the new
-            cvs-prepended sha.
-
-            Then we git gc to get rid of old shas.  This doesn't specifically
-            belong in this action, though it's the right spot in the workflow.
-            We have to gc to get rid of the <h<surkov email issue that
-            git-filter-branch-keep-rewrites gets rid of in the new shas.
-            """
-        dirs = self.query_abs_dirs()
-        git = self.query_exe("git", return_type="list")
-        conversion_dir = dirs['abs_conversion_dir']
-        self._fix_tags(
-            os.path.join(conversion_dir, '.git'),
-            dirs['abs_git_rewrite_dir']
-        )
-        self.run_command(
-            git + ['gc', '--aggressive'],
-            cwd=os.path.join(conversion_dir, '.git'),
-            error_list=GitErrorList,
-            halt_on_failure=True,
-        )
-
     def create_test_targets(self):
         """ This action creates local directories to do test pushes to.
             """
