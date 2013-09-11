@@ -6,8 +6,8 @@
 # ***** END LICENSE BLOCK *****
 """hg_git.py
 
-Multi-repo m-c hg->git conversions with cvs prepending, specifically for
-gecko.git and beagle support.
+hg->git conversions.  Needs to support both the monolithic beagle/gecko.git
+type conversions, as well as many-to-many (l10n, build repos, etc.)
 """
 
 from copy import deepcopy
