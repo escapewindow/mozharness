@@ -16,9 +16,36 @@ config = {
     },
 
     "l10n_config": {
-        "gecko.git": {
+        "gecko_config": {
+            'mozilla-beta': {
+                'locales_file_url': 'http://hg.mozilla.org/releases/mozilla-beta/raw-file/default/b2g/locales/all-locales',
+                'git_branch_name': 'mozilla-beta',
+                'targets': [{
+                    "target_dest": "gitmo-gecko-l10n",
+                }],
+            },
         },
-        "gaia.git": {
+        "gaia_config": {
+            'v1_1_0': {
+                'locales_file_url': 'https://raw.github.com/mozilla-b2g/gaia/v1-train/locales/languages_dev.json',
+                'git_branch_name': '',
+                'targets': [{
+                    "target_dest": "gitmo-gaia-l10n",
+                }],
+            },
+        },
+    },
+
+    "remote_targets": {
+        "gitmo-gecko-l10n": {
+            "repo": 'git+ssh://git.mozilla.org/releases/l10n/%(locale)s/gecko.git',
+            "ssh_key": "~/.ssh/blah",
+            "vcs": "git",
+        },
+        "gitmo-gaia-l10n": {
+            "repo": 'git+ssh://git.mozilla.org/releases/l10n/%(locale)s/gaia.git',
+            "ssh_key": "~/.ssh/blah",
+            "vcs": "git",
         },
     },
 
