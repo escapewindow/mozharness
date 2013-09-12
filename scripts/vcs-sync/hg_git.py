@@ -90,10 +90,6 @@ class HgGitScript(VirtualenvMixin, TooltoolMixin, TransferMixin, VCSScript):
         abs_dirs = super(HgGitScript, self).query_abs_dirs()
         abs_dirs['abs_cvs_history_dir'] = os.path.join(
             abs_dirs['abs_work_dir'], 'mozilla-cvs-history')
-        abs_dirs['abs_conversion_dir'] = os.path.join(
-            abs_dirs['abs_work_dir'], 'conversion',
-            self.config['conversion_dir']
-        )
         abs_dirs['abs_source_dir'] = os.path.join(
             abs_dirs['abs_work_dir'], 'stage_source')
         abs_dirs['abs_repo_sync_tools_dir'] = os.path.join(
@@ -102,6 +98,11 @@ class HgGitScript(VirtualenvMixin, TooltoolMixin, TransferMixin, VCSScript):
             abs_dirs['abs_work_dir'], 'mc-git-rewrite')
         abs_dirs['abs_target_dir'] = os.path.join(abs_dirs['abs_work_dir'],
                                                   'target')
+        if 'conversion_dir' in self.config:
+            abs_dirs['abs_conversion_dir'] = os.path.join(
+                abs_dirs['abs_work_dir'], 'conversion',
+                self.config['conversion_dir']
+            )
         self.abs_dirs = abs_dirs
         return self.abs_dirs
 
@@ -212,7 +213,9 @@ class HgGitScript(VirtualenvMixin, TooltoolMixin, TransferMixin, VCSScript):
             covers git pushes.
             """
         dirs = self.query_abs_dirs()
-        conversion_dir = dirs['abs_conversion_dir']
+        conversion_dir = repo_config.get('conversion_dir', dirs.get('abs_conversion_dir'))
+        if not conversion_dir:
+            self.fatal("No conversion_dir for %s!" % repo_config['repo_name'])
         source_dir = os.path.join(dirs['abs_source_dir'], repo_config['repo_name'])
         git = self.query_exe('git', return_type='list')
         hg = self.query_exe('hg', return_type='list')
@@ -445,7 +448,6 @@ class HgGitScript(VirtualenvMixin, TooltoolMixin, TransferMixin, VCSScript):
             """
         hg = self.query_exe("hg", return_type="list")
         dirs = self.query_abs_dirs()
-        dest = dirs['abs_conversion_dir']
         repo_map = self._read_repo_update_json()
         timestamp = int(time.time())
         datetime = time.strftime('%Y-%m-%d %H:%M %Z')
@@ -454,6 +456,9 @@ class HgGitScript(VirtualenvMixin, TooltoolMixin, TransferMixin, VCSScript):
         for repo_config in self.query_all_repos():
             repo_name = repo_config['repo_name']
             source = os.path.join(dirs['abs_source_dir'], repo_name)
+            dest = repo_config.get('conversion_dir', dirs.get('abs_conversion_dir'))
+            if not dest:
+                self.fatal("No conversion_dir for %s!" % repo_name)
             # Build branch map.
             branch_map = self.query_branches(
                 repo_config.get('branch_config', {}),
