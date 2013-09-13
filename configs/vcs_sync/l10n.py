@@ -24,16 +24,26 @@ config = {
                 'targets': [{
                     "target_dest": "gitmo-gecko-l10n",
                 }],
+                'tag_config': {
+                    'tag_regexes': [
+                        '^B2G_',
+                    ],
+                },
             },
         },
         "gaia_config": {
-            'v1_1_0': {
+            'v1-train': {
                 'locales_file_url': 'https://raw.github.com/mozilla-b2g/gaia/v1-train/locales/languages_dev.json',
                 'hg_url': 'https://hg.mozilla.org/releases/gaia-l10n/v1_1/%(locale)s',
-                'git_branch_name': '',
+                'git_branch_name': 'v1.1.0',
                 'targets': [{
                     "target_dest": "gitmo-gaia-l10n",
                 }],
+                'tag_config': {
+                    'tag_regexes': [
+                        '^B2G_',
+                    ],
+                },
             },
         },
     },

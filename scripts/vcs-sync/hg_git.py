@@ -131,6 +131,7 @@ class HgGitScript(VirtualenvMixin, TooltoolMixin, TransferMixin, VCSScript):
             repos, and since it would be nicest to read the list of locales
             from their SSoT files.
             """
+        l10n_repos = []
         gecko_dict = deepcopy(self.config['l10n_config'].get('gecko_config', {}))
         for name, gecko_config in gecko_dict.items():
             file_name = self.download_file(gecko_config['locales_file_url'])
@@ -139,10 +140,38 @@ class HgGitScript(VirtualenvMixin, TooltoolMixin, TransferMixin, VCSScript):
                 continue
             contents = self.read_from_file(file_name)
             for locale in contents.splitlines():
-                pass
-                # TODO
+                replace_dict = {'locale': locale}
+                long_name = 'gecko-%s-%s' % (name, locale)
+                repo_dict = {
+                    'repo': gecko_config['hg_url'] % replace_dict,
+                    'revision': 'default',
+                    'repo_name': long_name,
+                    'conversion_dir': long_name,
+                    'targets': [{
+                        'target_dest': '%s/.git' % long_name,
+                        'vcs': 'git',
+                        'test_push': True,
+                    }],
+                    'bare_checkout': True,
+                    'vcs': 'hg',
+                    'branch_config': {
+                        'branches': {
+                            'default': gecko_config['git_branch_name'],
+                        },
+                    },
+                    'tag_config': gecko_config.get('tag_config', {}),
+                }
+                for remote_target in gecko_config.get('targets', []):
+                    if not remote_target.get('target_dest') or remote_target['target_dest'] not in self.config['remote_targets']:
+                        self.fatal("Can't figure out remote target for %s!" % long_name)
+                    target_config = deepcopy(remote_target)
+                    target_config['repo'] = target_config['repo'] % replace_dict
+                    repo_dict['targets'].append(target_config)
+                l10n_repos.append(repo_dict)
 
         gaia_dict = deepcopy(self.config['l10n_config'].get('gaia_config', {}))
+        # TODO other than locales and long_name I think these are the same; I
+        # need to un-dup code.
         for name, gaia_config in gaia_dict.items():
             contents = self.retry(
                 self.load_json_from_url,
@@ -152,8 +181,34 @@ class HgGitScript(VirtualenvMixin, TooltoolMixin, TransferMixin, VCSScript):
                 self.error("Can't download locales from %s; skipping!" % gaia_config['locales_file_url'])
                 continue
             for locale in dict(contents).keys():
-                pass
-                # TODO
+                replace_dict = {'locale': locale}
+                long_name = 'gaia-%s-%s' % (name, locale)
+                repo_dict = {
+                    'repo': gaia_config['hg_url'] % replace_dict,
+                    'revision': 'default',
+                    'repo_name': long_name,
+                    'conversion_dir': long_name,
+                    'targets': [{
+                        'target_dest': '%s/.git' % long_name,
+                        'vcs': 'git',
+                        'test_push': True,
+                    }],
+                    'bare_checkout': True,
+                    'vcs': 'hg',
+                    'branch_config': {
+                        'branches': {
+                            'default': gaia_config['git_branch_name'],
+                        },
+                    },
+                    'tag_config': gaia_config.get('tag_config', {}),
+                }
+                for remote_target in gaia_config.get('targets', []):
+                    if not remote_target.get('target_dest') or remote_target['target_dest'] not in self.config['remote_targets']:
+                        self.fatal("Can't figure out remote target for %s!" % long_name)
+                    target_config = deepcopy(remote_target)
+                    target_config['repo'] = target_config['repo'] % replace_dict
+                    repo_dict['targets'].append(target_config)
+                l10n_repos.append(repo_dict)
 
     def query_all_repos(self):
         """ Very simple method, but we need this concatenated list many times
