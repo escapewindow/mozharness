@@ -14,11 +14,12 @@ config = {
         # http://kiln.stackexchange.com/questions/2816/mercurial-certificate-warning-certificate-not-verified-web-cacerts
         "hg": [os.path.join(os.getcwd(), "build", "venv", "bin", "hg"), "--config", "web.cacerts=/etc/pki/tls/certs/ca-bundle.crt"],
     },
-
+    "conversion_type": "b2g-l10n",
     "l10n_config": {
         "gecko_config": {
             'mozilla-beta': {
                 'locales_file_url': 'http://hg.mozilla.org/releases/mozilla-beta/raw-file/default/b2g/locales/all-locales',
+                'hg_url': 'http://hg.mozilla.org/releases/l10n/mozilla-beta/%{locale)s',
                 'git_branch_name': 'mozilla-beta',
                 'targets': [{
                     "target_dest": "gitmo-gecko-l10n",
@@ -28,6 +29,7 @@ config = {
         "gaia_config": {
             'v1_1_0': {
                 'locales_file_url': 'https://raw.github.com/mozilla-b2g/gaia/v1-train/locales/languages_dev.json',
+                'hg_url': 'https://hg.mozilla.org/releases/gaia-l10n/v1_1/%(locale)s',
                 'git_branch_name': '',
                 'targets': [{
                     "target_dest": "gitmo-gaia-l10n",

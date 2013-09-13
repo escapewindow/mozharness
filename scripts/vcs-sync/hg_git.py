@@ -53,6 +53,7 @@ class HgGitScript(VirtualenvMixin, TooltoolMixin, TransferMixin, VCSScript):
         """
 
     mapfile_binary_search = None
+    all_repos = None
 
     def __init__(self, require_config_file=True):
         super(HgGitScript, self).__init__(
@@ -125,15 +126,48 @@ class HgGitScript(VirtualenvMixin, TooltoolMixin, TransferMixin, VCSScript):
             error_message="Can't set up %s!" % path
         )
 
+    def _query_l10n_repos(self):
+        """ Since I didn't want to have to build a huge static list of l10n
+            repos, and since it would be nicest to read the list of locales
+            from their SSoT files.
+            """
+        gecko_dict = deepcopy(self.config['l10n_config'].get('gecko_config', {}))
+        for name, gecko_config in gecko_dict.items():
+            file_name = self.download_file(gecko_config['locales_file_url'])
+            if not os.path.exists(file_name):
+                self.error("Can't download locales from %s; skipping!" % gecko_config['locales_file_url'])
+                continue
+            contents = self.read_from_file(file_name)
+            for locale in contents.splitlines():
+                pass
+                # TODO
+
+        gaia_dict = deepcopy(self.config['l10n_config'].get('gaia_config', {}))
+        for name, gaia_config in gaia_dict.items():
+            contents = self.retry(
+                self.load_json_from_url,
+                args=(gaia_config['locales_file_url'],)
+            )
+            if not contents:
+                self.error("Can't download locales from %s; skipping!" % gaia_config['locales_file_url'])
+                continue
+            for locale in dict(contents).keys():
+                pass
+                # TODO
+
     def query_all_repos(self):
         """ Very simple method, but we need this concatenated list many times
             throughout the script.
             """
-        if self.config.get('initial_repo'):
-            all_repos = [self.config['initial_repo']] + list(self.config['conversion_repos'])
+        if self.all_repos:
+            return self.all_repos
+        if self.config.get('conversion_type') == 'b2g-l10n':
+            self.all_repos = self._query_l10n_repos()
+        elif self.config.get('initial_repo'):
+            self.all_repos = [self.config['initial_repo']] + list(self.config['conversion_repos'])
         else:
-            all_repos = list(self.config['conversion_repos'])
-        return all_repos
+            self.all_repos = list(self.config['conversion_repos'])
+        return self.all_repos
 
     def _update_stage_repo(self, repo_config, retry=True, clobber=False):
         """ Update a stage repo.
