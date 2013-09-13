@@ -24,7 +24,7 @@ try:
 except ImportError:
     import json
 
-sys.path.insert(1, os.path.dirname(sys.path[0]))
+sys.path.insert(1, os.path.dirname(os.path.dirname(sys.path[0])))
 
 import mozharness
 external_tools_path = os.path.join(
