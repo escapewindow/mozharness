@@ -209,6 +209,7 @@ class HgGitScript(VirtualenvMixin, TooltoolMixin, TransferMixin, VCSScript):
                     target_config['repo'] = target_config['repo'] % replace_dict
                     repo_dict['targets'].append(target_config)
                 l10n_repos.append(repo_dict)
+        return l10n_repos
 
     def query_all_repos(self):
         """ Very simple method, but we need this concatenated list many times
