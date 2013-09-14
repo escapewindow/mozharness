@@ -13,6 +13,7 @@ type conversions, as well as many-to-many (l10n, build repos, etc.)
 from copy import deepcopy
 import mmap
 import os
+import pprint
 import re
 import smtplib
 import sys
@@ -141,7 +142,7 @@ class HgGitScript(VirtualenvMixin, TooltoolMixin, TransferMixin, VCSScript):
             contents = self.read_from_file(file_name)
             for locale in contents.splitlines():
                 replace_dict = {'locale': locale}
-                long_name = 'gecko-%s-%s' % (name, locale)
+                long_name = 'gecko_%s_%s' % (name, locale)
                 repo_dict = {
                     'repo': gecko_config['hg_url'] % replace_dict,
                     'revision': 'default',
@@ -182,7 +183,7 @@ class HgGitScript(VirtualenvMixin, TooltoolMixin, TransferMixin, VCSScript):
                 continue
             for locale in dict(contents).keys():
                 replace_dict = {'locale': locale}
-                long_name = 'gaia-%s-%s' % (name, locale)
+                long_name = 'gaia_%s_%s' % (name, locale)
                 repo_dict = {
                     'repo': gaia_config['hg_url'] % replace_dict,
                     'revision': 'default',
@@ -210,7 +211,7 @@ class HgGitScript(VirtualenvMixin, TooltoolMixin, TransferMixin, VCSScript):
                     repo_dict['targets'].append(target_config)
                 l10n_repos.append(repo_dict)
         self.info("Built l10n_repos...")
-        self.info(str(l10n_repos))
+        self.info(pprint.pformat(l10n_repos, indent=4))
         return l10n_repos
 
     def query_all_repos(self):
