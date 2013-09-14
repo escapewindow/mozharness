@@ -60,7 +60,7 @@ config = {
             },
             'master': {
                 'locales_file_url': 'https://raw.github.com/mozilla-b2g/gaia/master/locales/languages_dev.json',
-                'hg_url': 'https://hg.mozilla.org/releases/gaia-l10n/%(locale)s',
+                'hg_url': 'https://hg.mozilla.org/gaia-l10n/%(locale)s',
                 'git_branch_name': 'master',
                 'targets': [{
                     "target_dest": "gitmo-gaia-l10n",
