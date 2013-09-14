@@ -149,7 +149,7 @@ class HgGitScript(VirtualenvMixin, TooltoolMixin, TransferMixin, VCSScript):
                     'repo_name': long_name,
                     'conversion_dir': long_name,
                     'targets': [{
-                        'target_dest': '%s/.git' % long_name,
+                        'target_dest': 'releases-l10n-%s-gecko.git' % (locale),
                         'vcs': 'git',
                         'test_push': True,
                     }],
