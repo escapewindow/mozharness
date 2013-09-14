@@ -618,31 +618,27 @@ intree=1
                     'pull_timestamp': timestamp,
                     'pull_datetime': datetime,
                 }
-        self.retry(
-            self.run_command,
-            args=(hg + ['-v', 'gexport'], ),
-            kwargs={
-                'output_timeout': 15 * 60,
-                'cwd': dest,
-                'error_list': HgErrorList,
-            },
-            error_level=FATAL,
-        )
-        generated_mapfile = os.path.join(dest, '.hg', 'git-mapfile')
-        for repo_config in self.query_all_repos():
-            repo_name = repo_config['repo_name']
-            source = os.path.join(dirs['abs_source_dir'], repo_name)
-            branch_map = self.query_branches(
-                repo_config.get('branch_config', {}),
-                source,
-                vcs='hg',
+            self.retry(
+                self.run_command,
+                args=(hg + ['-v', 'gexport'], ),
+                kwargs={
+                    'output_timeout': 15 * 60,
+                    'cwd': dest,
+                    'error_list': HgErrorList,
+                },
+                error_level=FATAL,
+            )
+            generated_mapfile = os.path.join(dest, '.hg', 'git-mapfile')
+            self.copy_to_upload_dir(
+                generated_mapfile,
+                dest=repo_config.get('mapfile_name', "gecko-mapfile"),
+                log_level=INFO
             )
             for (branch, target_branch) in branch_map.items():
                 git_revision = self._query_mapped_revision(
                     revision=rev, mapfile=generated_mapfile)
                 repo_map['repos'][repo_name]['branches'][branch]['git_revision'] = git_revision
         self._write_repo_update_json(repo_map)
-        self.copy_to_upload_dir(generated_mapfile, dest="gecko-mapfile", log_level=INFO)
 
     def push(self):
         """ Push to all targets.  test_targets are local directory test repos;
