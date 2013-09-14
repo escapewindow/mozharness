@@ -308,7 +308,7 @@ intree=1
             kwargs = {}
         for command in commands:
             # Do the push, with retry!
-            self.info("DEBUG: %s %s" % (str(command), str(kwargs))
+            self.info("DEBUG: %s %s" % (str(command), str(kwargs)))
             if self.retry(
                 self.run_command,
                 args=(command, ),
