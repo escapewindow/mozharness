@@ -210,7 +210,7 @@ class HgGitScript(VirtualenvMixin, TooltoolMixin, TransferMixin, VCSScript):
                     repo_dict['targets'].append(target_config)
                 l10n_repos.append(repo_dict)
         self.info("Built l10n_repos...")
-        self.info(l10n_repos)
+        self.info(str(l10n_repos))
         return l10n_repos
 
     def query_all_repos(self):
