@@ -399,6 +399,7 @@ intree=1
                                 refs_list += ['+refs/tags/%s:refs/tags/%s' % (tag_name, tag_name)]
                                 continue
                 error_msg = "%s: Can't push %s to %s!\n" % (repo_config['repo_name'], conversion_dir, target_name)
+                self.info("DEBUG refs_list %s" % str(refs_list))
                 if self._do_push_repo(
                     base_command,
                     refs_list=refs_list,
