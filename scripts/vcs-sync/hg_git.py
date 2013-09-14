@@ -205,7 +205,7 @@ intree=1
                     'repo_name': long_name,
                     'conversion_dir': long_name,
                     'targets': [{
-                        'target_dest': '%s/.git' % long_name,
+                        'target_dest': 'releases-l10n-%s-gaia.git' % (locale),
                         'vcs': 'git',
                         'test_push': True,
                     }],
