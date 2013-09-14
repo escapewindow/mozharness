@@ -552,6 +552,8 @@ class HgGitScript(VirtualenvMixin, TooltoolMixin, TransferMixin, VCSScript):
             dest = repo_config.get('conversion_dir', dirs.get('abs_conversion_dir'))
             if not dest:
                 self.fatal("No conversion_dir for %s!" % repo_name)
+            if not os.path.exists(dest):
+                self.run_command(hg + ["init", dest], halt_on_failure=True)
             # Build branch map.
             branch_map = self.query_branches(
                 repo_config.get('branch_config', {}),
