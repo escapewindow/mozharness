@@ -301,7 +301,7 @@ intree=1
             while len(refs_list) > 10:
                 commands.append(base_command + refs_list[0:10])
                 refs_list = refs_list[10:]
-                commands.append(base_command + refs_list)
+            commands.append(base_command + refs_list)
         else:
             commands = [base_command]
         if kwargs is None:
