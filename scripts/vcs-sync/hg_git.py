@@ -164,7 +164,7 @@ class HgGitScript(VirtualenvMixin, TooltoolMixin, TransferMixin, VCSScript):
                 for remote_target in gecko_config.get('targets', []):
                     if not remote_target.get('target_dest') or remote_target['target_dest'] not in self.config['remote_targets']:
                         self.fatal("Can't figure out remote target for %s!" % long_name)
-                    target_config = deepcopy(remote_target)
+                    target_config = deepcopy(self.config['remote_targets'][remote_target['target_dest']])
                     target_config['repo'] = target_config['repo'] % replace_dict
                     repo_dict['targets'].append(target_config)
                 l10n_repos.append(repo_dict)
@@ -205,7 +205,7 @@ class HgGitScript(VirtualenvMixin, TooltoolMixin, TransferMixin, VCSScript):
                 for remote_target in gaia_config.get('targets', []):
                     if not remote_target.get('target_dest') or remote_target['target_dest'] not in self.config['remote_targets']:
                         self.fatal("Can't figure out remote target for %s!" % long_name)
-                    target_config = deepcopy(remote_target)
+                    target_config = deepcopy(self.config['remote_targets'][remote_target['target_dest']])
                     target_config['repo'] = target_config['repo'] % replace_dict
                     repo_dict['targets'].append(target_config)
                 l10n_repos.append(repo_dict)
