@@ -62,7 +62,6 @@ class HgGitScript(VirtualenvMixin, TooltoolMixin, TransferMixin, VCSScript):
             all_actions=[
                 'clobber',
                 'create-virtualenv',
-                'pull',
                 'update-stage-mirror',
                 'update-work-mirror',
                 'push',
