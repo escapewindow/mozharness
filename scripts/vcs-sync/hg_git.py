@@ -147,8 +147,10 @@ intree=1
             """
         l10n_repos = []
         gecko_dict = deepcopy(self.config['l10n_config'].get('gecko_config', {}))
+        dirs = self.query_abs_dirs()
         for name, gecko_config in gecko_dict.items():
-            file_name = self.download_file(gecko_config['locales_file_url'])
+            file_name = self.download_file(gecko_config['locales_file_url'],
+                                           parent_dir=dirs['abs_work_dir'])
             if not os.path.exists(file_name):
                 self.error("Can't download locales from %s; skipping!" % gecko_config['locales_file_url'])
                 continue
