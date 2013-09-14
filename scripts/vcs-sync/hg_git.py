@@ -564,6 +564,7 @@ intree=1
             the git conversion repo.
             """
         hg = self.query_exe("hg", return_type="list")
+        git = self.query_exe("git", return_type="list")
         dirs = self.query_abs_dirs()
         repo_map = self._read_repo_update_json()
         timestamp = int(time.time())
@@ -579,6 +580,10 @@ intree=1
             if not os.path.exists(dest):
                 self.run_command(hg + ["init", dest], halt_on_failure=True)
                 self.write_hggit_hgrc(dest)
+                self.init_git_repo('%s/.git' % dest, additional_args=['--bare'])
+                self.run_command(
+                    git + ['--git-dir', '%s/.git' % dest, 'config', 'gc.auto', '0'],
+                )
             # Build branch map.
             branch_map = self.query_branches(
                 repo_config.get('branch_config', {}),
