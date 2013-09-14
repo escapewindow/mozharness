@@ -19,7 +19,7 @@ config = {
         "gecko_config": {
             'mozilla-beta': {
                 'locales_file_url': 'http://hg.mozilla.org/releases/mozilla-beta/raw-file/default/b2g/locales/all-locales',
-                'hg_url': 'http://hg.mozilla.org/releases/l10n/mozilla-beta/%{locale)s',
+                'hg_url': 'http://hg.mozilla.org/releases/l10n/mozilla-beta/%(locale)s',
                 'git_branch_name': 'mozilla-beta',
                 'targets': [{
                     "target_dest": "gitmo-gecko-l10n",
