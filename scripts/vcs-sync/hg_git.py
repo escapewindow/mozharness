@@ -178,9 +178,9 @@ intree=1
                 for remote_target in gecko_config.get('targets', []):
                     if not remote_target.get('target_dest') or remote_target['target_dest'] not in self.config['remote_targets']:
                         self.fatal("Can't figure out remote target for %s!" % long_name)
-                    target_config = deepcopy(self.config['remote_targets'][remote_target['target_dest']])
-                    target_config['repo'] = target_config['repo'] % replace_dict
-                    repo_dict['targets'].append(target_config)
+#                    target_config = deepcopy(self.config['remote_targets'][remote_target['target_dest']])
+#                    target_config['repo'] = target_config['repo'] % replace_dict
+#                    repo_dict['targets'].append(target_config)
                 l10n_repos.append(repo_dict)
 
         gaia_dict = deepcopy(self.config['l10n_config'].get('gaia_config', {}))
@@ -219,9 +219,9 @@ intree=1
                 for remote_target in gaia_config.get('targets', []):
                     if not remote_target.get('target_dest') or remote_target['target_dest'] not in self.config['remote_targets']:
                         self.fatal("Can't figure out remote target for %s!" % long_name)
-                    target_config = deepcopy(self.config['remote_targets'][remote_target['target_dest']])
-                    target_config['repo'] = target_config['repo'] % replace_dict
-                    repo_dict['targets'].append(target_config)
+#                    target_config = deepcopy(self.config['remote_targets'][remote_target['target_dest']])
+#                    target_config['repo'] = target_config['repo'] % replace_dict
+#                    repo_dict['targets'].append(target_config)
                 l10n_repos.append(repo_dict)
         self.info("Built l10n_repos...")
         self.info(pprint.pformat(l10n_repos, indent=4))
