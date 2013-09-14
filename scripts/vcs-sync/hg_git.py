@@ -295,6 +295,7 @@ intree=1
         """ Helper method for _push_repo() since it has to be able to break
             out of the target_repo list loop, and the commands loop borks that.
             """
+        self.info("DEBUG: in _do_push_repo()")
         commands = []
         if refs_list:
             while len(refs_list) > 10:
@@ -307,6 +308,7 @@ intree=1
             kwargs = {}
         for command in commands:
             # Do the push, with retry!
+            self.info("DEBUG: %s %s" % (str(command), str(kwargs))
             if self.retry(
                 self.run_command,
                 args=(command, ),
