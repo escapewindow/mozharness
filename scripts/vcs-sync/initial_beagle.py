@@ -502,6 +502,20 @@ class HgGitScript(VirtualenvMixin, TooltoolMixin, TransferMixin, VCSScript):
         for repo_config in self.query_all_repos():
             self._update_stage_repo(repo_config)
 
+    def write_hggit_hgrc(self, dest):
+        # Update .hg/hgrc, if not already updated
+        hgrc = os.path.join(dest, '.hg', 'hgrc')
+        contents = ''
+        if os.path.exists(hgrc):
+            contents = self.read_from_file(hgrc)
+        if 'hggit=' not in contents:
+            hgrc_update = """[extensions]
+hggit=
+[git]
+intree=1
+"""
+            self.write_to_file(hgrc, hgrc_update, open_mode='a')
+
     def create_work_mirror(self):
         """ Create the work_mirror, initial_repo only, from the stage_mirror.
             This is where the conversion will occur.
@@ -544,18 +558,7 @@ class HgGitScript(VirtualenvMixin, TooltoolMixin, TransferMixin, VCSScript):
                 git + ['--git-dir', git_dir, 'config', 'gc.auto', '0'],
                 cwd=work_dest
             )
-        # Update .hg/hgrc, if not already updated
-        hgrc = os.path.join(work_dest, '.hg', 'hgrc')
-        contents = ''
-        if os.path.exists(hgrc):
-            contents = self.read_from_file(hgrc)
-        if 'hggit=' not in contents:
-            hgrc_update = """[extensions]
-hggit=
-[git]
-intree=1
-"""
-            self.write_to_file(hgrc, hgrc_update, open_mode='a')
+        self.write_hggit_hgrc(work_dest)
 
     def initial_conversion(self):
         """ Run the initial hg-git conversion of the work_mirror.

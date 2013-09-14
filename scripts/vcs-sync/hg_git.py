@@ -127,6 +127,20 @@ class HgGitScript(VirtualenvMixin, TooltoolMixin, TransferMixin, VCSScript):
             error_message="Can't set up %s!" % path
         )
 
+    def write_hggit_hgrc(self, dest):
+        # Update .hg/hgrc, if not already updated
+        hgrc = os.path.join(dest, '.hg', 'hgrc')
+        contents = ''
+        if os.path.exists(hgrc):
+            contents = self.read_from_file(hgrc)
+        if 'hggit=' not in contents:
+            hgrc_update = """[extensions]
+hggit=
+[git]
+intree=1
+"""
+            self.write_to_file(hgrc, hgrc_update, open_mode='a')
+
     def _query_l10n_repos(self):
         """ Since I didn't want to have to build a huge static list of l10n
             repos, and since it would be nicest to read the list of locales
@@ -306,7 +320,7 @@ class HgGitScript(VirtualenvMixin, TooltoolMixin, TransferMixin, VCSScript):
             covers git pushes.
             """
         dirs = self.query_abs_dirs()
-        conversion_dir = repo_config.get('conversion_dir', dirs.get('abs_conversion_dir'))
+        conversion_dir = self.query_abs_conversion_dir(repo_config)
         if not conversion_dir:
             self.fatal("No conversion_dir for %s!" % repo_config['repo_name'])
         source_dir = os.path.join(dirs['abs_source_dir'], repo_config['repo_name'])
@@ -453,6 +467,15 @@ class HgGitScript(VirtualenvMixin, TooltoolMixin, TransferMixin, VCSScript):
             fh.close()
         return repo_map
 
+    def query_abs_conversion_dir(self, repo_config):
+        dirs = self.query_abs_dirs()
+        if repo_config.get('conversion_dir'):
+            dest = os.path.join(dirs['abs_work_dir'], 'conversion',
+                                repo_config['conversion_dir'])
+        else:
+            dest = dirs.get('abs_conversion_dir')
+        return dest
+
     def _write_repo_update_json(self, repo_map):
         """ The write portion of _read_repo_update_json().
             """
@@ -549,11 +572,12 @@ class HgGitScript(VirtualenvMixin, TooltoolMixin, TransferMixin, VCSScript):
         for repo_config in self.query_all_repos():
             repo_name = repo_config['repo_name']
             source = os.path.join(dirs['abs_source_dir'], repo_name)
-            dest = repo_config.get('conversion_dir', dirs.get('abs_conversion_dir'))
+            dest = self.query_abs_conversion_dir(repo_config)
             if not dest:
                 self.fatal("No conversion_dir for %s!" % repo_name)
             if not os.path.exists(dest):
                 self.run_command(hg + ["init", dest], halt_on_failure=True)
+                self.write_hggit_hgrc(dest)
             # Build branch map.
             branch_map = self.query_branches(
                 repo_config.get('branch_config', {}),
