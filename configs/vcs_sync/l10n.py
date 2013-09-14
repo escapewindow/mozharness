@@ -30,12 +30,38 @@ config = {
                     ],
                 },
             },
+            'mozilla-central': {
+                'locales_file_url': 'http://hg.mozilla.org/mozilla-central/raw-file/default/b2g/locales/all-locales',
+                'hg_url': 'http://hg.mozilla.org/l10n-central/%(locale)s',
+                'git_branch_name': 'master',
+                'targets': [{
+                    "target_dest": "gitmo-gecko-l10n",
+                }],
+                'tag_config': {
+                    'tag_regexes': [
+                        '^B2G_',
+                    ],
+                },
+            },
         },
         "gaia_config": {
             'v1-train': {
                 'locales_file_url': 'https://raw.github.com/mozilla-b2g/gaia/v1-train/locales/languages_dev.json',
                 'hg_url': 'https://hg.mozilla.org/releases/gaia-l10n/v1_1/%(locale)s',
                 'git_branch_name': 'v1.1',
+                'targets': [{
+                    "target_dest": "gitmo-gaia-l10n",
+                }],
+                'tag_config': {
+                    'tag_regexes': [
+                        '^B2G_',
+                    ],
+                },
+            },
+            'master': {
+                'locales_file_url': 'https://raw.github.com/mozilla-b2g/gaia/master/locales/languages_dev.json',
+                'hg_url': 'https://hg.mozilla.org/releases/gaia-l10n/%(locale)s',
+                'git_branch_name': 'master',
                 'targets': [{
                     "target_dest": "gitmo-gaia-l10n",
                 }],
