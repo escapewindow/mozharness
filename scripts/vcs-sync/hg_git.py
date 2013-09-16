@@ -581,7 +581,8 @@ intree=1
             if not dest:
                 self.fatal("No conversion_dir for %s!" % repo_name)
             if not os.path.exists(dest):
-                self.run_command(hg + ['clone', '--noupdate', source],
+                self.run_command(hg + ["init", dest], halt_on_failure=True)
+                self.run_command(hg + ['pull', source],
                                  cwd=os.path.dirname(dest))
                 self.write_hggit_hgrc(dest)
                 self.init_git_repo('%s/.git' % dest, additional_args=['--bare'])
