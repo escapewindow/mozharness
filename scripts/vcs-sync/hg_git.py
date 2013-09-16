@@ -584,6 +584,7 @@ intree=1
 #                self.run_command(hg + ["init", dest], halt_on_failure=True)
 #                self.run_command(hg + ['pull', source],
 #                                 cwd=os.path.dirname(dest))
+                self.mkdir_p(os.path.dirname(dest))
                 self.run_command(hg + ['clone', '--noupdate', source],
                                  error_list=HgErrorList,
                                  halt_on_failure=True,
