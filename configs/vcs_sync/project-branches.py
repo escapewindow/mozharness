@@ -133,7 +133,7 @@ config = {
     "upload_config": [{
         "ssh_key": "~/.ssh/id_rsa",
         "ssh_user": "asasaki",
-        "remote_host": "github-sync3",
+        "remote_host": "github-sync4",
         "remote_path": "/home/asasaki/project-branches/project-branches-upload",
     }],
 

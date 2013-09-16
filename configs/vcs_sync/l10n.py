@@ -30,6 +30,19 @@ config = {
                     ],
                 },
             },
+            'mozilla-aurora': {
+                'locales_file_url': 'http://hg.mozilla.org/releases/mozilla-aurora/raw-file/default/b2g/locales/all-locales',
+                'hg_url': 'http://hg.mozilla.org/releases/l10n/mozilla-aurora/%(locale)s',
+                'git_branch_name': 'aurora',
+                'targets': [{
+                    "target_dest": "gitmo-gecko-l10n",
+                }],
+                'tag_config': {
+                    'tag_regexes': [
+                        '^B2G_',
+                    ],
+                },
+            },
             'mozilla-central': {
                 'locales_file_url': 'http://hg.mozilla.org/mozilla-central/raw-file/default/b2g/locales/all-locales',
                 'hg_url': 'http://hg.mozilla.org/l10n-central/%(locale)s',
@@ -45,10 +58,36 @@ config = {
             },
         },
         "gaia_config": {
+            'v1_2': {
+                'locales_file_url': 'https://raw.github.com/mozilla-b2g/gaia/v1.2/locales/languages_dev.json',
+                'hg_url': 'https://hg.mozilla.org/releases/gaia-l10n/v1_2/%(locale)s',
+                'git_branch_name': 'v1.2',
+                'targets': [{
+                    "target_dest": "gitmo-gaia-l10n",
+                }],
+                'tag_config': {
+                    'tag_regexes': [
+                        '^B2G_',
+                    ],
+                },
+            },
             'v1-train': {
                 'locales_file_url': 'https://raw.github.com/mozilla-b2g/gaia/v1-train/locales/languages_dev.json',
                 'hg_url': 'https://hg.mozilla.org/releases/gaia-l10n/v1_1/%(locale)s',
                 'git_branch_name': 'v1.1',
+                'targets': [{
+                    "target_dest": "gitmo-gaia-l10n",
+                }],
+                'tag_config': {
+                    'tag_regexes': [
+                        '^B2G_',
+                    ],
+                },
+            },
+            'v1_0_1': {
+                'locales_file_url': 'https://raw.github.com/mozilla-b2g/gaia/v1.0.1/locales/languages_dev.json',
+                'hg_url': 'https://hg.mozilla.org/releases/gaia-l10n/v1_0_1/%(locale)s',
+                'git_branch_name': 'v1.0.1',
                 'targets': [{
                     "target_dest": "gitmo-gaia-l10n",
                 }],
