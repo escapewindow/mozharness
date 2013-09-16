@@ -584,9 +584,10 @@ intree=1
 #                self.run_command(hg + ["init", dest], halt_on_failure=True)
 #                self.run_command(hg + ['pull', source],
 #                                 cwd=os.path.dirname(dest))
-                self.run_command(hg + ['clone', '--noupdate', source, dest],
+                self.run_command(hg + ['clone', '--noupdate', source],
                                  error_list=HgErrorList,
-                                 halt_on_failure=True)
+                                 halt_on_failure=True,
+                                 cwd=os.path.dirname(dest))
                 self.write_hggit_hgrc(dest)
                 self.init_git_repo('%s/.git' % dest, additional_args=['--bare'])
                 self.run_command(
