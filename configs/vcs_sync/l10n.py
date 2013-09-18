@@ -17,6 +17,19 @@ config = {
     "conversion_type": "b2g-l10n",
     "l10n_config": {
         "gecko_config": {
+            'mozilla-release': {
+                'locales_file_url': 'http://hg.mozilla.org/releases/mozilla-release/raw-file/default/b2g/locales/all-locales',
+                'hg_url': 'http://hg.mozilla.org/releases/l10n/mozilla-release/%(locale)s',
+                'git_branch_name': 'release',
+                'targets': [{
+                    "target_dest": "gitmo-gecko-l10n",
+                }],
+                'tag_config': {
+                    'tag_regexes': [
+                        '^B2G_',
+                    ],
+                },
+            },
             'mozilla-beta': {
                 'locales_file_url': 'http://hg.mozilla.org/releases/mozilla-beta/raw-file/default/b2g/locales/all-locales',
                 'hg_url': 'http://hg.mozilla.org/releases/l10n/mozilla-beta/%(locale)s',
