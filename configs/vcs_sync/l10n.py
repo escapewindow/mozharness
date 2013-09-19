@@ -165,7 +165,7 @@ config = {
     "upload_config": [{
         "ssh_key": "~/.ssh/id_rsa",
         "ssh_user": "asasaki",
-        "remote_host": "github-sync4",
+        "remote_host": "github-sync2",
         "remote_path": "/home/asasaki/upload/l10n",
     }],
 
