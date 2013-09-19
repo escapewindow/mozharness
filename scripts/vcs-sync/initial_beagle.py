@@ -98,11 +98,7 @@ class HgGitScript(VirtualenvMixin, TooltoolMixin, TransferMixin, VCSScript):
         """ Very simple method, but we need this concatenated list many times
             throughout the script.
             """
-        if self.config.get('initial_repo'):
-            all_repos = [self.config['initial_repo']] + list(self.config['conversion_repos'])
-        else:
-            all_repos = list(self.config['conversion_repos'])
-        return all_repos
+        return [self.config['initial_repo']]
 
     def _update_stage_repo(self, repo_config, retry=True, clobber=False):
         """ Update a stage repo.
