@@ -295,7 +295,6 @@ intree=1
         """ Helper method for _push_repo() since it has to be able to break
             out of the target_repo list loop, and the commands loop borks that.
             """
-        self.info("DEBUG: in _do_push_repo()")
         commands = []
         if refs_list:
             while len(refs_list) > 10:
@@ -308,7 +307,6 @@ intree=1
             kwargs = {}
         for command in commands:
             # Do the push, with retry!
-            self.info("DEBUG: %s %s" % (str(command), str(kwargs)))
             if self.retry(
                 self.run_command,
                 args=(command, ),
@@ -401,7 +399,6 @@ intree=1
                                 refs_list += ['+refs/tags/%s:refs/tags/%s' % (tag_name, tag_name)]
                                 continue
                 error_msg = "%s: Can't push %s to %s!\n" % (repo_config['repo_name'], conversion_dir, target_name)
-                self.info("DEBUG refs_list %s" % str(refs_list))
                 if self._do_push_repo(
                     base_command,
                     refs_list=refs_list,
