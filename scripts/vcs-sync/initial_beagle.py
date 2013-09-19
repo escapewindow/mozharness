@@ -588,7 +588,7 @@ intree=1
         output = self.get_output_from_command(hg + ['branches', '-c'], cwd=source)
         for line in output.splitlines():
             branch_name = line.split(' ')[0]
-            if branch_name in repo_config.get('branches', {}):
+            if branch_name in repo_config.get('branch_config', {}).get('branches', {}):
                 continue
             self.run_command(
                 hg + ['bookmark', '-f', '-r', branch_name, branch_name],
