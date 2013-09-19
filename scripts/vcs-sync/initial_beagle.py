@@ -19,7 +19,6 @@ import os
 import re
 import smtplib
 import sys
-import time
 
 sys.path.insert(1, os.path.dirname(os.path.dirname(sys.path[0])))
 
@@ -63,17 +62,11 @@ class HgGitScript(VirtualenvMixin, TooltoolMixin, TransferMixin, VCSScript):
                 'initial-conversion',
                 'prepend-cvs',
                 'fix-tags',
-                'update-work-mirror',
                 'notify',
             ],
             # These default actions are the update loop that we run after the
             # initial steps to create the work mirror with all the branches +
             # cvs history have been run.
-            default_actions=[
-                'create-virtualenv',
-                'update-work-mirror',
-                'notify',
-            ],
             require_config_file=require_config_file
         )
 
@@ -739,77 +732,6 @@ intree=1
             error_list=GitErrorList,
             halt_on_failure=True,
         )
-
-    def update_work_mirror(self):
-        """ Pull the latest changes into the work mirror, update the repo_map
-            json, and run |hg gexport| to convert those latest changes into
-            the git conversion repo.
-            """
-        hg = self.query_exe("hg", return_type="list")
-        dirs = self.query_abs_dirs()
-        dest = dirs['abs_conversion_dir']
-        repo_map = self._read_repo_update_json()
-        timestamp = int(time.time())
-        datetime = time.strftime('%Y-%m-%d %H:%M %Z')
-        repo_map['last_pull_timestamp'] = timestamp
-        repo_map['last_pull_datetime'] = datetime
-        for repo_config in self.query_all_repos():
-            repo_name = repo_config['repo_name']
-            source = os.path.join(dirs['abs_source_dir'], repo_name)
-            # Build branch map.
-            branch_map = self.query_branches(
-                repo_config.get('branch_config', {}),
-                source,
-            )
-            for (branch, target_branch) in branch_map.items():
-                output = self.get_output_from_command(
-                    hg + ['id', '-r', branch],
-                    cwd=source
-                )
-                if output:
-                    rev = output.split(' ')[0]
-                else:
-                    self.fatal("Branch %s doesn't exist in %s!" % (branch, repo_name))
-                timestamp = int(time.time())
-                datetime = time.strftime('%Y-%m-%d %H:%M %Z')
-                self.run_command(hg + ['pull', '-r', rev, source], cwd=dest)
-                self.run_command(
-                    hg + ['bookmark', '-f', '-r', rev, target_branch],
-                    cwd=dest
-                )
-                # This might get a little large.
-                repo_map.setdefault('repos', {}).setdefault(repo_name, {}).setdefault('branches', {})[branch] = {
-                    'hg_branch': branch,
-                    'hg_revision': rev,
-                    'git_branch': target_branch,
-                    'pull_timestamp': timestamp,
-                    'pull_datetime': datetime,
-                }
-        self.retry(
-            self.run_command,
-            args=(hg + ['-v', 'gexport'], ),
-            kwargs={
-                'output_timeout': 15 * 60,
-                'cwd': dest,
-                'error_list': HgErrorList,
-            },
-            error_level=FATAL,
-        )
-        generated_mapfile = os.path.join(dest, '.hg', 'git-mapfile')
-        for repo_config in self.query_all_repos():
-            repo_name = repo_config['repo_name']
-            source = os.path.join(dirs['abs_source_dir'], repo_name)
-            branch_map = self.query_branches(
-                repo_config.get('branch_config', {}),
-                source,
-                vcs='hg',
-            )
-            for (branch, target_branch) in branch_map.items():
-                git_revision = self._query_mapped_revision(
-                    revision=rev, mapfile=generated_mapfile)
-                repo_map['repos'][repo_name]['branches'][branch]['git_revision'] = git_revision
-        self._write_repo_update_json(repo_map)
-        self.copy_to_upload_dir(generated_mapfile, dest="gecko-mapfile", log_level=INFO)
 
     def notify(self, message=None, fatal=False):
         """ Email people in the notify_config (depending on status and failure_only)
