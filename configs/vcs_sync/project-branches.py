@@ -19,26 +19,23 @@ config = {
     }],
     "job_name": "project-branches",
     "conversion_dir": "project-branches",
-#    "initial_repo": {
-#        "repo": "https://hg.mozilla.org/mozilla-central",
-#        "revision": "default",
-#        "repo_name": "mozilla-central",
-#        "targets": [{
-#            "target_dest": "project-branches/.git",
-#            "vcs": "git",
-#            "test_push": True,
-#        }, {
-#            "target_dest": "github-project-branches",
-#            "vcs": "git",
-#        }],
-#        "bare_checkout": True,
-#        "vcs": "hg",
-#        "branch_config": {
-#            "branches": {
-#                "default": "master",
-#            },
-#        },
-#    },
+    "initial_repo": {
+        "repo": "https://hg.mozilla.org/mozilla-central",
+        "revision": "default",
+        "repo_name": "mozilla-central",
+        "targets": [{
+            "target_dest": "project-branches/.git",
+            "vcs": "git",
+            "test_push": True,
+        }],
+        "bare_checkout": True,
+        "vcs": "hg",
+        "branch_config": {
+            "branches": {
+                "default": "master",
+            },
+        },
+    },
     "backup_dir": "/mnt/netapp/github_sync/aki/%s" % hostname,
     "cvs_manifest": CVS_MANIFEST,
     "tooltool_servers": ["http://runtime-binaries.pvt.build.mozilla.org/tooltool/"],
