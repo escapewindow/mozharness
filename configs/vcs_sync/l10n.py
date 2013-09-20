@@ -20,7 +20,7 @@ config = {
             'mozilla-release': {
                 'locales_file_url': 'http://hg.mozilla.org/releases/mozilla-release/raw-file/default/b2g/locales/all-locales',
                 'hg_url': 'http://hg.mozilla.org/releases/l10n/mozilla-release/%(locale)s',
-                'git_branch_name': 'release',
+                'git_branch_name': 'mozilla-release',
                 'targets': [{
                     "target_dest": "gitmo-gecko-l10n",
                 }],
@@ -33,7 +33,7 @@ config = {
             'mozilla-beta': {
                 'locales_file_url': 'http://hg.mozilla.org/releases/mozilla-beta/raw-file/default/b2g/locales/all-locales',
                 'hg_url': 'http://hg.mozilla.org/releases/l10n/mozilla-beta/%(locale)s',
-                'git_branch_name': 'beta',
+                'git_branch_name': 'mozilla-beta',
                 'targets': [{
                     "target_dest": "gitmo-gecko-l10n",
                 }],
@@ -46,7 +46,7 @@ config = {
             'mozilla-aurora': {
                 'locales_file_url': 'http://hg.mozilla.org/releases/mozilla-aurora/raw-file/default/b2g/locales/all-locales',
                 'hg_url': 'http://hg.mozilla.org/releases/l10n/mozilla-aurora/%(locale)s',
-                'git_branch_name': 'aurora',
+                'git_branch_name': 'mozilla-aurora',
                 'targets': [{
                     "target_dest": "gitmo-gecko-l10n",
                 }],
