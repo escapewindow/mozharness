@@ -66,9 +66,9 @@ config = {
         "tag_config": {
         },
     }, {
-        "repo": "https://hg.mozilla.org/projects/cedar",
+        "repo": "https://hg.mozilla.org/projects/profiling",
         "revision": "default",
-        "repo_name": "cedar",
+        "repo_name": "profiling",
         "targets": [{
             "target_dest": "project-branches/.git",
             "vcs": "git",
@@ -81,7 +81,7 @@ config = {
         "vcs": "hg",
         "branch_config": {
             "branches": {
-                "default": "cedar",
+                "default": "profiling",
             },
         },
         "tag_config": {
