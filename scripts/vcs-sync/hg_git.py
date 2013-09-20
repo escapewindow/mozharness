@@ -163,8 +163,9 @@ intree=1
                     'revision': 'default',
                     'repo_name': long_name,
                     'conversion_dir': long_name,
+                    'mapfile_name': '%s-mapfile' % long_name,
                     'targets': [{
-                        'target_dest': 'releases-l10n-%s-gecko/.git' % (locale),
+                        'target_dest': 'releases-l10n-%s-gecko/.git' % locale,
                         'vcs': 'git',
                         'test_push': True,
                     }],
@@ -204,8 +205,9 @@ intree=1
                     'revision': 'default',
                     'repo_name': long_name,
                     'conversion_dir': long_name,
+                    'mapfile_name': '%s-mapfile' % long_name,
                     'targets': [{
-                        'target_dest': 'releases-l10n-%s-gaia/.git' % (locale),
+                        'target_dest': 'releases-l10n-%s-gaia/.git' % locale,
                         'vcs': 'git',
                         'test_push': True,
                     }],
