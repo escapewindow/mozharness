@@ -23,6 +23,7 @@ config = {
         "repo": "https://hg.mozilla.org/mozilla-central",
         "revision": "default",
         "repo_name": "mozilla-central",
+        # Don't push this anywhere remote
         "targets": [{
             "target_dest": "project-branches/.git",
             "vcs": "git",
