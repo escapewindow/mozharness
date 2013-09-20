@@ -528,6 +528,31 @@ intree=1
                         branch_map.setdefault(branch, branch)
         return branch_map
 
+    def combine_mapfiles(self, mapfiles, target_file='combined_mapfile'):
+        pass
+## See if there's any work to do - that is individual mapfiles that are
+## newer than the last combined master
+#update_needed=false
+#for f in $(ls $mapfile_glob); do
+#    if test $f -nt $master_mapfile; then
+#        update_needed=true
+#        break
+#    fi
+#done
+#
+#if $update_needed; then
+#    # copy things around such that inodes are _not_ preserved, and the
+#    # symlink _always_ points to a complete good file. This directory is
+#    # being copied by rsync, and we want to minimize wierd race
+#    # conditions.
+#    cp -pf $master_mapfile $master_mapfile.old
+#    ln -sf $master_mapfile.old ${master_mapfile}-latest
+#    rm $master_mapfile
+#    sort --unique --field-separator=" "  --key=2 $mapfile_glob >$master_mapfile
+#    chmod 644 $master_mapfile
+#    ln -sf $master_mapfile ${master_mapfile}-latest
+#fi
+
     # Actions {{{1
     def create_test_targets(self):
         """ This action creates local directories to do test pushes to.

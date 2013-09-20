@@ -1,6 +1,70 @@
+from copy import deepcopy
 import os
 import socket
 hostname = socket.gethostname()
+
+GECKO_BRANCHES = {
+    'v1.1': 'mozilla-beta',
+    'v1.2': 'mozilla-aurora',
+    'v1.3': 'mozilla-central',
+}
+
+GECKO_CONFIG_TEMPLATE = {
+    'mozilla-release': {
+        'locales_file_url': 'http://hg.mozilla.org/releases/mozilla-release/raw-file/default/b2g/locales/all-locales',
+        'hg_url': 'http://hg.mozilla.org/releases/l10n/mozilla-release/%(locale)s',
+        'targets': [{
+            "target_dest": "gitmo-gecko-l10n",
+        }],
+        'tag_config': {
+            'tag_regexes': [
+                '^B2G_',
+            ],
+        },
+    },
+    'mozilla-beta': {
+        'locales_file_url': 'http://hg.mozilla.org/releases/mozilla-beta/raw-file/default/b2g/locales/all-locales',
+        'hg_url': 'http://hg.mozilla.org/releases/l10n/mozilla-beta/%(locale)s',
+        'targets': [{
+            "target_dest": "gitmo-gecko-l10n",
+        }],
+        'tag_config': {
+            'tag_regexes': [
+                '^B2G_',
+            ],
+        },
+    },
+    'mozilla-aurora': {
+        'locales_file_url': 'http://hg.mozilla.org/releases/mozilla-aurora/raw-file/default/b2g/locales/all-locales',
+        'hg_url': 'http://hg.mozilla.org/releases/l10n/mozilla-aurora/%(locale)s',
+        'targets': [{
+            "target_dest": "gitmo-gecko-l10n",
+        }],
+        'tag_config': {
+            'tag_regexes': [
+                '^B2G_',
+            ],
+        },
+    },
+    'mozilla-central': {
+        'locales_file_url': 'http://hg.mozilla.org/mozilla-central/raw-file/default/b2g/locales/all-locales',
+        'hg_url': 'http://hg.mozilla.org/l10n-central/%(locale)s',
+        'targets': [{
+            "target_dest": "gitmo-gecko-l10n",
+        }],
+        'tag_config': {
+            'tag_regexes': [
+                '^B2G_',
+            ],
+        },
+    },
+}
+
+# Build gecko_config
+GECKO_CONFIG = {}
+for version, branch in GECKO_BRANCHES.items():
+    GECKO_CONFIG[branch] = deepcopy(GECKO_CONFIG_TEMPLATE[branch])
+    GECKO_CONFIG[branch]['git_branch_name'] = version
 
 config = {
     "log_name": "l10n",
@@ -16,60 +80,7 @@ config = {
     },
     "conversion_type": "b2g-l10n",
     "l10n_config": {
-        "gecko_config": {
-            'mozilla-release': {
-                'locales_file_url': 'http://hg.mozilla.org/releases/mozilla-release/raw-file/default/b2g/locales/all-locales',
-                'hg_url': 'http://hg.mozilla.org/releases/l10n/mozilla-release/%(locale)s',
-                'git_branch_name': 'mozilla-release',
-                'targets': [{
-                    "target_dest": "gitmo-gecko-l10n",
-                }],
-                'tag_config': {
-                    'tag_regexes': [
-                        '^B2G_',
-                    ],
-                },
-            },
-            'mozilla-beta': {
-                'locales_file_url': 'http://hg.mozilla.org/releases/mozilla-beta/raw-file/default/b2g/locales/all-locales',
-                'hg_url': 'http://hg.mozilla.org/releases/l10n/mozilla-beta/%(locale)s',
-                'git_branch_name': 'mozilla-beta',
-                'targets': [{
-                    "target_dest": "gitmo-gecko-l10n",
-                }],
-                'tag_config': {
-                    'tag_regexes': [
-                        '^B2G_',
-                    ],
-                },
-            },
-            'mozilla-aurora': {
-                'locales_file_url': 'http://hg.mozilla.org/releases/mozilla-aurora/raw-file/default/b2g/locales/all-locales',
-                'hg_url': 'http://hg.mozilla.org/releases/l10n/mozilla-aurora/%(locale)s',
-                'git_branch_name': 'mozilla-aurora',
-                'targets': [{
-                    "target_dest": "gitmo-gecko-l10n",
-                }],
-                'tag_config': {
-                    'tag_regexes': [
-                        '^B2G_',
-                    ],
-                },
-            },
-            'mozilla-central': {
-                'locales_file_url': 'http://hg.mozilla.org/mozilla-central/raw-file/default/b2g/locales/all-locales',
-                'hg_url': 'http://hg.mozilla.org/l10n-central/%(locale)s',
-                'git_branch_name': 'master',
-                'targets': [{
-                    "target_dest": "gitmo-gecko-l10n",
-                }],
-                'tag_config': {
-                    'tag_regexes': [
-                        '^B2G_',
-                    ],
-                },
-            },
-        },
+        "gecko_config": GECKO_CONFIG,
         "gaia_config": {
             'v1_2': {
                 'locales_file_url': 'https://raw.github.com/mozilla-b2g/gaia/v1.2/locales/languages_dev.json',
