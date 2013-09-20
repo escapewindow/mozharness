@@ -635,7 +635,7 @@ intree=1
             generated_mapfile = os.path.join(dest, '.hg', 'git-mapfile')
             self.copy_to_upload_dir(
                 generated_mapfile,
-                dest=repo_config.get('mapfile_name', "gecko-mapfile"),
+                dest=repo_config.get('mapfile_name', self.config.get('mapfile_name', "gecko-mapfile")),
                 log_level=INFO
             )
             for (branch, target_branch) in branch_map.items():
