@@ -55,6 +55,7 @@ class HgGitScript(VirtualenvMixin, TooltoolMixin, TransferMixin, VCSScript):
 
     mapfile_binary_search = None
     all_repos = None
+    start_time = time.time()
 
     def __init__(self, require_config_file=True):
         super(HgGitScript, self).__init__(
@@ -721,6 +722,9 @@ intree=1
         c = self.config
         dirs = self.query_abs_dirs()
         job_name = c.get('job_name', c.get('conversion_dir', os.getcwd()))
+        end_time = time.time()
+        seconds = int(end_time - self.start_time)
+        self.info("Job took %d seconds." % seconds)
         subject = "[vcs2vcs] Successful conversion for %s <EOM>" % job_name
         text = ''
         error_log = os.path.join(dirs['abs_log_dir'], self.log_obj.log_files[ERROR])
@@ -732,6 +736,7 @@ intree=1
             text += 'Error log is non-zero!'
         if error_contents:
             text += '\n\n' + error_contents
+        text += '\n\nJob took %d seconds.' % seconds
         for notify_config in c.get('notify_config', []):
             if not fatal and notify_config.get('failure_only'):
                 continue
