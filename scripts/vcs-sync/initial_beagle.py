@@ -542,7 +542,6 @@ intree=1
         # Make sure 317fe0f314ab is the only head!
         output = self.get_output_from_command(hg + ["heads"],
                                               cwd=work_dest,
-                                              error_list=HgErrorList,
                                               halt_on_failure=True)
         for line in output.splitlines():
             if line.startswith("changeset:") and not line.endswith("317fe0f314ab"):
