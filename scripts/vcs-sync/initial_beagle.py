@@ -540,6 +540,7 @@ intree=1
                              error_list=HgErrorList,
                              halt_on_failure=True)
         # Make sure 317fe0f314ab is the only head!
+        self.info("Making sure we've stripped m-c down to a single head 317fe0f314ab...")
         output = self.get_output_from_command(hg + ["heads"],
                                               cwd=work_dest,
                                               halt_on_failure=True)
