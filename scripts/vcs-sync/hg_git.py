@@ -279,6 +279,7 @@ intree=1
             kwargs={
                 'output_timeout': 15 * 60,
                 'cwd': source_dest,
+                'error_list': HgErrorList,
             },
         ):
             if retry:
@@ -635,10 +636,11 @@ intree=1
                     self.fatal("Branch %s doesn't exist in %s!" % (branch, repo_name))
                 timestamp = int(time.time())
                 datetime = time.strftime('%Y-%m-%d %H:%M %Z')
-                self.run_command(hg + ['pull', '-r', rev, source], cwd=dest)
+                self.run_command(hg + ['pull', '-r', rev, source], cwd=dest,
+                                 error_list=HgErrorList)
                 self.run_command(
                     hg + ['bookmark', '-f', '-r', rev, target_branch],
-                    cwd=dest
+                    cwd=dest, error_list=HgErrorList,
                 )
                 # This might get a little large.
                 repo_map.setdefault('repos', {}).setdefault(repo_name, {}).setdefault('branches', {})[branch] = {
