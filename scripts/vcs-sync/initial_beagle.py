@@ -533,12 +533,20 @@ intree=1
         # See https://bugzilla.mozilla.org/show_bug.cgi?id=847727#c40 through
         # https://bugzilla.mozilla.org/show_bug.cgi?id=847727#c60
         # Also, yay hardcodes!
-        for hg_revision in ("26cb30a532a1", "aad29aa89237", "9f2fa4839e98"):
+        for hg_revision in ("26cb30a532a1", "aad29aa89237", "9f2fa4839e98", "f8d0784186b7"):
             self.run_command(hg + ["--config", "extensions.mq=", "strip",
                                    "--no-backup", hg_revision],
                              cwd=work_dest,
                              error_list=HgErrorList,
                              halt_on_failure=True)
+        # Make sure 317fe0f314ab is the only head!
+        output = self.get_output_from_command(hg + ["heads"],
+                                              cwd=work_dest,
+                                              error_list=HgErrorList,
+                                              halt_on_failure=True)
+        for line in output.splitlines():
+            if line.startswith("changeset:") and not line.endswith("317fe0f314ab"):
+                self.fatal("Found a head that is not 317fe0f314ab!  hg strip or <h<surkov will show up again!\n\n%s" % output)
         # Create .git for conversion, if it doesn't exist
         git_dir = os.path.join(work_dest, '.git')
         if not os.path.exists(git_dir):
