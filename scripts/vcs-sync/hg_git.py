@@ -530,30 +530,38 @@ intree=1
                         branch_map.setdefault(branch, branch)
         return branch_map
 
-    def combine_mapfiles(self, mapfiles, target_file='combined_mapfile'):
-        pass
-## See if there's any work to do - that is individual mapfiles that are
-## newer than the last combined master
-#update_needed=false
-#for f in $(ls $mapfile_glob); do
-#    if test $f -nt $master_mapfile; then
-#        update_needed=true
-#        break
-#    fi
-#done
-#
-#if $update_needed; then
-#    # copy things around such that inodes are _not_ preserved, and the
-#    # symlink _always_ points to a complete good file. This directory is
-#    # being copied by rsync, and we want to minimize wierd race
-#    # conditions.
-#    cp -pf $master_mapfile $master_mapfile.old
-#    ln -sf $master_mapfile.old ${master_mapfile}-latest
-#    rm $master_mapfile
-#    sort --unique --field-separator=" "  --key=2 $mapfile_glob >$master_mapfile
-#    chmod 644 $master_mapfile
-#    ln -sf $master_mapfile ${master_mapfile}-latest
-#fi
+    def combine_mapfiles(self, mapfiles, combined_mapfile='combined_mapfile'):
+        """ Ported from repo-sync-tools/combine_mapfiles
+
+            Consolidate multiple conversion processes' mapfiles into a
+            single mapfile.
+            """
+        self.info("Determining whether we need to combine mapfiles...")
+        existing_mapfiles = []
+        for f in mapfiles:
+            if os.path.exists(f):
+                existing_mapfiles.append(f)
+            else:
+                self.warning("%s doesn't exist!" % f)
+        if os.path.exists(combined_mapfile):
+            combined_timestamp = time.ctime(os.path.getmtime(combined_mapfile))
+            for f in existing_mapfiles:
+                if time.ctime(os.path.getmtime(f)) > combined_timestamp:
+                    # Yes, we want to combine mapfiles
+                    break
+            else:
+                self.info("No new mapfiles to combine.")
+                return
+            self.move(combined_mapfile, "%s.old" % combined_mapfile)
+        output = self.get_output_from_command(
+            ['sort', '--unique', '--field-separarator=" "',
+             '--key=2'] + existing_mapfiles,
+            silent=True, halt_on_failure=True,
+        )
+        self.write_to_file(combined_mapfile, output, verbose=False,
+                           error_level=FATAL)
+        self.run_command(['ln', '-sf', combined_mapfile,
+                          '%s-latest' % combined_mapfile])
 
     # Actions {{{1
     def create_test_targets(self):
