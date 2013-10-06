@@ -133,7 +133,7 @@ config = {
         "ssh_key": "~/.ssh/id_rsa",
         "ssh_user": "asasaki",
         "remote_host": "github-sync4",
-        "remote_path": "/home/asasaki/project-branches/project-branches-upload",
+        "remote_path": "/home/asasaki/projects/project-branches-upload",
     }],
 
     "default_notify_from": "vcs2vcs@%s" % hostname,
