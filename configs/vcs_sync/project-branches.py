@@ -26,9 +26,8 @@ config = {
         "repo_name": "mozilla-central",
         # Don't push this anywhere remote
         "targets": [{
-            "target_dest": "project-branches/.git",
+            "target_dest": "github-project-branches",
             "vcs": "git",
-            "test_push": True,
         }],
         "bare_checkout": True,
         "vcs": "hg",
@@ -50,10 +49,6 @@ config = {
         "revision": "default",
         "repo_name": "dogwood",
         "targets": [{
-            "target_dest": "project-branches/.git",
-            "vcs": "git",
-            "test_push": True,
-        }, {
             "target_dest": "github-project-branches",
             "vcs": "git",
         }],
@@ -71,10 +66,6 @@ config = {
         "revision": "default",
         "repo_name": "profiling",
         "targets": [{
-            "target_dest": "project-branches/.git",
-            "vcs": "git",
-            "test_push": True,
-        }, {
             "target_dest": "github-project-branches",
             "vcs": "git",
         }],
