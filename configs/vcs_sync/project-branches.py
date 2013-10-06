@@ -19,6 +19,7 @@ config = {
     }],
     "job_name": "project-branches",
     "conversion_dir": "project-branches",
+    "conversion_type": "project-branches",
     "mapfile_name": "project-branches-mapfile",
     "initial_repo": {
         "repo": "https://hg.mozilla.org/mozilla-central",
