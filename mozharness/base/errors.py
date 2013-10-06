@@ -71,6 +71,8 @@ GitErrorList = BaseErrorList + [
     {'substr': r'''remote: fatal: Error in object''', 'level': ERROR},
     {'substr': r'''fatal: sha1 file '<stdout>' write error: Broken pipe''', 'level': ERROR},
     {'substr': r'''error: failed to push some refs to ''', 'level': ERROR},
+    {'substr': r'''remote: error: denying non-fast-forward ''', 'level': ERROR},
+    {'substr': r'''! [remote rejected] ''', 'level': ERROR},
 ]
 
 PythonErrorList = BaseErrorList + [
