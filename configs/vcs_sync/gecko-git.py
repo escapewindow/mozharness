@@ -47,6 +47,30 @@ config = {
         "PATH": "%(PATH)s:/usr/libexec/git-core",
     },
     "conversion_repos": [{
+        "repo": "https://hg.mozilla.org/releases/mozilla-aurora",
+        "revision": "default",
+        "repo_name": "mozilla-aurora",
+        "targets": [{
+            "target_dest": "gecko-git/.git",
+            "vcs": "git",
+            "test_push": True,
+        }, {
+            "target_dest": "github-gecko-git",
+            "vcs": "git",
+        }],
+        "bare_checkout": True,
+        "vcs": "hg",
+        "branch_config": {
+            "branches": {
+                "default": "v1.2",
+            },
+        },
+        "tag_config": {
+            "tag_regexes": [
+                "^B2G_",
+            ],
+        },
+    }, {
         "repo": "https://hg.mozilla.org/releases/mozilla-b2g18",
         "revision": "default",
         "repo_name": "mozilla-b2g18",
