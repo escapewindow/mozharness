@@ -27,8 +27,9 @@ config = {
         "repo_name": "mozilla-central",
         # Don't push this anywhere remote
         "targets": [{
-            "target_dest": "github-project-branches",
+            "target_dest": "project-branches/.git",
             "vcs": "git",
+            "test_push": True,
         }],
         "bare_checkout": True,
         "vcs": "hg",
