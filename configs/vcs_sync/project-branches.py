@@ -44,41 +44,12 @@ config = {
     "env": {
         "PATH": "%(PATH)s:/usr/libexec/git-core",
     },
-    "conversion_repos": [{
-        "repo": "https://hg.mozilla.org/users/asasaki_mozilla.com/dogwood",
-        "revision": "default",
-        "repo_name": "dogwood",
-        "targets": [{
-            "target_dest": "github-project-branches",
-            "vcs": "git",
-        }],
-        "bare_checkout": True,
-        "vcs": "hg",
-        "branch_config": {
-            "branches": {
-                "default": "dogwood",
-            },
-        },
-        "tag_config": {
-        },
-    }, {
-        "repo": "https://hg.mozilla.org/projects/profiling",
-        "revision": "default",
-        "repo_name": "profiling",
-        "targets": [{
-            "target_dest": "github-project-branches",
-            "vcs": "git",
-        }],
-        "bare_checkout": True,
-        "vcs": "hg",
-        "branch_config": {
-            "branches": {
-                "default": "profiling",
-            },
-        },
-        "tag_config": {
-        },
-    }],
+    "project_branches": [
+        "ash",
+        "alder",
+    ],
+    "project_branch_repo_url": "http://hg.mozilla.org/projects/%(project)s",
+    "conversion_repos": [],
     "remote_targets": {
         "github-project-branches": {
             "repo": "git@github.com:escapewindow/test-project-branches.git",

@@ -232,6 +232,34 @@ intree=1
         self.info(pprint.pformat(l10n_repos, indent=4))
         return l10n_repos
 
+    def _query_project_repos(self):
+        """ Since I didn't want to have to build a huge static list of project
+            branch repos.
+            """
+        project_repos = []
+        for project in self.config.get("project_branches", []):
+            repo_dict = {
+                'repo': self.config['project_branch_repo_url'] % {'project': project},
+                'revision': 'default',
+                'repo_name': project,
+                'targets': [{
+                    'target_dest': 'github-project-branches',
+                    'vcs': 'git',
+                }],
+                'bare_checkout': True,
+                'vcs': 'hg',
+                'branch_config': {
+                    'branches': {
+                        'default': project,
+                    },
+                },
+                'tag_config': {},
+            }
+            project_repos.append(repo_dict)
+        self.info("Built project_repos...")
+        self.info(pprint.pformat(project_repos, indent=4))
+        return project_repos
+
     def query_all_repos(self):
         """ Very simple method, but we need this concatenated list many times
             throughout the script.
@@ -241,9 +269,11 @@ intree=1
         if self.config.get('conversion_type') == 'b2g-l10n':
             self.all_repos = self._query_l10n_repos()
         elif self.config.get('initial_repo'):
-            self.all_repos = [self.config['initial_repo']] + list(self.config['conversion_repos'])
+            self.all_repos = [self.config['initial_repo']] + list(self.config.get('conversion_repos', []))
         else:
-            self.all_repos = list(self.config['conversion_repos'])
+            self.all_repos = list(self.config.get('conversion_repos', []))
+        if self.config.get('conversion_type') == 'project-branches':
+            self.all_repos += self._query_project_repos()
         return self.all_repos
 
     def _update_stage_repo(self, repo_config, retry=True, clobber=False):
