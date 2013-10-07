@@ -749,6 +749,7 @@ intree=1
         for repo_config in self.query_all_repos():
             if self.query_failure(repo_config['repo_name']):
                 self.info("Skipping %s." % repo_config['repo_name'])
+                continue
             timestamp = int(time.time())
             datetime = time.strftime('%Y-%m-%d %H:%M %Z')
             status = self._push_repo(repo_config)
