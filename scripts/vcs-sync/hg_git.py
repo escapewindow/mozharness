@@ -308,7 +308,7 @@ intree=1
             # If you want to bypass this behavior (e.g. to update branches/tags
             # on a repo without requiring a new commit), set
             # repo_config["incoming_check"] = False.
-            cmd = hg + ['incoming']
+            cmd = hg + ['incoming', '-n', '-l', '1']
             status = self.run_command(
                 cmd,
                 cwd=source_dest,
