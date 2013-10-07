@@ -309,9 +309,9 @@ intree=1
                 cwd=source_dest,
                 output_timeout=15 * 60,
                 error_list=HgErrorList,
-                success_codes=[0, 1],
+                success_codes=[0, 1, 256],
             )
-            if status == 1:
+            if status in (1, 256):
                 self.add_failure(
                     repo_config['repo_name'],
                     message="No changes for %s; skipping." % repo_config['repo_name'],
