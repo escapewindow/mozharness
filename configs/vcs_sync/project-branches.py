@@ -6,6 +6,7 @@ hostname = socket.gethostname()
 # If you need to add a different repo, add it to conversion_repos
 # with the same format as beagle or gecko.git conversion_repos.
 PROJECT_BRANCHES = [
+    # twig projects
     "ash",
     "alder",
     "ash",
@@ -22,7 +23,8 @@ PROJECT_BRANCHES = [
     "maple",
     "oak",
     "pine",
-    # Non-twig projects/
+    # Non-twig projects
+    "build-system",
     "graphics",
     "profiling",
     "ux",
