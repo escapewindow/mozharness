@@ -805,7 +805,7 @@ intree=1
         if error_contents:
             text += '\n\n' + error_contents + '\n\n'
         if self.summary_list:
-            text += 'Summary is non-zero!\n\n'
+            text += 'Summary is non-zero:\n\n'
             for item in self.summary_list:
                 text += '%s - %s\n' % (item['level'], item['message'])
         text += '\n\nJob took %d seconds.' % seconds
