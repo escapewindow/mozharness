@@ -679,7 +679,7 @@ intree=1
                 # Don't continue if there were no changes from 'hg incoming'.
                 # This means any changes to the branch/tag maps won't happen
                 # til the next push; not sure if that's desired behavior.
-                self.info("Skipping %s due to previous circumstances." % repo_config['repo_name'])
+                self.info("Skipping %s." % repo_config['repo_name'])
                 continue
             # Build branch map.
             branch_map = self.query_branches(
@@ -746,7 +746,7 @@ intree=1
         repo_map['last_push_datetime'] = datetime
         for repo_config in self.query_all_repos():
             if self.query_failure(repo_config['repo_name']):
-                self.info("Skipping %s due to previous circumstances." % repo_config['repo_name'])
+                self.info("Skipping %s." % repo_config['repo_name'])
             timestamp = int(time.time())
             datetime = time.strftime('%Y-%m-%d %H:%M %Z')
             status = self._push_repo(repo_config)
