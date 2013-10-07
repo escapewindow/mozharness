@@ -309,18 +309,28 @@ intree=1
             # on a repo without requiring a new commit), set
             # repo_config["incoming_check"] = False.
             cmd = hg + ['incoming', '-n', '-l', '1']
-            status = self.run_command(
-                cmd,
-                cwd=source_dest,
-                output_timeout=15 * 60,
-                error_list=HgErrorList,
-                success_codes=[0, 1, 256],
+            status = self.retry(
+                self.run_command,
+                args=(cmd, ),
+                kwargs={
+                    'output_timeout': 2 * 60,
+                    'cwd': source_dest,
+                    'error_list': HgErrorList,
+                    'success_codes': [0, 1, 256],
+                },
             )
+            message = ''
+            level = INFO
             if status in (1, 256):
+                message = "No changes for %s; skipping." % repo_config['repo_name']
+            elif status != 0:
+                message = "Error getting changes for %s; skipping!" % repo_config['repo_name']
+                level = ERROR
+            if message:
                 self.add_failure(
                     repo_config['repo_name'],
-                    message="No changes for %s; skipping." % repo_config['repo_name'],
-                    level=INFO,
+                    message=message,
+                    level=level,
                     increment_return_code=False,
                 )
                 return
