@@ -2,13 +2,31 @@ import os
 import socket
 hostname = socket.gethostname()
 
-CVS_MANIFEST = """[{
-"size": 1301484692,
-"digest": "89df462d8d20f54402caaaa4e3c10aa54902a1d7196cdf86b7790b76e62d302ade3102dc3f7da4145dd832e6938b0472370ce6a321e0b3bcf0ad050937bd0e9a",
-"algorithm": "sha512",
-"filename": "mozilla-cvs-history.tar.bz2"
-}]
-"""
+# These all need to be under hg.m.o/projects.
+# If you need to add a different repo, add it to conversion_repos
+# with the same format as beagle or gecko.git conversion_repos.
+PROJECT_BRANCHES = [
+    "ash",
+    "alder",
+    "ash",
+    "birch",
+    "cedar",
+    "cypress",
+    "date",
+    "elm",
+    "fig",
+    "gum",
+    "holly",
+    "jamun",
+    "larch",
+    "maple",
+    "oak",
+    "pine",
+    # Non-twig projects/
+    "graphics",
+    "profiling",
+    "ux",
+]
 
 config = {
     "log_name": "project-branches",
@@ -20,32 +38,11 @@ config = {
     "job_name": "project-branches",
     "conversion_dir": "project-branches",
     "mapfile_name": "project-branches-mapfile",
-    "backup_dir": "/mnt/netapp/github_sync/aki/%s" % hostname,
-    "cvs_manifest": CVS_MANIFEST,
-    "tooltool_servers": ["http://runtime-binaries.pvt.build.mozilla.org/tooltool/"],
-    "cvs_history_tarball": "/home/asasaki/mozilla-cvs-history.tar.bz2",
     "env": {
         "PATH": "%(PATH)s:/usr/libexec/git-core",
     },
     "conversion_type": "project-branches",
-    "project_branches": [
-        "ash",
-        "alder",
-        "ash",
-        "birch",
-        "cedar",
-        "cypress",
-        "date",
-        "elm",
-        "fig",
-        "gum",
-        "holly",
-        "jamun",
-        "larch",
-        "maple",
-        "oak",
-        "pine",
-    ],
+    "project_branches": PROJECT_BRANCHES,
     "project_branch_repo_url": "http://hg.mozilla.org/projects/%(project)s",
     "conversion_repos": [],
     "remote_targets": {
