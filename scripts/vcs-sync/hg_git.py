@@ -302,7 +302,12 @@ intree=1
                         repo_config, retry=False, clobber=True)
                 else:
                     self.fatal("Can't clone %s!" % repo_config['repo'])
-        else:
+        elif repo_config.get("incoming_check", True):
+            # Run |hg incoming| and skip all subsequent actions if there
+            # are no no changes.
+            # If you want to bypass this behavior (e.g. to update branches/tags
+            # on a repo without requiring a new commit), set
+            # repo_config["incoming_check"] = False.
             cmd = hg + ['incoming']
             status = self.run_command(
                 cmd,
@@ -676,9 +681,6 @@ intree=1
                     git + ['--git-dir', '%s/.git' % dest, 'config', 'gc.auto', '0'],
                 )
             elif self.query_failure(repo_name):
-                # Don't continue if there were no changes from 'hg incoming'.
-                # This means any changes to the branch/tag maps won't happen
-                # til the next push; not sure if that's desired behavior.
                 self.info("Skipping %s." % repo_config['repo_name'])
                 continue
             # Build branch map.
