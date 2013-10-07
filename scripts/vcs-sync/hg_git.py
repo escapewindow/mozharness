@@ -302,6 +302,23 @@ intree=1
                         repo_config, retry=False, clobber=True)
                 else:
                     self.fatal("Can't clone %s!" % repo_config['repo'])
+        else:
+            cmd = hg + ['incoming']
+            status = self.run_command(
+                cmd,
+                cwd=source_dest,
+                output_timeout=15 * 60,
+                error_list=HgErrorList,
+                success_codes=[0, 1],
+            )
+            if status == 1:
+                self.add_failure(
+                    repo_config['repo_name'],
+                    message="No changes for %s; skipping." % repo_config['repo_name'],
+                    level=INFO,
+                    increment_return_code=False,
+                )
+                return
         cmd = hg + ['pull']
         if self.retry(
             self.run_command,
@@ -658,6 +675,12 @@ intree=1
                 self.run_command(
                     git + ['--git-dir', '%s/.git' % dest, 'config', 'gc.auto', '0'],
                 )
+            elif self.query_failure(repo_name):
+                # Don't continue if there were no changes from 'hg incoming'.
+                # This means any changes to the branch/tag maps won't happen
+                # til the next push; not sure if that's desired behavior.
+                self.info("Skipping %s due to previous circumstances." % repo_config['repo_name'])
+                continue
             # Build branch map.
             branch_map = self.query_branches(
                 repo_config.get('branch_config', {}),
@@ -722,6 +745,8 @@ intree=1
         repo_map['last_push_timestamp'] = timestamp
         repo_map['last_push_datetime'] = datetime
         for repo_config in self.query_all_repos():
+            if self.query_failure(repo_config['repo_name']):
+                self.info("Skipping %s due to previous circumstances." % repo_config['repo_name'])
             timestamp = int(time.time())
             datetime = time.strftime('%Y-%m-%d %H:%M %Z')
             status = self._push_repo(repo_config)

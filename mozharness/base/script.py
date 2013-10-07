@@ -648,6 +648,7 @@ class ScriptMixin(object):
             if output_timeout:
                 def processOutput(line):
                     parser.add_lines(line)
+
                 def onTimeout():
                     self.info("mozprocess timed out")
 
@@ -826,6 +827,7 @@ class ScriptMixin(object):
         else:
             # XXX implement
             pass
+
 
 def PreScriptRun(func):
     """Decorator for methods that will be called before script execution.
@@ -1228,11 +1230,13 @@ class BaseScript(ScriptMixin, LogMixin, object):
         # Summaries need a lot more love.
         self.log(message, level=level)
 
-    def add_failure(self, key, message="%(key)s failed.", level=ERROR):
+    def add_failure(self, key, message="%(key)s failed.", level=ERROR,
+                    increment_return_code=True):
         if key not in self.failures:
             self.failures.append(key)
-            self.return_code += 1
             self.add_summary(message % {'key': key}, level=level)
+            if increment_return_code:
+                self.return_code += 1
 
     def query_failure(self, key):
         return key in self.failures
