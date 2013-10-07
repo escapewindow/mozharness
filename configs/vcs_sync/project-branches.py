@@ -3,8 +3,7 @@ import socket
 hostname = socket.gethostname()
 
 # These all need to be under hg.m.o/projects.
-# If you need to add a different repo, add it to conversion_repos
-# with the same format as beagle or gecko.git conversion_repos.
+# If you need to add a different repo, add it to CONVERSION_REPOS.
 PROJECT_BRANCHES = [
     # twig projects
     "ash",
@@ -30,6 +29,25 @@ PROJECT_BRANCHES = [
     "ux",
 ]
 
+# Non-hg.m.o/projects/ repos.
+CONVERSION_REPOS = [{
+    "repo": "https://hg.mozilla.org/services/services-central",
+    "revision": "default",
+    "repo_name": "services-central",
+    "targets": [{
+        "target_dest": "github-project-branches",
+        "vcs": "git",
+    }],
+    "bare_checkout": True,
+    "vcs": "hg",
+    "branch_config": {
+        "branches": {
+            "default": "services",
+        },
+    },
+    "tag_config": {},
+}]
+
 config = {
     "log_name": "project-branches",
     "log_max_rotate": 99,
@@ -46,7 +64,7 @@ config = {
     "conversion_type": "project-branches",
     "project_branches": PROJECT_BRANCHES,
     "project_branch_repo_url": "http://hg.mozilla.org/projects/%(project)s",
-    "conversion_repos": [],
+    "conversion_repos": CONVERSION_REPOS,
     "remote_targets": {
         "github-project-branches": {
             "repo": "git@github.com:escapewindow/test-project-branches.git",
