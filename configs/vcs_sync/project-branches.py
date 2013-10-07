@@ -19,26 +19,7 @@ config = {
     }],
     "job_name": "project-branches",
     "conversion_dir": "project-branches",
-    "conversion_type": "project-branches",
     "mapfile_name": "project-branches-mapfile",
-    "initial_repo": {
-        "repo": "https://hg.mozilla.org/mozilla-central",
-        "revision": "default",
-        "repo_name": "mozilla-central",
-        # Don't push this anywhere remote
-        "targets": [{
-            "target_dest": "project-branches/.git",
-            "vcs": "git",
-            "test_push": True,
-        }],
-        "bare_checkout": True,
-        "vcs": "hg",
-        "branch_config": {
-            "branches": {
-                "default": "master",
-            },
-        },
-    },
     "backup_dir": "/mnt/netapp/github_sync/aki/%s" % hostname,
     "cvs_manifest": CVS_MANIFEST,
     "tooltool_servers": ["http://runtime-binaries.pvt.build.mozilla.org/tooltool/"],
@@ -46,6 +27,7 @@ config = {
     "env": {
         "PATH": "%(PATH)s:/usr/libexec/git-core",
     },
+    "conversion_type": "project-branches",
     "project_branches": [
         "ash",
         "alder",
