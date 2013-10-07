@@ -793,7 +793,7 @@ intree=1
         end_time = time.time()
         seconds = int(end_time - self.start_time)
         self.info("Job took %d seconds." % seconds)
-        subject = "[vcs2vcs] Successful conversion for %s <EOM>" % job_name
+        subject = "[vcs2vcs] Successful conversion for %s" % job_name
         text = ''
         error_log = os.path.join(dirs['abs_log_dir'], self.log_obj.log_files[ERROR])
         error_contents = self.read_from_file(error_log)
@@ -803,7 +803,11 @@ intree=1
         elif error_contents:
             text += 'Error log is non-zero!'
         if error_contents:
-            text += '\n\n' + error_contents
+            text += '\n\n' + error_contents + '\n\n'
+        if self.summary_list:
+            text += 'Summary is non-zero!\n\n'
+            for item in self.summary_list:
+                text += '%s - %s\n' % (item['level'], item['message'])
         text += '\n\nJob took %d seconds.' % seconds
         for notify_config in c.get('notify_config', []):
             if not fatal and notify_config.get('failure_only'):
