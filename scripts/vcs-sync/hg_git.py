@@ -68,7 +68,6 @@ class HgGitScript(VirtualenvMixin, TooltoolMixin, TransferMixin, VCSScript):
                 'push',
                 'upload',
                 'notify',
-                'summary',
             ],
             # These default actions are the update loop that we run after the
             # initial steps to create the work mirror with all the branches +
@@ -80,7 +79,6 @@ class HgGitScript(VirtualenvMixin, TooltoolMixin, TransferMixin, VCSScript):
                 'push',
                 'upload',
                 'notify',
-                'summary',
             ],
             require_config_file=require_config_file
         )
