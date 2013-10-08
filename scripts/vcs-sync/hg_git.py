@@ -764,10 +764,12 @@ intree=1
             datetime = time.strftime('%Y-%m-%d %H:%M %Z')
             status = self._push_repo(repo_config)
             if not status:  # good
+                self.add_summary("Successfully pushed %s." % repo_config['repo_name'])
                 repo_name = repo_config['repo_name']
                 repo_map.setdefault('repos', {}).setdefault(repo_name, {})['push_timestamp'] = timestamp
                 repo_map['repos'][repo_name]['push_datetime'] = datetime
             else:
+                self.add_failure("Unable to push %s." % repo_config['repo_name'])
                 failure_msg += status + "\n"
         if not failure_msg:
             repo_map['last_successful_push_timestamp'] = repo_map['last_push_timestamp']
