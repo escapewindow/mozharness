@@ -322,8 +322,7 @@ intree=1
             message = ''
             level = INFO
             if status in (1, 256):
-#                message = "No changes for %s; skipping." % repo_config['repo_name']
-                pass
+                message = "No changes for %s; skipping." % repo_config['repo_name']
             elif status != 0:
                 message = "Error getting changes for %s; skipping!" % repo_config['repo_name']
                 level = ERROR
