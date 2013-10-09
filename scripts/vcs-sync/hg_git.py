@@ -319,13 +319,15 @@ intree=1
             )
             if status in (1, 256):
                 self.info("No changes for %s; skipping." % repo_config['repo_name'])
+                # Overload self.failures to tell downstream actions to noop on
+                # this repo
+                self.failures.append(repo_config['repo_name'])
                 return
             elif status != 0:
                 self.add_failure(
                     repo_config['repo_name'],
                     message="Error getting changes for %s; skipping!" % repo_config['repo_name'],
                     level=ERROR,
-                    increment_return_code=False,
                 )
                 return
         cmd = hg + ['pull']
