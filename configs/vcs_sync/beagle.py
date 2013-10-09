@@ -372,9 +372,9 @@ config = {
 
     "upload_config": [{
         "ssh_key": "~/.ssh/id_rsa",
-        "ssh_user": "asasaki",
-        "remote_host": "github-sync3",
-        "remote_path": "/home/asasaki/beagle1/beagle-upload",
+        "ssh_user": "vcs2vcs",
+        "remote_host": "10.132.49.52",
+        "remote_path": "/opt/vcs2vcs/beagle-upload",
     }],
 
     "default_notify_from": "vcs2vcs@%s" % hostname,
