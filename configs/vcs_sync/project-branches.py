@@ -68,7 +68,7 @@ config = {
     "remote_targets": {
         "github-project-branches": {
             "repo": "git@github.com:escapewindow/test-project-branches.git",
-            "ssh_key": "~/.ssh/github1_rsa",
+            "ssh_key": "~/.ssh/escapewindow_github_rsa",
             "vcs": "git",
         },
     },

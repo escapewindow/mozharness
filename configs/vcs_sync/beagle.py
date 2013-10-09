@@ -332,7 +332,7 @@ config = {
     "remote_targets": {
         "github-beagle": {
             "repo": "git@github.com:escapewindow/test-beagle.git",
-            "ssh_key": "~/.ssh/github1_rsa",
+            "ssh_key": "~/.ssh/escapewindow_github_rsa",
             "vcs": "git",
         },
     },
