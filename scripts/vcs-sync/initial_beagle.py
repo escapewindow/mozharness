@@ -17,7 +17,6 @@ from copy import deepcopy
 import mmap
 import os
 import re
-import smtplib
 import sys
 
 sys.path.insert(1, os.path.dirname(os.path.dirname(sys.path[0])))
@@ -29,7 +28,7 @@ external_tools_path = os.path.join(
 )
 
 from mozharness.base.errors import HgErrorList, GitErrorList, TarErrorList
-from mozharness.base.log import INFO, ERROR, FATAL
+from mozharness.base.log import INFO, FATAL
 from mozharness.base.python import VirtualenvMixin, virtualenv_config_options
 from mozharness.base.transfer import TransferMixin
 from mozharness.base.vcs.vcsbase import VCSScript
@@ -737,44 +736,6 @@ intree=1
             halt_on_failure=True,
         )
 
-    def notify(self, message=None, fatal=False):
-        """ Email people in the notify_config (depending on status and failure_only)
-            """
-        c = self.config
-        dirs = self.query_abs_dirs()
-        job_name = c.get('job_name', c.get('conversion_dir', os.getcwd()))
-        subject = "[vcs2vcs] Successful conversion for %s <EOM>" % job_name
-        text = ''
-        error_log = os.path.join(dirs['abs_log_dir'], self.log_obj.log_files[ERROR])
-        error_contents = self.read_from_file(error_log)
-        if fatal:
-            subject = "[vcs2vcs] Failed conversion for %s" % job_name
-            text = message + '\n\n'
-        elif error_contents:
-            text += 'Error log is non-zero!'
-        if error_contents:
-            text += '\n\n' + error_contents
-        for notify_config in c.get('notify_config', []):
-            if not fatal and notify_config.get('failure_only'):
-                continue
-            fromaddr = notify_config.get('from', c['default_notify_from'])
-            message = '\r\n'.join((
-                "From: %s" % fromaddr,
-                "To: %s" % notify_config['to'],
-                "CC: %s" % ','.join(notify_config.get('cc', [])),
-                "Subject: %s" % subject,
-                "",
-                text
-            ))
-            toaddrs = [notify_config['to']] + notify_config.get('cc', [])
-            # TODO allow for a different smtp server
-            # TODO deal with failures
-            server = smtplib.SMTP('localhost')
-            self.retry(
-                server.sendmail,
-                args=(fromaddr, toaddrs, message),
-            )
-            server.quit()
 
 # __main__ {{{1
 if __name__ == '__main__':

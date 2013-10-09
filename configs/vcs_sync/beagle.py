@@ -381,6 +381,7 @@ config = {
     "notify_config": [{
         "to": "aki@mozilla.com",
         "failure_only": False,
+        "skip_empty_messages": True,
     }],
 
     # Disallow sharing.  We may need a better way of doing this.

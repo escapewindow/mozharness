@@ -15,7 +15,6 @@ import mmap
 import os
 import pprint
 import re
-import smtplib
 import sys
 import time
 
@@ -37,12 +36,12 @@ from mozharness.base.errors import HgErrorList, GitErrorList
 from mozharness.base.log import INFO, ERROR, FATAL
 from mozharness.base.python import VirtualenvMixin, virtualenv_config_options
 from mozharness.base.transfer import TransferMixin
-from mozharness.base.vcs.vcsbase import VCSScript
+from mozharness.base.vcs.vcssync import VCSSyncScript
 from mozharness.mozilla.tooltool import TooltoolMixin
 
 
 # HgGitScript {{{1
-class HgGitScript(VirtualenvMixin, TooltoolMixin, TransferMixin, VCSScript):
+class HgGitScript(VirtualenvMixin, TooltoolMixin, TransferMixin, VCSSyncScript):
     """ Beagle-oriented hg->git script (lots of mozilla-central hardcodes;
         assumption that we're going to be importing lots of branches).
 
@@ -55,7 +54,6 @@ class HgGitScript(VirtualenvMixin, TooltoolMixin, TransferMixin, VCSScript):
 
     mapfile_binary_search = None
     all_repos = None
-    start_time = time.time()
 
     def __init__(self, require_config_file=True):
         super(HgGitScript, self).__init__(
@@ -319,18 +317,14 @@ intree=1
                     'success_codes': [0, 1, 256],
                 },
             )
-            message = ''
-            level = INFO
             if status in (1, 256):
-                message = "No changes for %s; skipping." % repo_config['repo_name']
+                self.info("No changes for %s; skipping." % repo_config['repo_name'])
+                return
             elif status != 0:
-                message = "Error getting changes for %s; skipping!" % repo_config['repo_name']
-                level = ERROR
-            if message:
                 self.add_failure(
                     repo_config['repo_name'],
-                    message=message,
-                    level=level,
+                    message="Error getting changes for %s; skipping!" % repo_config['repo_name'],
+                    level=ERROR,
                     increment_return_code=False,
                 )
                 return
@@ -796,52 +790,6 @@ intree=1
         if failure_msg:
             self.fatal("Unable to upload to this location:\n%s" % failure_msg)
 
-    def notify(self, message=None, fatal=False):
-        """ Email people in the notify_config (depending on status and failure_only)
-            """
-        c = self.config
-        dirs = self.query_abs_dirs()
-        job_name = c.get('job_name', c.get('conversion_dir', os.getcwd()))
-        end_time = time.time()
-        seconds = int(end_time - self.start_time)
-        self.info("Job took %d seconds." % seconds)
-        subject = "[vcs2vcs] Successful conversion for %s" % job_name
-        text = ''
-        error_log = os.path.join(dirs['abs_log_dir'], self.log_obj.log_files[ERROR])
-        error_contents = self.read_from_file(error_log)
-        if fatal:
-            subject = "[vcs2vcs] Failed conversion for %s" % job_name
-            text = message + '\n\n'
-        elif error_contents:
-            text += 'Error log is non-zero!'
-        if error_contents:
-            text += '\n\n' + error_contents + '\n\n'
-        if self.summary_list:
-            text += 'Summary is non-zero:\n\n'
-            for item in self.summary_list:
-                text += '%s - %s\n' % (item['level'], item['message'])
-        text += '\n\nJob took %d seconds.' % seconds
-        for notify_config in c.get('notify_config', []):
-            if not fatal and notify_config.get('failure_only'):
-                continue
-            fromaddr = notify_config.get('from', c['default_notify_from'])
-            message = '\r\n'.join((
-                "From: %s" % fromaddr,
-                "To: %s" % notify_config['to'],
-                "CC: %s" % ','.join(notify_config.get('cc', [])),
-                "Subject: %s" % subject,
-                "",
-                text
-            ))
-            toaddrs = [notify_config['to']] + notify_config.get('cc', [])
-            # TODO allow for a different smtp server
-            # TODO deal with failures
-            server = smtplib.SMTP('localhost')
-            self.retry(
-                server.sendmail,
-                args=(fromaddr, toaddrs, message),
-            )
-            server.quit()
 
 # __main__ {{{1
 if __name__ == '__main__':
