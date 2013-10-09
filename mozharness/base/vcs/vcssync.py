@@ -55,8 +55,10 @@ class VCSSyncScript(VCSScript):
         for notify_config in c.get('notify_config', []):
             if not fatal:
                 if notify_config.get('failure_only'):
+                    self.info("Skipping notification for %s (failure_only)" % notify_config['to'])
                     continue
                 if not text and notify_config.get('skip_empty_messages'):
+                    self.info("Skipping notification for %s (skip_empty_messages)" % notify_config['to'])
                     continue
             fromaddr = notify_config.get('from', c['default_notify_from'])
             message = '\r\n'.join((
