@@ -4,9 +4,9 @@
 # License, v. 2.0. If a copy of the MPL was not distributed with this file,
 # You can obtain one at http://mozilla.org/MPL/2.0/.
 # ***** END LICENSE BLOCK *****
-"""hg_git.py
+"""vcs_sync.py
 
-hg->git conversions.  Needs to support both the monolithic beagle/gecko.git
+hg<->git conversions.  Needs to support both the monolithic beagle/gecko.git
 type conversions, as well as many-to-many (l10n, build repos, etc.)
 """
 
