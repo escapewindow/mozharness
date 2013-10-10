@@ -321,7 +321,7 @@ intree=1
                 self.info("No changes for %s; skipping." % repo_config['repo_name'])
                 # Overload self.failures to tell downstream actions to noop on
                 # this repo
-                self.failures.append(repo_config['repo_name'])
+#                self.failures.append(repo_config['repo_name'])
                 return
             elif status != 0:
                 self.add_failure(
