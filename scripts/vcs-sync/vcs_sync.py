@@ -782,6 +782,10 @@ intree=1
         if failure_msg:
             self.fatal("Unable to push these repos:\n%s" % failure_msg)
 
+    def preflight_upload(self):
+        if not self.config.get("copy_logs_post_run", True):
+            self.copy_logs_to_upload_dir()
+
     def upload(self):
         """ Upload the upload_dir according to the upload_config.
             """

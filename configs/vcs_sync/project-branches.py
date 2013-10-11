@@ -99,6 +99,7 @@ config = {
     ],
     "pip_index": False,
 
+    "copy_logs_post_run": False,
     "upload_config": [{
         "ssh_key": "~/.ssh/vcs-sync_rsa",
         "ssh_user": "asasaki",
