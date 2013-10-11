@@ -331,8 +331,8 @@ config = {
     }],
     "remote_targets": {
         "github-beagle": {
-            "repo": "git@github.com:escapewindow/test-beagle.git",
-            "ssh_key": "~/.ssh/escapewindow_github_rsa",
+            "repo": "git@github.com:mozilla/integration-gecko-dev.git",
+            "ssh_key": "~/.ssh/releng-github-id_rsa",
             "vcs": "git",
         },
     },
@@ -367,7 +367,7 @@ config = {
     "upload_config": [{
         "ssh_key": "~/.ssh/id_rsa",
         "ssh_user": "vcs2vcs",
-        "remote_host": "10.132.49.52",
+        "remote_host": "10.132.48.15",
         "remote_path": "/opt/vcs2vcs/beagle-upload",
     }],
 
@@ -375,7 +375,7 @@ config = {
     "notify_config": [{
         "to": "aki@mozilla.com",
         "failure_only": False,
-        "skip_empty_messages": True,
+        "skip_empty_messages": False,
     }],
 
     # Disallow sharing.  We may need a better way of doing this.
