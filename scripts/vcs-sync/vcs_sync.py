@@ -54,6 +54,14 @@ class HgGitScript(VirtualenvMixin, TooltoolMixin, TransferMixin, VCSSyncScript):
 
     mapfile_binary_search = None
     all_repos = None
+    config_options = [[
+        ["--no-check-incoming", ],
+        {"action": "store_false",
+         "dest": "check_incoming",
+         "default": True,
+         "help": "Don't check for incoming changesets"
+         }
+    ]]
 
     def __init__(self, require_config_file=True):
         super(HgGitScript, self).__init__(
@@ -300,7 +308,7 @@ intree=1
                         repo_config, retry=False, clobber=True)
                 else:
                     self.fatal("Can't clone %s!" % repo_config['repo'])
-        elif repo_config.get("incoming_check", True):
+        elif self.config['check_incoming'] and repo_config.get("check_incoming", True):
             # Run |hg incoming| and skip all subsequent actions if there
             # are no no changes.
             # If you want to bypass this behavior (e.g. to update branches/tags
