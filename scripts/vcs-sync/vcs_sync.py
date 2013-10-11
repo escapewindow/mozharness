@@ -65,7 +65,7 @@ class HgGitScript(VirtualenvMixin, TooltoolMixin, TransferMixin, VCSSyncScript):
 
     def __init__(self, require_config_file=True):
         super(HgGitScript, self).__init__(
-            config_options=virtualenv_config_options,
+            config_options=virtualenv_config_options + self.config_options,
             all_actions=[
                 'clobber',
                 'create-virtualenv',
