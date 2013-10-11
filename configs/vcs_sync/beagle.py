@@ -406,10 +406,10 @@ config = {
     "pip_index": False,
 
     "upload_config": [{
-        "ssh_key": "~/.ssh/id_rsa",
-        "ssh_user": "vcs2vcs",
-        "remote_host": "10.132.48.15",
-        "remote_path": "/opt/vcs2vcs/beagle-upload",
+        "ssh_key": "~/.ssh/vcs-sync_rsa",
+        "ssh_user": "asasaki",
+        "remote_host": "people.mozilla.org",
+        "remote_path": "/home/asasaki/public_html/vcs2vcs/beagle",
     }],
 
     "default_notify_from": "vcs2vcs@%s" % hostname,
