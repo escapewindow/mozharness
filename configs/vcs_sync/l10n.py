@@ -167,7 +167,6 @@ config = {
     ],
     "pip_index": False,
 
-    "copy_logs_post_run": False,
     "upload_config": [{
         "ssh_key": "~/.ssh/id_rsa",
         "ssh_user": "asasaki",

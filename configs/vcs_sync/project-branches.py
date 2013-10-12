@@ -99,7 +99,6 @@ config = {
     ],
     "pip_index": False,
 
-    "copy_logs_post_run": False,
     "upload_config": [{
         "ssh_key": "~/.ssh/vcs-sync_rsa",
         "ssh_user": "asasaki",
@@ -112,10 +111,10 @@ config = {
         "to": "aki@mozilla.com",
         "failure_only": False,
         "skip_empty_messages": False,
-    }, {
-        "to": "release+vcs2vcs@mozilla.com",
-        "failure_only": True,
-        "skip_empty_messages": True,
+#    }, {
+#        "to": "release+vcs2vcs@mozilla.com",
+#        "failure_only": True,
+#        "skip_empty_messages": True,
     }],
 
     # Disallow sharing.  We may need a better way of doing this.
