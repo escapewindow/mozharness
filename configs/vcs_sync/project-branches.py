@@ -103,7 +103,7 @@ config = {
         "ssh_key": "~/.ssh/vcs-sync_rsa",
         "ssh_user": "asasaki",
         "remote_host": "people.mozilla.org",
-        "remote_path": "/home/asasaki/public_html/vcs2vcs/projects",
+        "remote_path": "/home/asasaki/public_html/vcs2vcs/gecko-projects",
     }],
 
     "default_notify_from": "vcs2vcs@%s" % hostname,
