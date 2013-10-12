@@ -111,10 +111,10 @@ config = {
         "to": "aki@mozilla.com",
         "failure_only": False,
         "skip_empty_messages": False,
-#    }, {
-#        "to": "release+vcs2vcs@mozilla.com",
-#        "failure_only": True,
-#        "skip_empty_messages": True,
+    }, {
+        "to": "release+vcs2vcs@mozilla.com",
+        "failure_only": True,
+        "skip_empty_messages": True,
     }],
 
     # Disallow sharing.  We may need a better way of doing this.
