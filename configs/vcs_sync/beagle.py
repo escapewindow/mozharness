@@ -210,6 +210,7 @@ config = {
         "repo": "https://hg.mozilla.org/releases/mozilla-beta",
         "revision": "default",
         "repo_name": "mozilla-beta",
+        "check_incoming": False,  # debug GECKO90_2011121217_RELBRANCH
         "targets": [{
             "target_dest": "beagle/.git",
             "vcs": "git",
@@ -417,10 +418,10 @@ config = {
         "to": "aki@mozilla.com",
         "failure_only": False,
         "skip_empty_messages": False,
-    }, {
-        "to": "release+vcs2vcs@mozilla.com",
-        "failure_only": True,
-        "skip_empty_messages": True,
+#    }, {
+#        "to": "release+vcs2vcs@mozilla.com",
+#        "failure_only": True,
+#        "skip_empty_messages": True,
     }],
 
     # Disallow sharing.  We may need a better way of doing this.
