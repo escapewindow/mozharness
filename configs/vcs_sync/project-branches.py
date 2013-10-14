@@ -69,6 +69,7 @@ config = {
             "repo": "git@github.com:mozilla/integration-gecko-projects.git",
             "ssh_key": "~/.ssh/releng-github-id_rsa",
             "vcs": "git",
+            "force_push": True,
         },
     },
 
