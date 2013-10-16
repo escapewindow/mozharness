@@ -402,15 +402,17 @@ intree=1
             if target_config.get("vcs", "git") == "git":
                 base_command = git + ['push']
                 env = {}
-                if target_config.get("force_push"):
-                    base_command.append("-f")
                 if target_config.get("test_push"):
+                    if target_config.get("force_push"):
+                        base_command.append("-f")
                     target_name = os.path.join(
                         dirs['abs_target_dir'], target_config['target_dest'])
                     base_command.append(target_name)
                 else:
                     target_name = target_config['target_dest']
                     remote_config = self.config.get('remote_targets', {}).get(target_name)
+                    if target_config.get("force_push") or remote_config.get("force_push"):
+                        base_command.append("-f")
                     if not remote_config:
                         self.fatal("Can't find %s in remote_targets!" % target_name)
                     base_command.append(remote_config['repo'])
