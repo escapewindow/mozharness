@@ -38,7 +38,6 @@ CONVERSION_REPOS = [{
     "repo_name": "services-central",
     "targets": [{
         "target_dest": "github-project-branches",
-        "vcs": "git",
     }],
     "bare_checkout": True,
     "vcs": "hg",
@@ -121,7 +120,7 @@ config = {
         "skip_empty_messages": True,
     }],
 
-    # Disallow sharing.  We may need a better way of doing this.
+    # Disallow sharing, since we want pristine .hg and .git directories.
     "vcs_share_base": None,
     "hg_share_base": None,
 }

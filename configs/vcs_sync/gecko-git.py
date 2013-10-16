@@ -32,7 +32,6 @@ config = {
             "test_push": True,
         }, {
             "target_dest": "github-gecko-git",
-            "vcs": "git",
         }],
         "bare_checkout": True,
         "vcs": "hg",
@@ -59,7 +58,6 @@ config = {
             "test_push": True,
         }, {
             "target_dest": "github-gecko-git",
-            "vcs": "git",
         }],
         "bare_checkout": True,
         "vcs": "hg",
@@ -86,7 +84,6 @@ config = {
             },
         }, {
             "target_dest": "github-gecko-git",
-            "vcs": "git",
             "tag_config": {
                 "tag_regexes": [
                     "^B2G_",
@@ -115,7 +112,6 @@ config = {
             "test_push": True,
         }, {
             "target_dest": "github-gecko-git",
-            "vcs": "git",
         }],
         "bare_checkout": True,
         "vcs": "hg",
@@ -139,7 +135,6 @@ config = {
             "test_push": True,
         }, {
             "target_dest": "github-gecko-git",
-            "vcs": "git",
         }],
         "bare_checkout": True,
         "vcs": "hg",
@@ -163,7 +158,6 @@ config = {
             "test_push": True,
         }, {
             "target_dest": "github-gecko-git",
-            "vcs": "git",
         }],
         "bare_checkout": True,
         "vcs": "hg",
@@ -227,7 +221,7 @@ config = {
         "skip_empty_messages": True,
     }],
 
-    # Disallow sharing.  We may need a better way of doing this.
+    # Disallow sharing, since we want pristine .hg and .git directories.
     "vcs_share_base": None,
     "hg_share_base": None,
 }

@@ -250,7 +250,6 @@ intree=1
                 'repo_name': project,
                 'targets': [{
                     'target_dest': 'github-project-branches',
-                    'vcs': 'git',
                 }],
                 'bare_checkout': True,
                 'vcs': 'hg',
@@ -406,15 +405,15 @@ intree=1
                 force_push = target_config.get("force_push")
                 target_name = os.path.join(
                     dirs['abs_target_dir'], target_config['target_dest'])
-                vcs = target_config.get("vcs")
+                target_vcs = target_config.get("vcs")
             else:
                 target_name = target_config['target_dest']
                 remote_config = self.config.get('remote_targets', {}).get(target_name, {})
                 if not remote_config:
                     self.fatal("Can't find %s in remote_targets!" % target_name)
                 force_push = remote_config.get("force_push", target_config.get("force_push"))
-                vcs = remote_config.get("vcs", target_config.get("vcs"))
-            if vcs == "git":
+                target_vcs = remote_config.get("vcs", target_config.get("vcs"))
+            if target_vcs == "git":
                 base_command = git + ['push']
                 env = {}
                 if force_push:
@@ -497,7 +496,7 @@ intree=1
             else:
                 # TODO write hg
                 error_msg = "%s: Don't know how to deal with vcs %s!\n" % (
-                    target_config['target_dest'], target_config['vcs'])
+                    target_config['target_dest'], target_vcs)
                 self.error(error_msg)
                 return_status += error_msg
         return return_status
