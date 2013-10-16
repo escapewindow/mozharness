@@ -177,6 +177,7 @@ config = {
             "repo": "git@github.com:escapewindow/test-gecko-git.git",
             "ssh_key": "~/.ssh/escapewindow_github_rsa",
             "vcs": "git",
+            "force_push": True,
         },
     },
 

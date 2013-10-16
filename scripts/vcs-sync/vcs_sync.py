@@ -71,6 +71,7 @@ class HgGitScript(VirtualenvMixin, TooltoolMixin, TransferMixin, VCSSyncScript):
                 'create-virtualenv',
                 'update-stage-mirror',
                 'update-work-mirror',
+                'combine-mapfiles',
                 'push',
                 'upload',
                 'notify',
@@ -83,6 +84,7 @@ class HgGitScript(VirtualenvMixin, TooltoolMixin, TransferMixin, VCSSyncScript):
                 'update-stage-mirror',
                 'update-work-mirror',
                 'push',
+                'combine-mapfiles',
                 'upload',
                 'notify',
             ],
@@ -604,7 +606,7 @@ intree=1
                         branch_map.setdefault(branch, branch)
         return branch_map
 
-    def combine_mapfiles(self, mapfiles, combined_mapfile='combined_mapfile'):
+    def _combine_mapfiles(self, mapfiles, combined_mapfile='combined_mapfile'):
         """ Ported from repo-sync-tools/combine_mapfiles
 
             Consolidate multiple conversion processes' mapfiles into a
@@ -756,6 +758,12 @@ intree=1
                     revision=rev, mapfile=generated_mapfile)
                 repo_map['repos'][repo_name]['branches'][branch]['git_revision'] = git_revision
         self._write_repo_update_json(repo_map)
+
+    def combine_mapfiles(self):
+        """ This method is for any job (l10n, project-branches) that needs to combine
+            mapfiles.
+            """
+        pass
 
     def push(self):
         """ Push to all targets.  test_targets are local directory test repos;
