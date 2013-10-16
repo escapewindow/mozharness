@@ -399,22 +399,29 @@ intree=1
         hg = self.query_exe('hg', return_type='list')
         return_status = ''
         for target_config in repo_config['targets']:
-            if target_config.get("vcs", "git") == "git":
+            test_push = False
+            remote_config = {}
+            if target_config.get("test_push"):
+                test_push = True
+                force_push = target_config.get("force_push")
+                target_name = os.path.join(
+                    dirs['abs_target_dir'], target_config['target_dest'])
+                vcs = target_config.get("vcs")
+            else:
+                target_name = target_config['target_dest']
+                remote_config = self.config.get('remote_targets', {}).get(target_name, {})
+                if not remote_config:
+                    self.fatal("Can't find %s in remote_targets!" % target_name)
+                force_push = remote_config.get("force_push", target_config.get("force_push"))
+                vcs = remote_config.get("vcs", target_config.get("vcs"))
+            if vcs == "git":
                 base_command = git + ['push']
                 env = {}
-                if target_config.get("test_push"):
-                    if target_config.get("force_push"):
-                        base_command.append("-f")
-                    target_name = os.path.join(
-                        dirs['abs_target_dir'], target_config['target_dest'])
+                if force_push:
+                    base_command.append("-f")
+                if test_push:
                     base_command.append(target_name)
                 else:
-                    target_name = target_config['target_dest']
-                    remote_config = self.config.get('remote_targets', {}).get(target_name)
-                    if target_config.get("force_push") or remote_config.get("force_push"):
-                        base_command.append("-f")
-                    if not remote_config:
-                        self.fatal("Can't find %s in remote_targets!" % target_name)
                     base_command.append(remote_config['repo'])
                     # Allow for using a custom git ssh key.
                     env['GIT_SSH_KEY'] = remote_config['ssh_key']
