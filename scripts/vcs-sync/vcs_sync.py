@@ -773,8 +773,6 @@ intree=1
         if not self.config.get("combined_mapfile"):
             self.info("No combined_mapfile set in config; skipping!")
             return
-        dirs = self.query_abs_dirs()
-        combined_mapfile = os.path.join(dirs['abs_upload_dir'], self.config['combined_mapfile'])
         mapfiles = []
         if self.config.get('conversion_type') == 'b2g-l10n':
             for repo_config in self.query_all_repos():
@@ -791,7 +789,7 @@ intree=1
         if not mapfiles:
             self.info("No mapfiles to combine; skipping!")
             return
-        self._combine_mapfiles(mapfiles, combined_mapfile)
+        self._combine_mapfiles(mapfiles, self.config['combined_mapfile'])
 
     def push(self):
         """ Push to all targets.  test_targets are local directory test repos;
