@@ -219,7 +219,7 @@ config = {
     "notify_config": [{
         "to": "aki@mozilla.com",
         "failure_only": False,
-        "skip_empty_messages": True,
+        "skip_empty_messages": False,
     }],
 
     # Disallow sharing, since we want pristine .hg and .git directories.
