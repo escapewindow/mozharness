@@ -773,6 +773,7 @@ intree=1
         if not self.config.get("combined_mapfile"):
             self.info("No combined_mapfile set in config; skipping!")
             return
+        dirs = self.query_abs_dirs()
         mapfiles = []
         if self.config.get('conversion_type') == 'b2g-l10n':
             for repo_config in self.query_all_repos():
