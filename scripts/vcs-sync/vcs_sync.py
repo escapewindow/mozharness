@@ -776,7 +776,7 @@ intree=1
         if not mapfiles:
             self.info("No mapfiles to combine; skipping!")
             return
-        self._combine_mapfiles(self, mapfiles, combined_mapfile)
+        self._combine_mapfiles(mapfiles, combined_mapfile)
 
     def push(self):
         """ Push to all targets.  test_targets are local directory test repos;
