@@ -763,6 +763,8 @@ intree=1
         """ This method is for any job (l10n, project-branches) that needs to combine
             mapfiles.
             """
+        if self.config.get('conversion_type') == 'b2g-l10n':
+            pass
         pass
 
     def push(self):
