@@ -606,38 +606,45 @@ intree=1
                         branch_map.setdefault(branch, branch)
         return branch_map
 
-    def _combine_mapfiles(self, mapfiles, combined_mapfile):
+    def _combine_mapfiles(self, mapfiles, combined_mapfile, cwd=None):
         """ Ported from repo-sync-tools/combine_mapfiles
 
             Consolidate multiple conversion processes' mapfiles into a
             single mapfile.
             """
         self.info("Determining whether we need to combine mapfiles...")
+        if cwd is None:
+            cwd = self.query_abs_dirs()['abs_upload_dir']
         existing_mapfiles = []
         for f in mapfiles:
-            if os.path.exists(f):
+            f_path = os.path.join(cwd, f)
+            if os.path.exists(f_path):
                 existing_mapfiles.append(f)
             else:
-                self.warning("%s doesn't exist!" % f)
-        if os.path.exists(combined_mapfile):
-            combined_timestamp = time.ctime(os.path.getmtime(combined_mapfile))
+                self.warning("%s doesn't exist!" % f_path)
+        combined_mapfile_path = os.path.join(cwd, combined_mapfile)
+        if os.path.exists(combined_mapfile_path):
+            combined_timestamp = time.ctime(os.path.getmtime(combined_mapfile_path))
             for f in existing_mapfiles:
-                if time.ctime(os.path.getmtime(f)) > combined_timestamp:
+                f_path = os.path.join(cwd, f)
+                if time.ctime(os.path.getmtime(f_path)) > combined_timestamp:
                     # Yes, we want to combine mapfiles
                     break
             else:
                 self.info("No new mapfiles to combine.")
                 return
-            self.move(combined_mapfile, "%s.old" % combined_mapfile)
+            self.move(combined_mapfile_path, "%s.old" % combined_mapfile_path)
         output = self.get_output_from_command(
             ['sort', '--unique', '-t', ' ',
              '--key=2'] + existing_mapfiles,
             silent=True, halt_on_failure=True,
+            cwd=cwd,
         )
-        self.write_to_file(combined_mapfile, output, verbose=False,
+        self.write_to_file(combined_mapfile_path, output, verbose=False,
                            error_level=FATAL)
         self.run_command(['ln', '-sf', combined_mapfile,
-                          '%s-latest' % combined_mapfile])
+                          '%s-latest' % combined_mapfile],
+                         cwd=cwd)
 
     # Actions {{{1
     def create_test_targets(self):
@@ -772,7 +779,7 @@ intree=1
         if self.config.get('conversion_type') == 'b2g-l10n':
             for repo_config in self.query_all_repos():
                 if repo_config.get("mapfile_name"):
-                    mapfiles.append(os.path.join(dirs['abs_upload_dir'], repo_config['mapfile_name']))
+                    mapfiles.append(repo_config['mapfile_name'])
         if self.config.get('external_mapfile_urls'):
             for url in self.config['external_mapfile_urls']:
                 file_name = self.download_file(
@@ -780,7 +787,7 @@ intree=1
                     parent_dir=dirs['abs_upload_dir'],
                     error_level=FATAL,
                 )
-                mapfiles.append(os.path.join(dirs['abs_upload_dir'], file_name))
+                mapfiles.append(file_name)
         if not mapfiles:
             self.info("No mapfiles to combine; skipping!")
             return
