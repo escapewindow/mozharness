@@ -606,7 +606,7 @@ intree=1
                         branch_map.setdefault(branch, branch)
         return branch_map
 
-    def _combine_mapfiles(self, mapfiles, combined_mapfile='combined_mapfile'):
+    def _combine_mapfiles(self, mapfiles, combined_mapfile):
         """ Ported from repo-sync-tools/combine_mapfiles
 
             Consolidate multiple conversion processes' mapfiles into a
@@ -763,9 +763,20 @@ intree=1
         """ This method is for any job (l10n, project-branches) that needs to combine
             mapfiles.
             """
+        if not self.config.get("combined_mapfile"):
+            self.info("No combined_mapfile set in config; skipping!")
+            return
+        dirs = self.query_abs_dirs()
+        combined_mapfile = os.path.join(dirs['abs_upload_dir'], self.config['combined_mapfile'])
+        mapfiles = []
         if self.config.get('conversion_type') == 'b2g-l10n':
-            pass
-        pass
+            for repo_config in self.query_all_repos():
+                if repo_config.get("mapfile_name"):
+                    mapfiles.append(os.path.join(dirs['abs_upload_dir'], repo_config['mapfile_name']))
+        if not mapfiles:
+            self.info("No mapfiles to combine; skipping!")
+            return
+        self._combine_mapfiles(self, mapfiles, combined_mapfile)
 
     def push(self):
         """ Push to all targets.  test_targets are local directory test repos;

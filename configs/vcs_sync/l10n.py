@@ -79,6 +79,7 @@ config = {
         "hg": [os.path.join(os.getcwd(), "build", "venv", "bin", "hg"), "--config", "web.cacerts=/etc/pki/tls/certs/ca-bundle.crt"],
     },
     "conversion_type": "b2g-l10n",
+    "combined_mapfile": "l10n-mapfile",
     "l10n_config": {
         "gecko_config": GECKO_CONFIG,
         "gaia_config": {
