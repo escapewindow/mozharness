@@ -207,13 +207,6 @@ config = {
     ],
     "pip_index": False,
 
-    # Testing only; delete
-    "combined_mapfile": "throwaway_mapfile",
-    "external_mapfile_urls": [
-        "http://people.mozilla.org/~asasaki/vcs2vcs/gecko-dev/gecko-mapfile",
-        "http://people.mozilla.org/~asasaki/vcs2vcs/gecko-projects/project-branches-mapfile",
-    ],
-
     "upload_config": [{
         "ssh_key": "~/.ssh/id_rsa",
         "ssh_user": "asasaki",
