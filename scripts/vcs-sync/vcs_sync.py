@@ -773,6 +773,14 @@ intree=1
             for repo_config in self.query_all_repos():
                 if repo_config.get("mapfile_name"):
                     mapfiles.append(os.path.join(dirs['abs_upload_dir'], repo_config['mapfile_name']))
+        if self.config.get('external_mapfile_urls'):
+            for url in self.config['external_mapfile_urls']:
+                file_name = self.download_file(
+                    url,
+                    parent_dir=dirs['abs_upload_dir'],
+                    error_level=FATAL,
+                )
+                mapfiles.append(os.path.join(dirs['abs_upload_dir'], file_name))
         if not mapfiles:
             self.info("No mapfiles to combine; skipping!")
             return
