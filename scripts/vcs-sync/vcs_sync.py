@@ -630,7 +630,7 @@ intree=1
                 return
             self.move(combined_mapfile, "%s.old" % combined_mapfile)
         output = self.get_output_from_command(
-            ['sort', '--unique', '--field-separarator=" "',
+            ['sort', '--unique', '--field-separator=" "',
              '--key=2'] + existing_mapfiles,
             silent=True, halt_on_failure=True,
         )
