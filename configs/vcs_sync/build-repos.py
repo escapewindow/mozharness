@@ -6,7 +6,7 @@ hostname = socket.gethostname()
 
 # These all need to be under hg.m.o/build.
 # If you need to add a different repo, add it to CONVERSION_REPOS.
-BUILD_BRANCHES = [
+BUILD_REPOS = [
     "autoland",
     "buildapi",
     "buildbot-configs",
@@ -23,8 +23,28 @@ BUILD_BRANCHES = [
     "tools",
 ]
 
-# Non-hg.m.o/build/ repos.
 CONVERSION_REPOS = []
+for repo in BUILD_REPOS:
+    CONVERSION_REPOS.append({
+        "repo": "https://hg.mozilla.org/build/%s" % repo,
+        "revision": "default",
+        "repo_name": repo,
+        "conversion_dir": repo,
+        "mapfile_name": "%s-mapfile" % repo,
+        "targets": [{
+            "target_dest": "%(branch)s/.git",
+            "vcs": "git",
+            "test_push": True,
+            "force_push": True,
+        }],
+        "vcs": "hg",
+        "branch_config": {
+            "branches": {'*': '*'},
+        },
+        "tag_config": {
+            "tags": {'*': '*'},
+        },
+    })
 
 config = {
     "log_name": "build-repos",
@@ -35,19 +55,8 @@ config = {
     "env": {
         "PATH": "%(PATH)s:/usr/libexec/git-core",
     },
-    "conversion_type": "standalone-hg-github-repos",
-    "standalone_branches": BUILD_BRANCHES,
-    "standalone_source_repo_url": "http://hg.mozilla.org/projects/%(branch)s",
-    "standalone_target_template": {
-#        "repo": "git@github.com:mozilla/build-%(branch)s.git",
-        "target_dest": "%(branch)s/.git",
-        "vcs": "git",
-        "test_push": True,
-        "force_push": True,
-    },
     "conversion_repos": CONVERSION_REPOS,
     "remote_targets": {},
-
     "exes": {
         # bug 828140 - shut https warnings up.
         # http://kiln.stackexchange.com/questions/2816/mercurial-certificate-warning-certificate-not-verified-web-cacerts

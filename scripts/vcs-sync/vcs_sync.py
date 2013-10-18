@@ -178,7 +178,6 @@ intree=1
                         'vcs': 'git',
                         'test_push': True,
                     }],
-                    'bare_checkout': True,
                     'vcs': 'hg',
                     'branch_config': {
                         'branches': {
@@ -220,7 +219,6 @@ intree=1
                         'vcs': 'git',
                         'test_push': True,
                     }],
-                    'bare_checkout': True,
                     'vcs': 'hg',
                     'branch_config': {
                         'branches': {
@@ -253,7 +251,6 @@ intree=1
                 'targets': [{
                     'target_dest': 'github-project-branches',
                 }],
-                'bare_checkout': True,
                 'vcs': 'hg',
                 'branch_config': {
                     'branches': {
@@ -410,9 +407,7 @@ intree=1
                 target_vcs = target_config.get("vcs")
             else:
                 target_name = target_config['target_dest']
-                remote_config = self.config.get('remote_targets', {}).get(target_name, {})
-                if not remote_config:
-                    self.fatal("Can't find %s in remote_targets!" % target_name)
+                remote_config = self.config.get('remote_targets', {}).get(target_name, target_config)
                 force_push = remote_config.get("force_push", target_config.get("force_push"))
                 target_vcs = remote_config.get("vcs", target_config.get("vcs"))
             if target_vcs == "git":

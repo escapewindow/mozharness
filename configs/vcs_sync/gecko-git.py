@@ -33,7 +33,6 @@ config = {
         }, {
             "target_dest": "github-gecko-git",
         }],
-        "bare_checkout": True,
         "vcs": "hg",
         "branch_config": {
             "branches": {
@@ -59,7 +58,6 @@ config = {
         }, {
             "target_dest": "github-gecko-git",
         }],
-        "bare_checkout": True,
         "vcs": "hg",
         "branch_config": {
             "branches": {
@@ -90,7 +88,6 @@ config = {
                 ],
             },
         }],
-        "bare_checkout": True,
         "vcs": "hg",
         "branch_config": {
             "branches": {
@@ -113,7 +110,6 @@ config = {
         }, {
             "target_dest": "github-gecko-git",
         }],
-        "bare_checkout": True,
         "vcs": "hg",
         "branch_config": {
             "branches": {
@@ -136,7 +132,6 @@ config = {
         }, {
             "target_dest": "github-gecko-git",
         }],
-        "bare_checkout": True,
         "vcs": "hg",
         "branch_config": {
             "branches": {
@@ -159,7 +154,6 @@ config = {
         }, {
             "target_dest": "github-gecko-git",
         }],
-        "bare_checkout": True,
         "vcs": "hg",
         "branch_config": {
             "branches": {
