@@ -609,7 +609,7 @@ intree=1
         return branch_map
 
     def _combine_mapfiles(self, mapfiles, combined_mapfile, cwd=None):
-        """ Ported from repo-sync-tools/combine_mapfiles
+        """ Adapted from repo-sync-tools/combine_mapfiles
 
             Consolidate multiple conversion processes' mapfiles into a
             single mapfile.
@@ -626,10 +626,10 @@ intree=1
                 self.warning("%s doesn't exist!" % f_path)
         combined_mapfile_path = os.path.join(cwd, combined_mapfile)
         if os.path.exists(combined_mapfile_path):
-            combined_timestamp = time.ctime(os.path.getmtime(combined_mapfile_path))
+            combined_timestamp = os.path.getmtime(combined_mapfile_path)
             for f in existing_mapfiles:
                 f_path = os.path.join(cwd, f)
-                if time.ctime(os.path.getmtime(f_path)) > combined_timestamp:
+                if os.path.getmtime(f_path) > combined_timestamp:
                     # Yes, we want to combine mapfiles
                     break
             else:
