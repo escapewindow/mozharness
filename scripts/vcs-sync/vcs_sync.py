@@ -735,11 +735,11 @@ intree=1
                     # We shouldn't have an issue pulling!
                     self.add_failure(
                         repo_name,
-                        message="Unable to pull %s from source; clobbering!" % repo_name,
+                        message="Unable to pull %s from stage_source; clobbering and skipping!" % repo_name,
                         level=ERROR,
                     )
                     self.rmtree(source)
-                    self.fatal("Breaking out of update-work-mirror loop!")
+                    break
                 self.run_command(
                     hg + ['bookmark', '-f', '-r', rev, target_branch],
                     cwd=dest, error_list=HgErrorList,
@@ -752,6 +752,9 @@ intree=1
                     'pull_timestamp': timestamp,
                     'pull_datetime': datetime,
                 }
+            if self.query_failure(repo_name):
+                # We hit an error in the for loop above
+                continue
             self.retry(
                 self.run_command,
                 args=(hg + ['-v', 'gexport'], ),
