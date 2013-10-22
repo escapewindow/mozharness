@@ -730,8 +730,16 @@ intree=1
                     self.fatal("Branch %s doesn't exist in %s!" % (branch, repo_name))
                 timestamp = int(time.time())
                 datetime = time.strftime('%Y-%m-%d %H:%M %Z')
-                self.run_command(hg + ['pull', '-r', rev, source], cwd=dest,
-                                 error_list=HgErrorList)
+                if self.run_command(hg + ['pull', '-r', rev, source], cwd=dest,
+                                    error_list=HgErrorList):
+                    # We shouldn't have an issue pulling!
+                    self.add_failure(
+                        repo_name,
+                        message="Unable to pull %s from source; clobbering!" % repo_name,
+                        level=ERROR,
+                    )
+                    self.rmtree(source)
+                    self.fatal("Breaking out of update-work-mirror loop!")
                 self.run_command(
                     hg + ['bookmark', '-f', '-r', rev, target_branch],
                     cwd=dest, error_list=HgErrorList,
@@ -816,7 +824,11 @@ intree=1
                 repo_map.setdefault('repos', {}).setdefault(repo_name, {})['push_timestamp'] = timestamp
                 repo_map['repos'][repo_name]['push_datetime'] = datetime
             else:
-                self.add_failure("Unable to push %s." % repo_config['repo_name'])
+                self.add_failure(
+                    repo_config['repo_name'],
+                    message="Unable to push %s." % repo_config['repo_name'],
+                    level=ERROR,
+                )
                 failure_msg += status + "\n"
         if not failure_msg:
             repo_map['last_successful_push_timestamp'] = repo_map['last_push_timestamp']

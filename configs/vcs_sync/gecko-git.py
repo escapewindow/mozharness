@@ -26,6 +26,7 @@ config = {
         "repo": "https://hg.mozilla.org/mozilla-central",
         "revision": "default",
         "repo_name": "mozilla-central",
+        "check_incoming": False,
         "targets": [{
             "target_dest": "gecko-git/.git",
             "vcs": "git",
