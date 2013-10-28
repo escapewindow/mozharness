@@ -67,7 +67,6 @@ config = {
                 ],
             },
         }],
-        "bare_checkout": True,
         "vcs": "hg",
         "branch_config": {
             "branches": {
