@@ -313,6 +313,8 @@ intree=1
                     return self._update_stage_repo(
                         repo_config, retry=False, clobber=True)
                 else:
+                    # Don't leave a failed clone behind
+                    self.rmtree(source_dest)
                     self.fatal("Can't clone %s!" % repo_config['repo'])
         elif self.config['check_incoming'] and repo_config.get("check_incoming", True):
             # Run |hg incoming| and skip all subsequent actions if there
