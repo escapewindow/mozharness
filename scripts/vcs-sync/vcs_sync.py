@@ -291,10 +291,15 @@ intree=1
             self.all_repos += self._query_project_repos()
         return self.all_repos
 
-    def _update_repo_map_failure(self, repo_name, repo_map=None, write_update=False):
+    def _query_repo_previous_status(self, repo_name, repo_map=None):
         if repo_map is None:
             repo_map = self._read_repo_update_json()
-        repo_map.setdefault('repos', {}).setdefault(repo_name, {})['previous_push_successful'] = False
+        return repo_map.get('repos', {}).get(repo_name, {}).get('previous_push_successful')
+
+    def _update_repo_previous_status(self, repo_name, successful_flag=False, repo_map=None, write_update=False):
+        if repo_map is None:
+            repo_map = self._read_repo_update_json()
+        repo_map.setdefault('repos', {}).setdefault(repo_name, {})['previous_push_successful'] = successful_flag
         if write_update:
             self._write_repo_update_json(repo_map)
         return repo_map
@@ -329,36 +334,42 @@ intree=1
                     self.rmtree(source_dest)
                     self.fatal("Can't clone %s!" % repo_config['repo'])
         elif self.config['check_incoming'] and repo_config.get("check_incoming", True):
-            # Run |hg incoming| and skip all subsequent actions if there
-            # are no no changes.
-            # If you want to bypass this behavior (e.g. to update branches/tags
-            # on a repo without requiring a new commit), set
-            # repo_config["incoming_check"] = False.
-            cmd = hg + ['incoming', '-n', '-l', '1']
-            status = self.retry(
-                self.run_command,
-                args=(cmd, ),
-                kwargs={
-                    'output_timeout': 5 * 60,
-                    'cwd': source_dest,
-                    'error_list': HgErrorList,
-                    'success_codes': [0, 1, 256],
-                },
-            )
-            if status in (1, 256):
-                self.info("No changes for %s; skipping." % repo_name)
-                # Overload self.failures to tell downstream actions to noop on
-                # this repo
-                self.failures.append(repo_name)
-                return
-            elif status != 0:
-                self.add_failure(
-                    repo_name,
-                    message="Error getting changes for %s; skipping!" % repo_config['repo_name'],
-                    level=ERROR,
+            previous_status = self._query_repo_previous_status(self, repo_name)
+            if previous_status is None:
+                self.info("No previous status for %s; skipping incoming check!" % repo_name)
+            elif previous_status is False:
+                self.info("Previously unsuccessful status for %s; skipping incoming check!" % repo_name)
+            else:
+                # Run |hg incoming| and skip all subsequent actions if there
+                # are no no changes.
+                # If you want to bypass this behavior (e.g. to update branches/tags
+                # on a repo without requiring a new commit), set
+                # repo_config["incoming_check"] = False.
+                cmd = hg + ['incoming', '-n', '-l', '1']
+                status = self.retry(
+                    self.run_command,
+                    args=(cmd, ),
+                    kwargs={
+                        'output_timeout': 5 * 60,
+                        'cwd': source_dest,
+                        'error_list': HgErrorList,
+                        'success_codes': [0, 1, 256],
+                    },
                 )
-                self._update_repo_map_failure(repo_name, write_update=True)
-                return
+                if status in (1, 256):
+                    self.info("No changes for %s; skipping." % repo_name)
+                    # Overload self.failures to tell downstream actions to noop on
+                    # this repo
+                    self.failures.append(repo_name)
+                    return
+                elif status != 0:
+                    self.add_failure(
+                        repo_name,
+                        message="Error getting changes for %s; skipping!" % repo_config['repo_name'],
+                        level=ERROR,
+                    )
+                    self._update_repo_previous_status(repo_name, write_update=True)
+                    return
         cmd = hg + ['pull']
         if self.retry(
             self.run_command,
@@ -373,7 +384,7 @@ intree=1
                 return self._update_stage_repo(
                     repo_config, retry=False, clobber=True)
             else:
-                self._update_repo_map_failure(repo_name, write_update=True)
+                self._update_repo_previous_status(repo_name, write_update=True)
                 self.fatal("Can't pull %s!" % repo_config['repo'])
         # commenting out hg verify since it takes ~5min per repo; hopefully
         # exit codes will save us
@@ -758,7 +769,7 @@ intree=1
                         message="Unable to pull %s from stage_source; clobbering and skipping!" % repo_name,
                         level=ERROR,
                     )
-                    self._update_repo_map_failure(repo_name, repo_map=repo_map, write_update=True)
+                    self._update_repo_previous_status(repo_name, write_update=True)
                     self.rmtree(source)
                     break
                 self.run_command(
@@ -850,12 +861,12 @@ intree=1
                     self.successful_repos.append(repo_name)
                 repo_map.setdefault('repos', {}).setdefault(repo_name, {})['push_timestamp'] = timestamp
                 repo_map['repos'][repo_name]['push_datetime'] = datetime
-                previous_status = repo_map['repos'][repo_name].get('previous_push_successful')
+                previous_status = self._query_repo_previous_status(repo_name, repo_map=repo_map)
                 if previous_status is None:
                     self.add_summary("Possibly the first successful push of %s." % repo_name)
                 elif previous_status is False:
                     self.add_summary("Previously unsuccessful push of %s is now successful!" % repo_name)
-                repo_map['repos'][repo_name]['previous_push_successful'] = True
+                self._update_repo_previous_status(repo_name, successful_flag=True, repo_map=repo_map, write_update=True)
             else:
                 self.add_failure(
                     repo_config['repo_name'],
@@ -863,7 +874,7 @@ intree=1
                     level=ERROR,
                 )
                 failure_msg += status + "\n"
-                self._update_repo_map_failure(repo_name, repo_map=repo_map, write_update=True)
+                self._update_repo_previous_status(repo_name, repo_map=repo_map, write_update=True)
         if not failure_msg:
             repo_map['last_successful_push_timestamp'] = repo_map['last_push_timestamp']
             repo_map['last_successful_push_datetime'] = repo_map['last_push_datetime']
