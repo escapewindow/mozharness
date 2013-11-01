@@ -135,6 +135,10 @@ class HgGitScript(VirtualenvMixin, TooltoolMixin, TransferMixin, VCSSyncScript):
             error_level=FATAL,
             error_message="Can't set up %s!" % path
         )
+        status = self.run_command(
+            git + ['config', 'receive.denyNonFastForwards', 'true'],
+            cwd=path
+        )
         if deny_deletes:
             status = self.run_command(
                 git + ['config', 'receive.denyDeletes', 'true'],
