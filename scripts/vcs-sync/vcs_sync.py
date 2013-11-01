@@ -293,8 +293,10 @@ intree=1
             """
         hg = self.query_exe('hg', return_type='list')
         dirs = self.query_abs_dirs()
+        repo_name = repo_config['repo_name']
         source_dest = os.path.join(dirs['abs_source_dir'],
-                                   repo_config['repo_name'])
+                                   repo_name)
+        repo_map = self._read_repo_update_json()
         if clobber:
             self.rmtree(source_dest)
         if not os.path.exists(source_dest):
@@ -333,17 +335,18 @@ intree=1
                 },
             )
             if status in (1, 256):
-                self.info("No changes for %s; skipping." % repo_config['repo_name'])
+                self.info("No changes for %s; skipping." % repo_name)
                 # Overload self.failures to tell downstream actions to noop on
                 # this repo
-                self.failures.append(repo_config['repo_name'])
+                self.failures.append(repo_name)
                 return
             elif status != 0:
                 self.add_failure(
-                    repo_config['repo_name'],
+                    repo_name,
                     message="Error getting changes for %s; skipping!" % repo_config['repo_name'],
                     level=ERROR,
                 )
+                repo_map.setdefault('repos', {}).setdefault(repo_name, {})['previous_push_successful'] = False
                 return
         cmd = hg + ['pull']
         if self.retry(
@@ -359,7 +362,10 @@ intree=1
                 return self._update_stage_repo(
                     repo_config, retry=False, clobber=True)
             else:
+                repo_map.setdefault('repos', {}).setdefault(repo_name, {})['previous_push_successful'] = False
+                self._write_repo_update_json(repo_map)
                 self.fatal("Can't pull %s!" % repo_config['repo'])
+        self._write_repo_update_json(repo_map)
         # commenting out hg verify since it takes ~5min per repo; hopefully
         # exit codes will save us
 #        if self.run_command(hg + ["verify"], cwd=source_dest):
@@ -743,6 +749,7 @@ intree=1
                         message="Unable to pull %s from stage_source; clobbering and skipping!" % repo_name,
                         level=ERROR,
                     )
+                    repo_map.setdefault('repos', {}).setdefault(repo_name, {})['previous_push_successful'] = False
                     self.rmtree(source)
                     break
                 self.run_command(
@@ -834,6 +841,12 @@ intree=1
                     self.successful_repos.append(repo_name)
                 repo_map.setdefault('repos', {}).setdefault(repo_name, {})['push_timestamp'] = timestamp
                 repo_map['repos'][repo_name]['push_datetime'] = datetime
+                previous_status = repo_map['repos'][repo_name].get('previous_push_successful')
+                if previous_status is None:
+                    self.add_summary("Possibly the first successful push of %s." % repo_name)
+                elif previous_status is False:
+                    self.add_summary("Previously unsuccessful push of %s is now successful!" % repo_name)
+                repo_map['repos'][repo_name]['previous_push_successful'] = True
             else:
                 self.add_failure(
                     repo_config['repo_name'],
@@ -841,6 +854,7 @@ intree=1
                     level=ERROR,
                 )
                 failure_msg += status + "\n"
+                repo_map.setdefault('repos', {}).setdefault(repo_name, {})['previous_push_successful'] = False
         if not failure_msg:
             repo_map['last_successful_push_timestamp'] = repo_map['last_push_timestamp']
             repo_map['last_successful_push_datetime'] = repo_map['last_push_datetime']
