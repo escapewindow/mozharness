@@ -334,7 +334,7 @@ intree=1
                     self.rmtree(source_dest)
                     self.fatal("Can't clone %s!" % repo_config['repo'])
         elif self.config['check_incoming'] and repo_config.get("check_incoming", True):
-            previous_status = self._query_repo_previous_status(self, repo_name)
+            previous_status = self._query_repo_previous_status(repo_name)
             if previous_status is None:
                 self.info("No previous status for %s; skipping incoming check!" % repo_name)
             elif previous_status is False:
