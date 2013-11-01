@@ -19,7 +19,6 @@ sys.path.insert(1, os.path.dirname(sys.path[0]))
 from mozharness.mozilla.buildbot import TBPL_SUCCESS, BuildbotMixin
 from mozharness.base.errors import BaseErrorList
 from mozharness.base.log import INFO, ERROR, FATAL
-from mozharness.base.python import VirtualenvMixin
 from mozharness.base.vcs.vcsbase import MercurialScript
 from mozharness.mozilla.blob_upload import BlobUploadMixin, blobupload_config_options
 from mozharness.mozilla.mozbase import MozbaseMixin
@@ -31,7 +30,7 @@ from mozharness.mozilla.testing.unittest import DesktopUnittestOutputParser
 SUITE_CATEGORIES = ['mochitest', 'reftest', 'crashtest', 'jsreftest', 'robocop', 'xpcshell', 'jittest', 'cppunittest']
 
 
-class PandaTest(TestingMixin, MercurialScript, VirtualenvMixin, MozpoolMixin, BuildbotMixin, SUTDeviceMozdeviceMixin, MozbaseMixin):
+class PandaTest(TestingMixin, MercurialScript, BlobUploadMixin, MozpoolMixin, BuildbotMixin, SUTDeviceMozdeviceMixin, MozbaseMixin):
     test_suites = SUITE_CATEGORIES
     config_options = [
         [["--mozpool-api-url"], {
@@ -180,7 +179,7 @@ class PandaTest(TestingMixin, MercurialScript, VirtualenvMixin, MozpoolMixin, Bu
             self.info("*** Touching the shutdown file **")
             open(shutdown_file, 'w').close()
         except Exception, e:
-            self.warning("We failed to create the shutdown file: str(%s)" % str(e)) 
+            self.warning("We failed to create the shutdown file: str(%s)" % str(e))
 
     def request_device(self):
         self.retrieve_android_device(b2gbase="")
@@ -215,13 +214,18 @@ class PandaTest(TestingMixin, MercurialScript, VirtualenvMixin, MozpoolMixin, Bu
                 dirs = self.query_abs_dirs()
                 self._download_unzip_hostutils()
                 abs_base_cmd = self._query_abs_base_cmd(suite_category)
+
+                should_install_app = True
+                if 'cppunittest' in suite:
+                    should_install_app = False
                 if 'robocop' in suite:
                     self._download_robocop_apk()
-
                 if 'jittest' in suite:
+                    should_install_app = False
                     self._download_unzip(self.query_jsshell_url(), dirs['abs_test_bin_dir'])
 
-                self._install_app()
+                if should_install_app:
+                    self._install_app()
                 cmd = abs_base_cmd[:]
                 replace_dict = {}
                 for arg in suites[suite]:
