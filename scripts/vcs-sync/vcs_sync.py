@@ -136,12 +136,11 @@ class HgGitScript(VirtualenvMixin, TooltoolMixin, TransferMixin, VCSSyncScript):
             error_message="Can't set up %s!" % path
         )
         if deny_deletes:
-            return self.run_command(
+            status = self.run_command(
                 git + ['config', 'receive.denyDeletes', 'true'],
                 cwd=path
             )
-        else:
-            return status
+        return status
 
     def write_hggit_hgrc(self, dest):
         # Update .hg/hgrc, if not already updated
@@ -664,7 +663,7 @@ intree=1
                 if not os.path.exists(target_dest):
                     self.info("Creating local target repo %s." % target_dest)
                     if target_config.get("vcs", "git") == "git":
-                        self.init_git_repo(target_dest, additional_args=['--bare', '--shared=true'],
+                        self.init_git_repo(target_dest, additional_args=['--bare', '--shared=all'],
                                            deny_deletes=True)
                     else:
                         self.fatal("Don't know how to deal with vcs %s!" % target_config['vcs'])
