@@ -291,6 +291,14 @@ intree=1
             self.all_repos += self._query_project_repos()
         return self.all_repos
 
+    def _update_repo_map_failure(self, repo_name, repo_map=None, write_update=False):
+        if repo_map is None:
+            repo_map = self._read_repo_update_json()
+        repo_map.setdefault('repos', {}).setdefault(repo_name, {})['previous_push_successful'] = False
+        if write_update:
+            self._write_repo_update_json(repo_map)
+        return repo_map
+
     def _update_stage_repo(self, repo_config, retry=True, clobber=False):
         """ Update a stage repo.
             See update_stage_mirror() for a description of the stage repos.
@@ -300,7 +308,6 @@ intree=1
         repo_name = repo_config['repo_name']
         source_dest = os.path.join(dirs['abs_source_dir'],
                                    repo_name)
-        repo_map = self._read_repo_update_json()
         if clobber:
             self.rmtree(source_dest)
         if not os.path.exists(source_dest):
@@ -350,7 +357,7 @@ intree=1
                     message="Error getting changes for %s; skipping!" % repo_config['repo_name'],
                     level=ERROR,
                 )
-                repo_map.setdefault('repos', {}).setdefault(repo_name, {})['previous_push_successful'] = False
+                self._update_repo_map_failure(repo_name, write_update=True)
                 return
         cmd = hg + ['pull']
         if self.retry(
@@ -366,10 +373,8 @@ intree=1
                 return self._update_stage_repo(
                     repo_config, retry=False, clobber=True)
             else:
-                repo_map.setdefault('repos', {}).setdefault(repo_name, {})['previous_push_successful'] = False
-                self._write_repo_update_json(repo_map)
+                self._update_repo_map_failure(repo_name, write_update=True)
                 self.fatal("Can't pull %s!" % repo_config['repo'])
-        self._write_repo_update_json(repo_map)
         # commenting out hg verify since it takes ~5min per repo; hopefully
         # exit codes will save us
 #        if self.run_command(hg + ["verify"], cwd=source_dest):
@@ -753,7 +758,7 @@ intree=1
                         message="Unable to pull %s from stage_source; clobbering and skipping!" % repo_name,
                         level=ERROR,
                     )
-                    repo_map.setdefault('repos', {}).setdefault(repo_name, {})['previous_push_successful'] = False
+                    self._update_repo_map_failure(repo_name, repo_map=repo_map, write_update=True)
                     self.rmtree(source)
                     break
                 self.run_command(
@@ -858,7 +863,7 @@ intree=1
                     level=ERROR,
                 )
                 failure_msg += status + "\n"
-                repo_map.setdefault('repos', {}).setdefault(repo_name, {})['previous_push_successful'] = False
+                self._update_repo_map_failure(repo_name, repo_map=repo_map, write_update=True)
         if not failure_msg:
             repo_map['last_successful_push_timestamp'] = repo_map['last_push_timestamp']
             repo_map['last_successful_push_datetime'] = repo_map['last_push_datetime']
