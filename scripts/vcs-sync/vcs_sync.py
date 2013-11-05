@@ -147,7 +147,8 @@ class HgGitScript(VirtualenvMixin, TooltoolMixin, TransferMixin, VCSSyncScript):
         return status
 
     def write_hggit_hgrc(self, dest):
-        # Update .hg/hgrc, if not already updated
+        """ Update .hg/hgrc, if not already updated
+            """
         hgrc = os.path.join(dest, '.hg', 'hgrc')
         contents = ''
         if os.path.exists(hgrc):
@@ -292,11 +293,16 @@ intree=1
         return self.all_repos
 
     def _query_repo_previous_status(self, repo_name, repo_map=None):
+        """ Return False if previous run was unsuccessful.
+            Return None if no previous run information.
+            """
         if repo_map is None:
             repo_map = self._read_repo_update_json()
         return repo_map.get('repos', {}).get(repo_name, {}).get('previous_push_successful')
 
-    def _update_repo_previous_status(self, repo_name, successful_flag=False, repo_map=None, write_update=False):
+    def _update_repo_previous_status(self, repo_name, successful_flag, repo_map=None, write_update=False):
+        """ Set the repo_name to successful_flag (False for unsuccessful, True for successful)
+            """
         if repo_map is None:
             repo_map = self._read_repo_update_json()
         repo_map.setdefault('repos', {}).setdefault(repo_name, {})['previous_push_successful'] = successful_flag
@@ -368,7 +374,7 @@ intree=1
                         message="Error getting changes for %s; skipping!" % repo_config['repo_name'],
                         level=ERROR,
                     )
-                    self._update_repo_previous_status(repo_name, write_update=True)
+                    self._update_repo_previous_status(repo_name, successful_flag=False, write_update=True)
                     return
         cmd = hg + ['pull']
         if self.retry(
@@ -384,7 +390,7 @@ intree=1
                 return self._update_stage_repo(
                     repo_config, retry=False, clobber=True)
             else:
-                self._update_repo_previous_status(repo_name, write_update=True)
+                self._update_repo_previous_status(repo_name, successful_flag=False, write_update=True)
                 self.fatal("Can't pull %s!" % repo_config['repo'])
         # commenting out hg verify since it takes ~5min per repo; hopefully
         # exit codes will save us
@@ -769,7 +775,7 @@ intree=1
                         message="Unable to pull %s from stage_source; clobbering and skipping!" % repo_name,
                         level=ERROR,
                     )
-                    self._update_repo_previous_status(repo_name, write_update=True)
+                    self._update_repo_previous_status(repo_name, successful_flag=False, write_update=True)
                     self.rmtree(source)
                     break
                 self.run_command(
@@ -874,7 +880,7 @@ intree=1
                     level=ERROR,
                 )
                 failure_msg += status + "\n"
-                self._update_repo_previous_status(repo_name, repo_map=repo_map, write_update=True)
+                self._update_repo_previous_status(repo_name, successful_flag=False, repo_map=repo_map, write_update=True)
         if not failure_msg:
             repo_map['last_successful_push_timestamp'] = repo_map['last_push_timestamp']
             repo_map['last_successful_push_datetime'] = repo_map['last_push_datetime']
