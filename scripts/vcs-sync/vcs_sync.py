@@ -69,6 +69,7 @@ class HgGitScript(VirtualenvMixin, TooltoolMixin, TransferMixin, VCSSyncScript):
             config_options=virtualenv_config_options + self.config_options,
             all_actions=[
                 'clobber',
+                'list-repos',
                 'create-virtualenv',
                 'update-stage-mirror',
                 'update-work-mirror',
@@ -81,6 +82,7 @@ class HgGitScript(VirtualenvMixin, TooltoolMixin, TransferMixin, VCSSyncScript):
             # initial steps to create the work mirror with all the branches +
             # cvs history have been run.
             default_actions=[
+                'list-repos',
                 'create-virtualenv',
                 'update-stage-mirror',
                 'update-work-mirror',
@@ -246,8 +248,6 @@ intree=1
 #                    target_config['repo'] = target_config['repo'] % replace_dict
 #                    repo_dict['targets'].append(target_config)
                 l10n_repos.append(repo_dict)
-        self.info("Built l10n_repos...")
-        self.info(pprint.pformat(l10n_repos, indent=4))
         return l10n_repos
 
     def _query_project_repos(self):
@@ -272,8 +272,6 @@ intree=1
                 'tag_config': {},
             }
             project_repos.append(repo_dict)
-        self.info("Built project_repos...")
-        self.info(pprint.pformat(project_repos, indent=4))
         return project_repos
 
     def query_all_repos(self):
@@ -684,6 +682,11 @@ intree=1
                          cwd=cwd)
 
     # Actions {{{1
+
+    def list_repos(self):
+        repos = self.query_all_repos()
+        self.info(pprint.pformat(repos))
+
     def create_test_targets(self):
         """ This action creates local directories to do test pushes to.
             """
