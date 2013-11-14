@@ -168,7 +168,7 @@ config = {
     ],
     "pip_index": False,
 
-    "upload_config": [{
+    "rsync_upload_config": [{
         "ssh_key": "~/.ssh/id_rsa",
         "ssh_user": "asasaki",
         "remote_host": "github-sync2",

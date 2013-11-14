@@ -897,11 +897,13 @@ intree=1
             self.copy_logs_to_upload_dir()
 
     def upload(self):
-        """ Upload the upload_dir according to the upload_config.
+        """ Upload the upload_dir according to the rsync_upload_config.
+            TODO: diff/db populate for mapfile, S3 uploads
             """
         failure_msg = ''
         dirs = self.query_abs_dirs()
-        for upload_config in self.config.get('upload_config', []):
+        # Rsync.
+        for upload_config in self.config.get('rsync_upload_config', []):
             if self.retry(
                 self.rsync_upload_directory,
                 args=(

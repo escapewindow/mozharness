@@ -408,7 +408,7 @@ config = {
     ],
     "pip_index": False,
 
-    "upload_config": [{
+    "rsync_upload_config": [{
         "ssh_key": "~/.ssh/vcs-sync_rsa",
         "ssh_user": "asasaki",
         "remote_host": "people.mozilla.org",

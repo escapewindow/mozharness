@@ -104,7 +104,7 @@ config = {
     "external_mapfile_urls": [
         "http://people.mozilla.org/~asasaki/vcs2vcs/gecko-dev/gecko-mapfile",
     ],
-    "upload_config": [{
+    "rsync_upload_config": [{
         "ssh_key": "~/.ssh/vcs-sync_rsa",
         "ssh_user": "asasaki",
         "remote_host": "people.mozilla.org",
