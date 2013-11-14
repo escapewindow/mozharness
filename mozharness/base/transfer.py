@@ -31,7 +31,7 @@ class TransferMixin(object):
                                rsync_options=None,
                                error_level=ERROR,
                                create_remote_directory=True,
-                              ):
+                               ):
         """
         Create a remote directory and upload the contents of
         a local directory to it via rsync+ssh.
@@ -61,13 +61,14 @@ class TransferMixin(object):
                                 error_list=mkdir_error_list):
                 self.log("Unable to create remote directory %s:%s!" % (remote_host, remote_path), level=error_level)
                 return -2
-        if self.run_command([rsync, '-e',
-                             '%s -oIdentityFile=%s' % (ssh, ssh_key)
-                            ] + rsync_options + ['.',
-                             '%s@%s:%s/' % (ssh_user, remote_host, remote_path)],
-                            cwd=local_path,
-                            return_type='num_errors',
-                            error_list=SSHErrorList):
+        if self.run_command(
+            [rsync, '-e', '%s -oIdentityFile=%s' % (ssh, ssh_key)] +
+            rsync_options +
+            ['.', '%s@%s:%s/' % (ssh_user, remote_host, remote_path)],
+            cwd=local_path,
+            return_type='num_errors',
+            error_list=SSHErrorList,
+        ):
             self.log("Unable to rsync %s to %s:%s!" % (local_path, remote_host, remote_path), level=error_level)
             return -3
 
@@ -75,7 +76,7 @@ class TransferMixin(object):
                                  remote_path, local_path,
                                  rsync_options=None,
                                  error_level=ERROR,
-                                ):
+                                 ):
         """
         Create a remote directory and upload the contents of
         a local directory to it via rsync+ssh.
@@ -91,14 +92,14 @@ class TransferMixin(object):
             self.log("%s isn't a directory!" % local_path,
                      level=error_level)
             return -1
-        if self.run_command([rsync, '-e',
-                             '%s -oIdentityFile=%s' % (ssh, ssh_key)
-                            ] + rsync_options + [
-                             '%s@%s:%s/' % (ssh_user, remote_host, remote_path),
+        if self.run_command(
+            [rsync, '-e', '%s -oIdentityFile=%s' % (ssh, ssh_key)] +
+            rsync_options + ['%s@%s:%s/' % (ssh_user, remote_host, remote_path),
                              '.'],
-                            cwd=local_path,
-                            return_type='num_errors',
-                            error_list=SSHErrorList):
+            cwd=local_path,
+            return_type='num_errors',
+            error_list=SSHErrorList
+        ):
             self.log("Unable to rsync %s:%s to %s!" % (remote_host, remote_path, local_path), level=error_level)
             return -3
 
@@ -107,3 +108,6 @@ class TransferMixin(object):
         r = urllib2.urlopen(url, timeout=timeout)
         j = json.load(r)
         return j
+
+    def upload_to_s3(self, ):
+        pass
