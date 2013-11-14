@@ -77,6 +77,7 @@ config = {
         "mozfile==0.9",
         "mozinfo==0.5",
         "mozprocess==0.11",
+        "boto==2.17.0",
     ],
     "find_links": [
         "http://pypi.pvt.build.mozilla.org/pub",
