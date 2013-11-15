@@ -7,8 +7,10 @@
 """Generic ways to upload + download files.
 """
 
+import mimetypes
 import os
 import sys
+import time
 import urllib2
 import urlparse
 try:
@@ -144,10 +146,13 @@ class TransferMixin(object):
                      level=error_level)
 
     def upload_file_to_s3(self, bucket_name, file_path, key_name,
-                          headers, metadata, error_level=ERROR):
+                          metadata=None, error_level=ERROR):
         """ Based on https://github.com/catlee/blobber/blob/master/blobber/amazons3_backend.py
-            TODO: default headers/metadata?
             """
+        if not os.path.exists(file_path):
+            self.log("%s doesn't exist!" % file_path, level=error_level)
+            return
+        file_name = os.path.basename(file_path)
         conn = self.query_s3connection(error_level=error_level)
         try:
             bucket = conn.get_bucket(bucket_name)
@@ -155,6 +160,22 @@ class TransferMixin(object):
             self.log("upload_file_to_s3: Can't get bucket; %s!" % str(e), level=error_level)
             return
         bucket_key = bucket.get_key(key_name)
+
+        # build metadata and headers
+        if metadata is None:
+            metadata = {}
+        mimetype = mimetypes.guess_type(file_path)[0] or 'application/octet-stream'
+        metadata.update({
+            'upload_time': int(time.time()),
+            'filesize': os.path.getsize(file_path),
+            'filename': file_name,
+            'mimetype': mimetype,
+        })
+        headers = {
+            'Content-Type': mimetype,
+            'Content-Disposition': 'inline; filename="%s"' % (file_name),
+        }
+
         with self.opened(file_path, "r") as (fd, err):
             if err:
                 self.log("Can't open %s for reading!" % file_path, level=error_level)
