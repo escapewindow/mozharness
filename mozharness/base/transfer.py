@@ -8,7 +8,9 @@
 """
 
 import os
+import sys
 import urllib2
+import urlparse
 try:
     import simplejson as json
     assert json
@@ -26,6 +28,8 @@ class TransferMixin(object):
 
     Dependent on BaseScript.
     """
+    s3connection = None
+
     def rsync_upload_directory(self, local_path, ssh_key, ssh_user,
                                remote_host, remote_path,
                                rsync_options=None,
@@ -104,10 +108,84 @@ class TransferMixin(object):
             return -3
 
     def load_json_from_url(self, url, timeout=30):
+        """ Loads json from a url, returns the loaded json
+            """
         self.debug("Attempting to download %s; timeout=%i" % (url, timeout))
         r = urllib2.urlopen(url, timeout=timeout)
         j = json.load(r)
         return j
 
-    def upload_to_s3(self, ):
-        pass
+    def query_s3connection(self, error_level=ERROR):
+        """ Imports boto and creates a connection.  Requires boto in venv.
+
+            This assumes the credentials are in ~/.boto and only has a single
+            connection available.  If we need more complex support, we'll
+            have to write it (maybe with a dict of key/value self.s3connections?)
+            """
+        if self.s3connection:
+            return self.s3connection
+        if not hasattr(self, 'query_python_site_packages_path'):
+            self.log("This script doesn't inherit VirtualenvMixin; can't import boto!",
+                     level=error_level)
+            return
+        site_packages_path = self.query_python_site_packages_path()
+        sys.path.append(site_packages_path)
+        try:
+            import boto
+            try:
+                from boto.s3.connection import S3Connection
+                self.s3connection = S3Connection()
+                return self.s3connection
+            except boto.exception.NoAuthHandlerFound:
+                self.log("Auth problems; do you have a ~/.boto ?",
+                         level=error_level)
+        except ImportError:
+            self.log("Can't import boto!",
+                     level=error_level)
+
+    def upload_file_to_s3(self, bucket_name, file_path, key_name,
+                          headers, metadata, error_level=ERROR):
+        """ Based on https://github.com/catlee/blobber/blob/master/blobber/amazons3_backend.py
+            TODO: default headers/metadata?
+            """
+        conn = self.query_s3connection(error_level=error_level)
+        try:
+            bucket = conn.get_bucket(bucket_name)
+        except Exception, e:
+            self.log("upload_file_to_s3: Can't get bucket; %s!" % str(e), level=error_level)
+            return
+        bucket_key = bucket.get_key(key_name)
+        with self.opened(file_path, "r") as (fd, err):
+            if err:
+                self.log("Can't open %s for reading!" % file_path, level=error_level)
+                return
+            if bucket_key:
+                # if object exists in bucket then reset storage method
+                timestamp = bucket_key.last_modified
+                bucket_key.change_storage_class("STANDARD")
+
+                # make sure the timestamp has been refreshed
+                bucket_key = bucket.get_key(key_name)
+                new_timestamp = bucket_key.last_modified
+                if timestamp == new_timestamp:
+                    # upload file should refreshing timestamp failed
+                    bucket_key.update_metadata(metadata)
+                    bucket_key.set_contents_from_file(fd, headers=headers)
+                    bucket_key.set_acl('public-read')
+                else:
+                    # update metadata should refreshing timestamp succeeded
+                    bucket_key = bucket.copy_key(
+                        bucket_key.name, bucket_key.bucket.name,
+                        bucket_key.name, metadata, preserve_acl=True,
+                        headers=headers)
+            else:
+                # if object does not exist, upload it
+                bucket_key = bucket.new_key(key_name)
+                bucket_key.update_metadata(metadata)
+                bucket_key.set_contents_from_file(fd, headers=headers)
+                bucket_key.set_acl('public-read')
+
+        # return the blob URL
+        s3_base_url = self.config.get("s3_base_url", "http://" + bucket_name + ".s3.amazonaws.com")
+        url = urlparse.urljoin(s3_base_url, key_name)
+        return url
