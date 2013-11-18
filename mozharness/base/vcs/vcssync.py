@@ -52,7 +52,10 @@ class VCSSyncScript(VCSScript):
         if error_contents and not fatal:
             subject += " with warnings"
         if self.successful_repos:
-            subject += ' (' + ','.join(self.successful_repos) + ')'
+            if len(self.successful_repos) <= 5:
+                subject += ' (' + ','.join(self.successful_repos) + ')'
+            else:
+                text += "Successful repos: %s\n\n" % ', '.join(self.successful_repos)
         subject += ' (%ds)' % seconds
         if self.summary_list:
             text += 'Summary is non-zero:\n\n'
