@@ -48,7 +48,7 @@ class VCSSyncScript(VCSScript):
             subject = "[vcs2vcs] Failed conversion for %s" % job_name
             text = message + '\n\n'
         if not self.successful_repos:
-            subject = "[vcs2vcs] No-op conversion for %s" % job_name
+            subject = "[vcs2vcs] Successful no-op conversion for %s" % job_name
         if error_contents and not fatal:
             subject += " with warnings"
         if self.successful_repos:
