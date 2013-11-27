@@ -16,12 +16,12 @@ from mozharness.base.errors import MakefileErrorList
 from mozharness.base.script import BaseScript
 from mozharness.base.transfer import TransferMixin
 from mozharness.base.vcs.vcsbase import VCSMixin
-from mozharness.mozilla.buildbot import BuildbotMixin, TBPL_WARNING
+from mozharness.mozilla.buildbot import BuildbotMixin
 from mozharness.mozilla.purge import PurgeMixin
 from mozharness.mozilla.mock import MockMixin
 from mozharness.mozilla.tooltool import TooltoolMixin
 
-SUCCESS, WARNINGS, FAILURE, EXCEPTION = xrange(4)
+SUCCESS, WARNINGS, FAILURE, EXCEPTION, RETRY = xrange(5)
 
 
 def requires(*queries):
@@ -71,10 +71,10 @@ class SpidermonkeyBuild(MockMixin,
                             config_options=self.config_options,
                             # other stuff
                             all_actions=[
+                                'purge',
                                 'setup-mock',
                                 'reuse-mock',
                                 'checkout-tools',
-                                'purge',
 
                                 # First, build an optimized JS shell for running the analysis
                                 'checkout-source',
@@ -97,10 +97,10 @@ class SpidermonkeyBuild(MockMixin,
                                 'check-expectations',
                             ],
                             default_actions=[
+                                'purge',
                                 #'reuse-mock',
                                 'setup-mock',
                                 'checkout-tools',
-                                'purge',
                                 'checkout-source',
                                 'clobber-shell',
                                 'configure-shell',
@@ -312,14 +312,6 @@ class SpidermonkeyBuild(MockMixin,
         self.enable_mock()
         self.done_mock_setup = True
 
-    def checkout_tools(self):
-        rev = self.vcs_checkout(
-            vcs='hg',  # Don't have hgtool.py yet
-            repo=self.config['tools_repo'],
-            clean=False,
-        )
-        self.set_buildbot_property("tools_revision", rev, write_to_file=True)
-
     def purge(self):
         dirs = self.query_abs_dirs()
         PurgeMixin.clobber(
@@ -329,8 +321,15 @@ class SpidermonkeyBuild(MockMixin,
             ],
         )
 
-    @requires(query_repo)
-    def checkout_source(self):
+    def checkout_tools(self):
+        rev = self.vcs_checkout(
+            vcs='hg',  # Don't have hgtool.py yet
+            repo=self.config['tools_repo'],
+            clean=False,
+        )
+        self.set_buildbot_property("tools_revision", rev, write_to_file=True)
+
+    def do_checkout_source(self):
         dirs = self.query_abs_dirs()
         dest = os.path.join(dirs['abs_work_dir'], 'source')
 
@@ -346,6 +345,13 @@ class SpidermonkeyBuild(MockMixin,
             clean=True,
         )
         self.set_buildbot_property('source_revision', rev, write_to_file=True)
+
+    @requires(query_repo)
+    def checkout_source(self):
+        try:
+            self.do_checkout_source()
+        except Exception as e:
+            self.fatal("checkout failed: " + str(e), exit_code=RETRY)
 
     def clobber_shell(self):
         dirs = self.query_abs_dirs()
@@ -496,14 +502,13 @@ jobs = 2
 
         if retval is not None:
             self.error("failed to upload")
-            self.return_code = 2
+            self.return_code = WARNINGS
         else:
             upload_url = "{baseuri}{upload_path}".format(
                 baseuri=self.query_upload_remote_baseuri(),
                 upload_path=upload_path,
             )
-
-            self.info("Upload successful: %s" % upload_url)
+            self.info("TinderboxPrint: uploaded to %s" % upload_url)
 
     def check_expectations(self):
         if 'expect_file' not in self.config:
@@ -534,24 +539,37 @@ jobs = 2
                     num_refs += 1
 
         expect_hazards = data.get('expect-hazards')
+        status = []
+        if expect_hazards is None:
+            status.append("%d hazards" % num_hazards)
+        else:
+            status.append("%d/%d hazards" % (num_hazards, expect_hazards))
+
         if expect_hazards is not None and expect_hazards != num_hazards:
             if expect_hazards < num_hazards:
                 self.warning("%d more hazards than expected (expected %d, saw %d)" %
                              (num_hazards - expect_hazards, expect_hazards, num_hazards))
-                self.buildbot_status(TBPL_WARNING)
+                self.buildbot_status(WARNINGS)
             else:
                 self.info("%d fewer hazards than expected! (expected %d, saw %d)" %
                           (expect_hazards - num_hazards, expect_hazards, num_hazards))
 
         expect_refs = data.get('expect-refs')
+        if expect_refs is None:
+            status.append("%d unsafe refs" % num_refs)
+        else:
+            status.append("%d/%d unsafe refs" % (num_refs, expect_refs))
+
         if expect_refs is not None and expect_refs != num_refs:
             if expect_refs < num_refs:
                 self.warning("%d more unsafe refs than expected (expected %d, saw %d)" %
                              (num_refs - expect_refs, expect_refs, num_refs))
-                self.buildbot_status(TBPL_WARNING)
+                self.buildbot_status(WARNINGS)
             else:
                 self.info("%d fewer unsafe refs than expected! (expected %d, saw %d)" %
                           (expect_refs - num_refs, expect_refs, num_refs))
+
+        self.info("TinderboxPrint: " + ", ".join(status))
 
 # main {{{1
 if __name__ == '__main__':
