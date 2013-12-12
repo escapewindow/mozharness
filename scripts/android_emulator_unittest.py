@@ -177,26 +177,129 @@ class AndroidEmulatorTest(TestingMixin, TooltoolMixin, EmulatorMixin, VCSMixin, 
             if res.find('OK') == -1:
                 self.critical('error adding redirect:'+str(res))
         else:
-            self.fatal('We have not been able to establish a telnet' + \
+            self.fatal('We have not been able to establish a telnet ' + \
                        'connection with the emulator')
 
     def _launch_emulator(self, emulator):
         env = self.query_env()
         command = [
             "emulator", "-avd", emulator["name"],
-            "-debug", "all",
+            "-debug", "init,console,gles,memcheck,adbserver,adbclient,adb,avd_config,socket",
             "-port", str(emulator["emulator_port"]),
             # Enable kvm; -qemu arguments must be at the end of the command
             "-qemu", "-m", "1024", "-enable-kvm"
         ]
         if "emulator_cpu" in self.config:
             command += ["-qemu", "-cpu", self.config["emulator_cpu"] ]
+        tmp_file = tempfile.NamedTemporaryFile(mode='w')
+        tmp_stdout = open(tmp_file.name, 'w')
+        self.info("Created temp file %s." % tmp_file.name)
         self.info("Trying to start the emulator with this command: %s" % ' '.join(command))
-        proc = subprocess.Popen(command, stdout=subprocess.PIPE, stderr=subprocess.STDOUT, env=env)
+        proc = subprocess.Popen(command, stdout=tmp_stdout, stderr=tmp_stdout, env=env)
         self._redirectSUT(emulator["emulator_port"], emulator["sut_port1"], emulator["sut_port2"])
         self.info("%s: %s; sut port: %s/%s" % \
                 (emulator["name"], emulator["emulator_port"], emulator["sut_port1"], emulator["sut_port2"]))
-        return proc
+        return {
+            "process": proc,
+            "tmp_file": tmp_file,
+            "tmp_stdout": tmp_stdout
+            }
+
+    def _check_emulator(self, emulator):
+        self.info('Checking emulator %s' % emulator["name"])
+
+        attempts = 0
+        tn = None
+        contacted_sut = False
+        while attempts < 4:
+            if attempts != 0:
+               self.info("Sleeping 30 seconds")
+               time.sleep(30)
+            attempts += 1
+            self.info("  Attempt #%d to connect to SUT on port %d" % \
+                    (attempts, emulator["sut_port1"]))
+            try:
+                tn = telnetlib.Telnet('localhost', emulator["sut_port1"], 10)
+                if tn != None:
+                    self.info('Connected to port %d' % emulator["sut_port1"])
+                    res = tn.read_until('$>', 10)
+                    tn.write('quit\n')
+                    if res.find('$>') == -1:
+                        self.warning('Unexpected SUT response: %s' % res)
+                    else:
+                        self.info('SUT response: %s' % res)
+                    tn.read_all()
+                    tn.close()
+                    contacted_sut = True
+                    break
+                else:
+                    self.warning('Unable to connect to the SUT agent on port %d' % emulator["sut_port1"])
+            except socket.error, e:
+                self.info('Trying again after socket error: %s' % str(e))
+                pass
+            except EOFError:
+                self.info('Trying again after EOF')
+                pass
+            except:
+                self.info('Trying again after unexpected exception')
+                pass
+            finally:
+                if tn != None:
+                    tn.close()
+        if not contacted_sut:
+            self.warning('Unable to communicate with SUT agent on port %d' % emulator["sut_port1"])
+
+        attempts = 0
+        tn = None
+        contacted_emu = False
+        while attempts < 4:
+            if attempts != 0:
+               self.info("Sleeping 30 seconds")
+               time.sleep(30)
+            attempts += 1
+            self.info("  Attempt #%d to connect to emulator on port %d" % \
+                    (attempts, emulator["emulator_port"]))
+            try:
+                tn = telnetlib.Telnet('localhost', emulator["emulator_port"], 10)
+                if tn != None:
+                    self.info('Connected to port %d' % emulator["emulator_port"])
+                    res = tn.read_until('OK', 10)
+                    self.info(res)
+                    tn.write('avd status\n')
+                    res = tn.read_until('OK', 10)
+                    self.info('avd status: %s' % res)
+                    tn.write('redir list\n')
+                    res = tn.read_until('OK', 10)
+                    self.info('redir list: %s' % res)
+                    tn.write('network status\n')
+                    res = tn.read_until('OK', 10)
+                    self.info('network status: %s' % res)
+                    tn.write('quit\n')
+                    tn.read_all()
+                    tn.close()
+                    contacted_emu = True
+                    break
+                else:
+                    self.warning('Unable to connect to the emulator on port %d' % emulator["emulator_port"])
+            except socket.error, e:
+                self.info('Trying again after socket error: %s' % str(e))
+                pass
+            except EOFError:
+                self.info('Trying again after EOF')
+                pass
+            except:
+                self.info('Trying again after unexpected exception')
+                pass
+            finally:
+                if tn != None:
+                    tn.close()
+        if not contacted_emu:
+            self.warning('Unable to communicate with emulator on port %d' % emulator["emulator_port"])
+
+        ps_cmd = [self.adb_path, '-s', emulator["device_id"], 'shell', 'ps']
+        p = subprocess.Popen(ps_cmd, stdout=subprocess.PIPE)
+        out, err = p.communicate()
+        self.info('%s:\n%s\n%s' % (ps_cmd, out, err))
 
     def _kill_processes(self, process_name):
         p = subprocess.Popen(['ps', '-A'], stdout=subprocess.PIPE)
@@ -309,7 +412,8 @@ class AndroidEmulatorTest(TestingMixin, TooltoolMixin, EmulatorMixin, VCSMixin, 
             "process": subprocess.Popen(cmd, cwd=cwd, stdout=tmp_stdout, stderr=tmp_stdout, env=env),
             "tmp_file": tmp_file,
             "tmp_stdout": tmp_stdout,
-            "suite_name": suite_name
+            "suite_name": suite_name,
+            "emulator_index": emulator_index
             }
 
     ##########################################
@@ -352,14 +456,20 @@ class AndroidEmulatorTest(TestingMixin, TooltoolMixin, EmulatorMixin, VCSMixin, 
             "We can't run more tests that the number of emulators we start"
         # We kill compiz because it sometimes prevents us from starting the emulators
         self._kill_processes("compiz")
-        self.procs = []
+        self.emulator_procs = []
         emulator_index = 0
         for test in self.test_suites:
             emulator = self.emulators[emulator_index]
             emulator_index+=1
 
-            proc = self._launch_emulator(emulator)
-            self.procs.append(proc)
+            emulator_proc = self._launch_emulator(emulator)
+            self.emulator_procs.append(emulator_proc)
+        # Verify that we can communicate with each emulator
+        emulator_index = 0
+        for test in self.test_suites:
+            emulator = self.emulators[emulator_index]
+            emulator_index+=1
+            self._check_emulator(emulator)
 
     def download_and_extract(self):
         # This will download and extract the fennec.apk and tests.zip
@@ -425,6 +535,7 @@ class AndroidEmulatorTest(TestingMixin, TooltoolMixin, EmulatorMixin, VCSMixin, 
         start_time = int(time.time())
         while True:
             for p in procs:
+                emulator_index = p["emulator_index"]
                 return_code = p["process"].poll()
                 if return_code!=None:
                     suite_name = p["suite_name"]
@@ -453,6 +564,11 @@ class AndroidEmulatorTest(TestingMixin, TooltoolMixin, EmulatorMixin, VCSMixin, 
                     joint_log_level = self.worst_level(log_level, joint_log_level)
 
                     self.info("##### %s log ends" % p["suite_name"])
+                    self.info("##### %s emulator log begins" % p["suite_name"])
+                    output = self.read_from_file(self.emulator_procs[emulator_index]["tmp_file"].name, verbose=False)
+                    if output:
+                        self.info(output)
+                    self.info("##### %s emulator log ends" % p["suite_name"])
                     procs.remove(p)
             if procs == []:
                 break
@@ -468,8 +584,13 @@ class AndroidEmulatorTest(TestingMixin, TooltoolMixin, EmulatorMixin, VCSMixin, 
 
     def stop_emulators(self):
         '''
-        Let's make sure that every emulator has been stopped
+        Report emulator health, then make sure that every emulator has been stopped
         '''
+        emulator_index = 0
+        for test in self.test_suites:
+            emulator = self.emulators[emulator_index]
+            emulator_index+=1
+            self._check_emulator(emulator)
         self._kill_processes(self.config["emulator_process_name"])
 
 if __name__ == '__main__':
