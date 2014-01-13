@@ -1224,7 +1224,7 @@ class B2GBuild(LocalesMixin, MockMixin, PurgeMixin, BaseScript, VCSMixin,
 
             base_upload_path = "%(basepath)s/%(branch)s-%(target)s/%(year)04i/%(month)02i/%(year)04i-%(month)02i-%(day)02i-%(hour)02i-%(minute)02i-%(second)02i"
             basepath = self.config['upload_remote_nightly_basepath']
-            public_basepath = self.config.get('upload_public_remote_nightly_basepath')
+            public_basepath = self.config.get('public_upload_remote_nightly_basepath')
             symlink_path = "%(basepath)s/%(branch)s-%(target)s/latest" % dict(
                 basepath=basepath,
                 branch=self.query_branch(),
@@ -1238,7 +1238,7 @@ class B2GBuild(LocalesMixin, MockMixin, PurgeMixin, BaseScript, VCSMixin,
         else:
             base_upload_path = "%(basepath)s/%(branch)s-%(target)s/%(buildid)s"
             basepath = self.config['upload_remote_basepath']
-            public_basepath = self.config.get('upload_public_remote_basepath')
+            public_basepath = self.config.get('public_upload_remote_basepath')
             symlink_path = None
             public_symlink_path = None
 
@@ -1269,9 +1269,9 @@ class B2GBuild(LocalesMixin, MockMixin, PurgeMixin, BaseScript, VCSMixin,
                 buildid=self.query_buildid()
             )
 
-        # TODO deal with public upload, update config files, test
+        # TODO update config files, test
 
-        # Ugly block of hardcoded non-public uplooad behavior
+        # Ugly block of hardcoded non-public upload behavior
         if not self._do_upload(
             dirs['abs_upload_dir'],
             self.config['ssh_key'],
@@ -1281,14 +1281,6 @@ class B2GBuild(LocalesMixin, MockMixin, PurgeMixin, BaseScript, VCSMixin,
             symlink_path,
         ):  # successful
             download_url = "http://pvtbuilds.pvt.build.mozilla.org/%s" % upload_path
-
-            if self.query_is_nightly():
-                # Create a symlink to the latest nightly
-                symlink_path = "%(basepath)s/%(branch)s-%(target)s/latest" % dict(
-                    basepath=self.config['upload_remote_nightly_basepath'],
-                    branch=self.query_branch(),
-                    target=target,
-                )
 
             if self.config["target"] == "panda" and self.config.get('sendchange_masters'):
                 self.sendchange(downloadables=[download_url, "%s/%s" % (download_url, "gaia-tests.zip")])
@@ -1304,6 +1296,15 @@ class B2GBuild(LocalesMixin, MockMixin, PurgeMixin, BaseScript, VCSMixin,
                 if matches:
                     downloadables.append("%s/%s" % (download_url, os.path.basename(matches[0])))
                     self.sendchange(downloadables=downloadables)
+
+        self._do_upload(
+            dirs['abs_public_upload_dir'],
+            self.config['public_ssh_key'],
+            self.config['public_ssh_user'],
+            self.config['public_upload_remote_host'],
+            public_upload_path,
+            public_symlink_path,
+        )
 
     def make_socorro_json(self):
         self.info("Creating socorro.json...")
