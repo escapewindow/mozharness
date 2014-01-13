@@ -228,6 +228,7 @@ class B2GBuild(LocalesMixin, MockMixin, PurgeMixin, BaseScript, VCSMixin,
             'testdata_dir': os.path.join(abs_dirs['abs_work_dir'], 'testdata'),
             'gaia_l10n_base_dir': os.path.join(abs_dirs['abs_work_dir'], 'gaia-l10n'),
             'compare_locales_dir': os.path.join(abs_dirs['abs_work_dir'], 'compare-locales'),
+            'abs_public_upload_dir': os.path.join(abs_dirs['abs_work_dir'], 'upload-public'),
         }
 
         abs_dirs.update(dirs)
@@ -436,6 +437,7 @@ class B2GBuild(LocalesMixin, MockMixin, PurgeMixin, BaseScript, VCSMixin,
             self,
             always_clobber_dirs=[
                 dirs['abs_upload_dir'],
+                dirs['abs_public_upload_dir'],
                 dirs['testdata_dir'],
             ],
         )
@@ -1094,6 +1096,7 @@ class B2GBuild(LocalesMixin, MockMixin, PurgeMixin, BaseScript, VCSMixin,
                 self.debug("removing %s" % tmpdir)
                 self.rmtree(tmpdir)
 
+        public_files = []
         # Copy gaia profile
         if gecko_config.get('package_gaia', True):
             zip_name = os.path.join(dirs['work_dir'], "gaia.zip")
@@ -1102,32 +1105,85 @@ class B2GBuild(LocalesMixin, MockMixin, PurgeMixin, BaseScript, VCSMixin,
             if self.run_command(cmd, cwd=dirs['work_dir']) != 0:
                 self.fatal("problem zipping up gaia")
             self.copy_to_upload_dir(zip_name)
+            public_files.append(zip_name)
 
         self.info("copying files to upload directory")
         files = []
 
         files.append(os.path.join(output_dir, 'system', 'build.prop'))
 
-        for pattern in gecko_config.get('upload_files', []):
-            pattern = pattern.format(objdir=self.objdir, workdir=dirs['work_dir'], srcdir=dirs['src'])
+        public_upload_patterns = []
+        upload_patterns = gecko_config.get('upload_files', [])
+        if self.query_is_nightly():
+            public_upload_patterns = gecko_config.get('public_upload_files', [])
+        for base_pattern in upload_patterns + public_upload_patterns:
+            pattern = base_pattern.format(objdir=self.objdir, workdir=dirs['work_dir'], srcdir=dirs['src'])
             for f in glob.glob(pattern):
-                files.append(f)
+                if base_pattern in upload_patterns:
+                    files.append(f)
+                if base_pattern in public_upload_patterns:
+                    public_files.append(f)
 
-        for f in files:
+        for base_f in files + public_files:
+            f = base_f
             if f.endswith(".img"):
                 if self.query_is_nightly():
                     # Compress it
                     self.info("compressing %s" % f)
                     self.run_command(["bzip2", f])
-                    f += ".bz2"
+                    f = "%s.bz2" % base_f
                 else:
                     # Skip it
                     self.info("not uploading %s for non-nightly build" % f)
                     continue
-            self.info("copying %s to upload directory" % f)
-            self.copy_to_upload_dir(f)
+            if base_f in files:
+                self.info("copying %s to upload directory" % f)
+                self.copy_to_upload_dir(f)
+            if base_f in public_files:
+                self.info("copying %s to public upload directory" % f)
+                self.copy_to_upload_dir(base_f, upload_dir=dirs['abs_public_upload_dir'])
 
         self.copy_logs_to_upload_dir()
+
+    def _do_upload(self, upload_dir, ssh_key, ssh_user, remote_host,
+                   remote_path, remote_symlink_path):
+        retval = self.rsync_upload_directory(upload_dir, ssh_key, ssh_user,
+                                             remote_host, remote_path)
+        if retval is not None:
+            self.error("Failed to upload %s to %s@%s:%s!" % (upload_dir, ssh_user, remote_host, remote_path))
+            self.return_code = 2
+            return -1
+        upload_url = "http://%(remote_host)s/%(remote_path)s" % dict(
+            remote_host=remote_host,
+            remote_path=remote_path,
+        )
+        self.info("Upload successful: %s" % upload_url)
+
+        if remote_symlink_path is not None:
+            ssh = self.query_exe('ssh')
+            # First delete the symlink if it exists
+            cmd = [ssh,
+                   '-l', ssh_user,
+                   '-i', ssh_key,
+                   remote_host,
+                   'rm -f %s' % remote_symlink_path,
+                   ]
+            retval = self.run_command(cmd)
+            if retval != 0:
+                self.error("failed to delete latest symlink")
+                self.return_code = 2
+            # Now create the symlink
+            rel_path = os.path.relpath(remote_path, os.path.dirname(remote_symlink_path))
+            cmd = [ssh,
+                   '-l', ssh_user,
+                   '-i', ssh_key,
+                   remote_host,
+                   'ln -sf %s %s' % (rel_path, remote_symlink_path),
+                   ]
+            retval = self.run_command(cmd)
+            if retval != 0:
+                self.error("failed to create latest symlink")
+                self.return_code = 2
 
     def upload(self):
         if not self.query_do_upload():
@@ -1166,8 +1222,42 @@ class B2GBuild(LocalesMixin, MockMixin, PurgeMixin, BaseScript, VCSMixin,
                 # Default to now
                 buildid = datetime.now()
 
-            upload_path = "%(basepath)s/%(branch)s-%(target)s/%(year)04i/%(month)02i/%(year)04i-%(month)02i-%(day)02i-%(hour)02i-%(minute)02i-%(second)02i" % dict(
-                basepath=self.config['upload_remote_nightly_basepath'],
+            base_upload_path = "%(basepath)s/%(branch)s-%(target)s/%(year)04i/%(month)02i/%(year)04i-%(month)02i-%(day)02i-%(hour)02i-%(minute)02i-%(second)02i"
+            basepath = self.config['upload_remote_nightly_basepath']
+            public_basepath = self.config.get('upload_public_remote_nightly_basepath')
+            symlink_path = "%(basepath)s/%(branch)s-%(target)s/latest" % dict(
+                basepath=basepath,
+                branch=self.query_branch(),
+                target=target,
+            )
+            public_symlink_path = "%(basepath)s/%(branch)s-%(target)s/latest" % dict(
+                basepath=public_basepath,
+                branch=self.query_branch(),
+                target=target,
+            )
+        else:
+            base_upload_path = "%(basepath)s/%(branch)s-%(target)s/%(buildid)s"
+            basepath = self.config['upload_remote_basepath']
+            public_basepath = self.config.get('upload_public_remote_basepath')
+            symlink_path = None
+            public_symlink_path = None
+
+        upload_path = base_upload_path % dict(
+            basepath=basepath,
+            branch=self.query_branch(),
+            target=target,
+            year=buildid.year,
+            month=buildid.month,
+            day=buildid.day,
+            hour=buildid.hour,
+            minute=buildid.minute,
+            second=buildid.second,
+            buildid=self.query_buildid()
+        )
+        public_upload_path = None
+        if public_basepath:
+            public_upload_path = base_upload_path % dict(
+                basepath=public_basepath,
                 branch=self.query_branch(),
                 target=target,
                 year=buildid.year,
@@ -1176,36 +1266,21 @@ class B2GBuild(LocalesMixin, MockMixin, PurgeMixin, BaseScript, VCSMixin,
                 hour=buildid.hour,
                 minute=buildid.minute,
                 second=buildid.second,
-            )
-        else:
-            upload_path = "%(basepath)s/%(branch)s-%(target)s/%(buildid)s" % dict(
-                basepath=self.config['upload_remote_basepath'],
-                branch=self.query_branch(),
-                buildid=self.query_buildid(),
-                target=target,
+                buildid=self.query_buildid()
             )
 
-        retval = self.rsync_upload_directory(
+        # TODO deal with public upload, update config files, test
+
+        # Ugly block of hardcoded non-public uplooad behavior
+        if not self._do_upload(
             dirs['abs_upload_dir'],
             self.config['ssh_key'],
             self.config['ssh_user'],
             self.config['upload_remote_host'],
             upload_path,
-        )
-
-        if retval is not None:
-            self.error("failed to upload")
-            self.return_code = 2
-        else:
-            upload_url = "http://%(upload_remote_host)s/%(upload_path)s" % dict(
-                upload_remote_host=self.config['upload_remote_host'],
-                upload_path=upload_path,
-            )
-            download_url = "http://pvtbuilds.pvt.build.mozilla.org/%(upload_path)s" % dict(
-                upload_path=upload_path,
-            )
-
-            self.info("Upload successful: %s" % upload_url)
+            symlink_path,
+        ):  # successful
+            download_url = "http://pvtbuilds.pvt.build.mozilla.org/%s" % upload_path
 
             if self.query_is_nightly():
                 # Create a symlink to the latest nightly
@@ -1214,31 +1289,6 @@ class B2GBuild(LocalesMixin, MockMixin, PurgeMixin, BaseScript, VCSMixin,
                     branch=self.query_branch(),
                     target=target,
                 )
-
-                ssh = self.query_exe('ssh')
-                # First delete the symlink if it exists
-                cmd = [ssh,
-                       '-l', self.config['ssh_user'],
-                       '-i', self.config['ssh_key'],
-                       self.config['upload_remote_host'],
-                       'rm -f %s' % symlink_path,
-                       ]
-                retval = self.run_command(cmd)
-                if retval != 0:
-                    self.error("failed to delete latest symlink")
-                    self.return_code = 2
-                # Now create the symlink
-                rel_path = os.path.relpath(upload_path, os.path.dirname(symlink_path))
-                cmd = [ssh,
-                       '-l', self.config['ssh_user'],
-                       '-i', self.config['ssh_key'],
-                       self.config['upload_remote_host'],
-                       'ln -sf %s %s' % (rel_path, symlink_path),
-                       ]
-                retval = self.run_command(cmd)
-                if retval != 0:
-                    self.error("failed to create latest symlink")
-                    self.return_code = 2
 
             if self.config["target"] == "panda" and self.config.get('sendchange_masters'):
                 self.sendchange(downloadables=[download_url, "%s/%s" % (download_url, "gaia-tests.zip")])
