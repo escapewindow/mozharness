@@ -1097,6 +1097,9 @@ class B2GBuild(LocalesMixin, MockMixin, PurgeMixin, BaseScript, VCSMixin,
                 self.rmtree(tmpdir)
 
         public_files = []
+        public_upload_patterns = []
+        if self.query_is_nightly():
+            public_upload_patterns = gecko_config.get('public_upload_files', [])
         # Copy gaia profile
         if gecko_config.get('package_gaia', True):
             zip_name = os.path.join(dirs['work_dir'], "gaia.zip")
@@ -1105,17 +1108,15 @@ class B2GBuild(LocalesMixin, MockMixin, PurgeMixin, BaseScript, VCSMixin,
             if self.run_command(cmd, cwd=dirs['work_dir']) != 0:
                 self.fatal("problem zipping up gaia")
             self.copy_to_upload_dir(zip_name)
-            public_files.append(zip_name)
+            if public_upload_patterns:
+                public_files.append(zip_name)
 
         self.info("copying files to upload directory")
         files = []
 
         files.append(os.path.join(output_dir, 'system', 'build.prop'))
 
-        public_upload_patterns = []
         upload_patterns = gecko_config.get('upload_files', [])
-        if self.query_is_nightly():
-            public_upload_patterns = gecko_config.get('public_upload_files', [])
         for base_pattern in upload_patterns + public_upload_patterns:
             pattern = base_pattern.format(objdir=self.objdir, workdir=dirs['work_dir'], srcdir=dirs['src'])
             for f in glob.glob(pattern):
@@ -1129,8 +1130,13 @@ class B2GBuild(LocalesMixin, MockMixin, PurgeMixin, BaseScript, VCSMixin,
             if f.endswith(".img"):
                 if self.query_is_nightly():
                     # Compress it
-                    self.info("compressing %s" % f)
-                    self.run_command(["bzip2", f])
+                    if os.path.exists(f):
+                        self.info("compressing %s" % f)
+                        self.run_command(["bzip2", "-f", f])
+                    elif not os.path.exists("%s.bz2" % f):
+                        self.error("%s doesn't exist to bzip2!" % f)
+                        self.return_code = 2
+                        continue
                     f = "%s.bz2" % base_f
                 else:
                     # Skip it
@@ -1269,9 +1275,6 @@ class B2GBuild(LocalesMixin, MockMixin, PurgeMixin, BaseScript, VCSMixin,
                 buildid=self.query_buildid()
             )
 
-        # TODO update config files, test
-
-        # Ugly block of hardcoded non-public upload behavior
         if not self._do_upload(
             dirs['abs_upload_dir'],
             self.config['ssh_key'],
@@ -1279,7 +1282,7 @@ class B2GBuild(LocalesMixin, MockMixin, PurgeMixin, BaseScript, VCSMixin,
             self.config['upload_remote_host'],
             upload_path,
             symlink_path,
-        ):  # successful
+        ):  # successful; sendchange
             download_url = "http://pvtbuilds.pvt.build.mozilla.org/%s" % upload_path
 
             if self.config["target"] == "panda" and self.config.get('sendchange_masters'):
@@ -1297,14 +1300,16 @@ class B2GBuild(LocalesMixin, MockMixin, PurgeMixin, BaseScript, VCSMixin,
                     downloadables.append("%s/%s" % (download_url, os.path.basename(matches[0])))
                     self.sendchange(downloadables=downloadables)
 
-        self._do_upload(
-            dirs['abs_public_upload_dir'],
-            self.config['public_ssh_key'],
-            self.config['public_ssh_user'],
-            self.config['public_upload_remote_host'],
-            public_upload_path,
-            public_symlink_path,
-        )
+        if os.path.exists(dirs['abs_public_upload_dir']):
+            self.info("Uploading public bits...")
+            self._do_upload(
+                dirs['abs_public_upload_dir'],
+                self.config['public_ssh_key'],
+                self.config['public_ssh_user'],
+                self.config['public_upload_remote_host'],
+                public_upload_path,
+                public_symlink_path,
+            )
 
     def make_socorro_json(self):
         self.info("Creating socorro.json...")
