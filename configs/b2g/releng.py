@@ -23,7 +23,6 @@ config = {
             "upload_remote_symlink": "/pub/mozilla.org/b2g/tinderbox-builds/%(basepath)s/%(branch)s-%(target)s/latest",
             "upload_remote_nightly_path": "/pub/mozilla.org/b2g/nightly/%(branch)s-%(target)s/%(year)04i/%(month)02i/%(year)04i-%(month)02i-%(day)02i-%(hour)02i-%(minute)02i-%(second)02i",
             "upload_remote_nightly_symlink": "/pub/mozilla.org/b2g/nightly/%(branch)s-%(target)s/latest",
-            "filelist_key": "upload_files",
             "upload_dep_target_exclusions": [],
         },
         "public": {
@@ -32,7 +31,6 @@ config = {
             "upload_remote_host": "stage.mozilla.org",
             "post_upload_cmd": "post_upload.py --tinderbox-builds-dir ${branch}s-%(target)s -p b2g -i %(buildid)s --revision %(revision)s --release-to-tinderbox-dated-builds",
             "post_upload_nightly_cmd": "post_upload.py --tinderbox-builds-dir %(branch)s-%(target)s -b %(branch)s -p b2g -i %(buildid)s --revision %(revision)s --release-to-tinderbox-dated-builds --release-to-latest --release-to-dated",
-            "filelist_key": "public_upload_files",
         },
     },
     "tooltool_servers": ["http://runtime-binaries.pvt.build.mozilla.org/tooltool/"],

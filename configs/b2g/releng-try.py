@@ -17,7 +17,6 @@ config = {
             "ssh_user": "b2gtry",
             "upload_remote_host": "pvtbuilds2.dmz.scl3.mozilla.com",
             "upload_remote_path": "/pub/mozilla.org/b2g/try-builds/%(user)s-%(rev)s/%(branch)s-%(target)s",
-            "filelist_key": "upload_files",
             "upload_dep_target_exclusions": [],
         },
         "public": {
@@ -25,7 +24,6 @@ config = {
             "ssh_user": "b2gtry",
             "upload_remote_host": "stage.mozilla.org",
             "post_upload_cmd": "post_upload.py --tinderbox-builds-dir %(user)s-%(revision)s -p b2g -i %(buildid)s --revision %(revision)s --who %(user)s --builddir try-%(target)s --release-to-try-builds",
-            "filelist_key": "public_upload_files",
         },
     },
     "tooltool_servers": ["http://runtime-binaries.pvt.build.mozilla.org/tooltool/"],
