@@ -1188,8 +1188,48 @@ class B2GBuild(LocalesMixin, MockMixin, PurgeMixin, BaseScript, VCSMixin,
 
     def _do_postupload_upload(self, upload_dir, ssh_key, ssh_user, remote_host,
                               postupload_cmd):
-        pass
-        # TODO WRITEME
+        ssh = self.query_exe('ssh')
+        remote_path = self.get_output_from_command(
+            [ssh, '-l', ssh_user, '-i', ssh_key, remote_host, 'mktemp -d']
+        )
+        if not remote_path.endswith('/'):
+            remote_path += '/'
+        retval = self.rsync_upload_directory(upload_dir, ssh_key, ssh_user,
+                                             remote_host, remote_path)
+        if retval is not None:
+            self.error("Failed to upload %s to %s@%s:%s!" % (upload_dir, ssh_user, remote_host, remote_path))
+            self.return_code = 2
+        else:  # post_upload.py
+            upload_url = "http://%(remote_host)s/%(remote_path)s" % dict(
+                remote_host=remote_host,
+                remote_path=remote_path,
+            )
+            # build filelist
+            filelist = []
+            for dirpath, dirname, filenames in os.walk(upload_dir):
+                for f in filenames:
+                    path = '%s/%s' % (dirpath, f)
+                    path.replace(upload_dir, remote_path)
+                    filelist.append(path)
+            cmd = [ssh,
+                   '-l', ssh_user,
+                   '-i', ssh_key,
+                   remote_host,
+                   '%s %s "%s"' % (postupload_cmd, remote_path, '" "'.join(filelist))
+                   ]
+            retval = self.run_command(cmd)
+            if retval != 0:
+                self.error("failed to run %s!" % postupload_cmd)
+                self.return_code = 2
+            else:
+                self.info("Upload successful: %s" % upload_url)
+        # cleanup, whether we ran postupload or not
+        cmd = [ssh,
+               '-l', ssh_user,
+               '-i', ssh_key,
+               remote_host,
+               'rm -f %s' % remote_path
+               ]
 
     def upload(self):
         if not self.query_do_upload():
