@@ -1249,7 +1249,7 @@ class B2GBuild(LocalesMixin, MockMixin, PurgeMixin, BaseScript, VCSMixin,
         try:
             # for Try
             user = self.buildbot_config['sourcestamp']['changes'][0]['who']
-        except KeyError:
+        except (KeyError, IndexError):
             user = "unknown"
 
         replace_dict = dict(
