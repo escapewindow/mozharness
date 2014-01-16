@@ -174,11 +174,6 @@ class B2GBuild(LocalesMixin, MockMixin, PurgeMixin, BaseScript, VCSMixin,
                                 'ccache': True,
                                 'buildbot_json_path': os.environ.get('PROPERTIES_FILE'),
                                 'tooltool_servers': None,
-                                'ssh_key': None,
-                                'ssh_user': None,
-                                'upload_remote_host': None,
-                                'upload_remote_basepath': None,
-                                'enable_try_uploads': False,
                                 'tools_repo': 'http://hg.mozilla.org/build/tools',
                                 'locales_dir': 'gecko/b2g/locales',
                                 'l10n_dir': 'gecko-l10n',
@@ -355,7 +350,7 @@ class B2GBuild(LocalesMixin, MockMixin, PurgeMixin, BaseScript, VCSMixin,
         # always upload nightlies, but not dep builds for some platforms
         if self.query_is_nightly():
             return True
-        if self.config['target'] in self.config.get('upload_dep_target_exclusions', []):
+        if self.config['target'] in self.config['upload']['default'].get('upload_dep_target_exclusions', []):
             return False
         return True
 
@@ -1151,8 +1146,8 @@ class B2GBuild(LocalesMixin, MockMixin, PurgeMixin, BaseScript, VCSMixin,
 
         self.copy_logs_to_upload_dir()
 
-    def _do_upload(self, upload_dir, ssh_key, ssh_user, remote_host,
-                   remote_path, remote_symlink_path):
+    def _do_rsync_upload(self, upload_dir, ssh_key, ssh_user, remote_host,
+                         remote_path, remote_symlink_path):
         retval = self.rsync_upload_directory(upload_dir, ssh_key, ssh_user,
                                              remote_host, remote_path)
         if retval is not None:
@@ -1165,7 +1160,7 @@ class B2GBuild(LocalesMixin, MockMixin, PurgeMixin, BaseScript, VCSMixin,
         )
         self.info("Upload successful: %s" % upload_url)
 
-        if remote_symlink_path is not None:
+        if remote_symlink_path:
             ssh = self.query_exe('ssh')
             # First delete the symlink if it exists
             cmd = [ssh,
@@ -1191,6 +1186,11 @@ class B2GBuild(LocalesMixin, MockMixin, PurgeMixin, BaseScript, VCSMixin,
                 self.error("failed to create latest symlink")
                 self.return_code = 2
 
+    def _do_postupload_upload(self, upload_dir, ssh_key, ssh_user, remote_host,
+                              postupload_cmd):
+        pass
+        # TODO WRITEME
+
     def upload(self):
         if not self.query_do_upload():
             self.info("Uploads disabled for this build. Skipping...")
@@ -1203,87 +1203,57 @@ class B2GBuild(LocalesMixin, MockMixin, PurgeMixin, BaseScript, VCSMixin,
             target += c["target_suffix"]
         if self.config.get('debug_build'):
             target += "-debug"
-        if c['enable_try_uploads']:
-            try:
-                user = self.buildbot_config['sourcestamp']['changes'][0]['who']
-            except KeyError:
-                user = "unknown"
-            upload_path = "%(basepath)s/%(user)s-%(rev)s/%(branch)s-%(target)s" % dict(
-                basepath=self.config['upload_remote_basepath'],
-                branch=self.query_branch(),
-                target=target,
-                user=user,
-                rev=self.query_revision(),
-            )
-        elif self.query_is_nightly():
-            # Dates should be based on buildid
-            buildid = self.query_buildid()
-            if buildid:
-                try:
-                    buildid = datetime.strptime(buildid, "%Y%m%d%H%M%S")
-                except ValueError:
-                    buildid = None
+        try:
+            # for Try
+            user = self.buildbot_config['sourcestamp']['changes'][0]['who']
+        except KeyError:
+            user = "unknown"
 
-            if buildid is None:
-                # Default to now
-                buildid = datetime.now()
-
-            base_upload_path = "%(basepath)s/%(branch)s-%(target)s/%(year)04i/%(month)02i/%(year)04i-%(month)02i-%(day)02i-%(hour)02i-%(minute)02i-%(second)02i"
-            basepath = self.config['upload_remote_nightly_basepath']
-            public_basepath = self.config.get('public_upload_remote_nightly_basepath')
-            symlink_path = "%(basepath)s/%(branch)s-%(target)s/latest" % dict(
-                basepath=basepath,
-                branch=self.query_branch(),
-                target=target,
-            )
-            public_symlink_path = "%(basepath)s/%(branch)s-%(target)s/latest" % dict(
-                basepath=public_basepath,
-                branch=self.query_branch(),
-                target=target,
-            )
-        else:
-            base_upload_path = "%(basepath)s/%(branch)s-%(target)s/%(buildid)s"
-            basepath = self.config['upload_remote_basepath']
-            public_basepath = self.config.get('public_upload_remote_basepath')
-            symlink_path = None
-            public_symlink_path = None
-
-        upload_path = base_upload_path % dict(
-            basepath=basepath,
+        replace_dict = dict(
             branch=self.query_branch(),
             target=target,
-            year=buildid.year,
-            month=buildid.month,
-            day=buildid.day,
-            hour=buildid.hour,
-            minute=buildid.minute,
-            second=buildid.second,
-            buildid=self.query_buildid()
+            user=user,
+            revision=self.query_revision(),
+            buildid=self.query_buildid(),
         )
-        public_upload_path = None
-        if public_basepath:
-            public_upload_path = base_upload_path % dict(
-                basepath=public_basepath,
-                branch=self.query_branch(),
-                target=target,
-                year=buildid.year,
-                month=buildid.month,
-                day=buildid.day,
-                hour=buildid.hour,
-                minute=buildid.minute,
-                second=buildid.second,
-                buildid=self.query_buildid()
-            )
+        upload_path_key = 'upload_remote_path'
+        upload_symlink_key = 'upload_remote_symlink'
+        postupload_key = 'post_upload_cmd'
+        if self.query_is_nightly():
+            # Dates should be based on buildid
+            build_date = self.query_buildid()
+            if build_date:
+                try:
+                    build_date = datetime.strptime(build_date, "%Y%m%d%H%M%S")
+                except ValueError:
+                    build_date = None
+            if build_date is None:
+                # Default to now
+                build_date = datetime.now()
+            replace_dict.update(dict(
+                year=build_date.year,
+                month=build_date.month,
+                day=build_date.day,
+                hour=build_date.hour,
+                minute=build_date.minute,
+                second=build_date.second,
+            ))
+            upload_path_key = 'upload_remote_nightly_path'
+            upload_symlink_key = 'upload_remote_nightly_symlink'
+            postupload_key = 'post_upload_ngithly_cmd'
 
-        if not self._do_upload(
+        # default upload
+        upload_path = self.config['upload']['default'][upload_path_key] % replace_dict
+        if not self._do_rsync_upload(
             dirs['abs_upload_dir'],
-            self.config['ssh_key'],
-            self.config['ssh_user'],
-            self.config['upload_remote_host'],
+            self.config['upload']['default']['ssh_key'],
+            self.config['upload']['default']['ssh_user'],
+            self.config['upload']['default']['upload_remote_host'],
             upload_path,
-            symlink_path,
+            self.config['upload']['default'].get(upload_symlink_key, '') % replace_dict,
         ):  # successful; sendchange
-            download_url = "http://pvtbuilds.pvt.build.mozilla.org/%s" % upload_path
+            # TODO unhardcode
+            download_url = "http://pvtbuilds.pvt.build.mozilla.org%s" % upload_path
 
             if self.config["target"] == "panda" and self.config.get('sendchange_masters'):
                 self.sendchange(downloadables=[download_url, "%s/%s" % (download_url, "gaia-tests.zip")])
@@ -1300,15 +1270,14 @@ class B2GBuild(LocalesMixin, MockMixin, PurgeMixin, BaseScript, VCSMixin,
                     downloadables.append("%s/%s" % (download_url, os.path.basename(matches[0])))
                     self.sendchange(downloadables=downloadables)
 
-        if os.path.exists(dirs['abs_public_upload_dir']):
+        if os.path.exists(dirs['abs_public_upload_dir']) and self.config['upload'].get('public'):
             self.info("Uploading public bits...")
-            self._do_upload(
+            self._do_postupload_upload(
                 dirs['abs_public_upload_dir'],
-                self.config['public_ssh_key'],
-                self.config['public_ssh_user'],
-                self.config['public_upload_remote_host'],
-                public_upload_path,
-                public_symlink_path,
+                self.config['upload']['public']['ssh_key'],
+                self.config['upload']['public']['ssh_user'],
+                self.config['upload']['public']['upload_remote_host'],
+                self.config['upload']['public'][postupload_key] % replace_dict,
             )
 
     def make_socorro_json(self):
