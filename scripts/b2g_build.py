@@ -1208,6 +1208,9 @@ class B2GBuild(LocalesMixin, MockMixin, PurgeMixin, BaseScript, VCSMixin,
             filelist = []
             for dirpath, dirname, filenames in os.walk(upload_dir):
                 for f in filenames:
+                    # use / instead of os.path.join() because this is part of
+                    # a post_upload.py call on a fileserver, which is probably
+                    # not windows
                     path = '%s/%s' % (dirpath, f)
                     path.replace(upload_dir, remote_path)
                     filelist.append(path)
@@ -1280,7 +1283,7 @@ class B2GBuild(LocalesMixin, MockMixin, PurgeMixin, BaseScript, VCSMixin,
             ))
             upload_path_key = 'upload_remote_nightly_path'
             upload_symlink_key = 'upload_remote_nightly_symlink'
-            postupload_key = 'post_upload_ngithly_cmd'
+            postupload_key = 'post_upload_nightly_cmd'
 
         # default upload
         upload_path = self.config['upload']['default'][upload_path_key] % replace_dict

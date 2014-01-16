@@ -18,7 +18,7 @@ config = {
         "default": {
             "ssh_key": os.path.expanduser("~/.ssh/b2gbld_dsa"),
             "ssh_user": "b2gbld",
-            "upload_remote_host": "pvtbuilds2.dmz.scl3.mozilla.com",
+            "upload_remote_host": "pvtbuilds.dmz.scl3.mozilla.com",
             "upload_remote_path": "/pub/mozilla.org/b2g/tinderbox-builds/%(branch)s-%(target)s/%(buildid)s",
             "upload_remote_symlink": "/pub/mozilla.org/b2g/tinderbox-builds/%(branch)s-%(target)s/latest",
             "upload_remote_nightly_path": "/pub/mozilla.org/b2g/nightly/%(branch)s-%(target)s/%(year)04i/%(month)02i/%(year)04i-%(month)02i-%(day)02i-%(hour)02i-%(minute)02i-%(second)02i",
@@ -29,7 +29,8 @@ config = {
             "ssh_key": os.path.expanduser("~/.ssh/b2gbld_dsa"),
             "ssh_user": "b2gbld",
             "upload_remote_host": "stage.mozilla.org",
-            "post_upload_cmd": "post_upload.py --tinderbox-builds-dir ${branch}s-%(target)s -p b2g -i %(buildid)s --revision %(revision)s --release-to-tinderbox-dated-builds",            "post_upload_nightly_cmd": "post_upload.py --tinderbox-builds-dir %(branch)s-%(target)s -b %(branch)s -p b2g -i %(buildid)s --revision %(revision)s --release-to-tinderbox-dated-builds --release-to-latest --release-to-dated",
+            "post_upload_cmd": "post_upload.py --tinderbox-builds-dir ${branch}s-%(target)s -p b2g -i %(buildid)s --revision %(revision)s --release-to-tinderbox-dated-builds",
+            "post_upload_nightly_cmd": "post_upload.py --tinderbox-builds-dir %(branch)s-%(target)s -b %(branch)s -p b2g -i %(buildid)s --revision %(revision)s --release-to-tinderbox-dated-builds --release-to-latest --release-to-dated",
         },
     },
     "tooltool_servers": ["http://runtime-binaries.pvt.build.mozilla.org/tooltool/"],
