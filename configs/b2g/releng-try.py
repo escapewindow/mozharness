@@ -20,8 +20,8 @@ config = {
             "upload_dep_target_exclusions": [],
         },
         "public": {
-            "ssh_key": os.path.expanduser("~/.ssh/b2gtry_dsa"),
-            "ssh_user": "b2gtry",
+            "ssh_key": os.path.expanduser("~/.ssh/trybld_dsa"),
+            "ssh_user": "trybld",
             "upload_remote_host": "stage.mozilla.org",
             "post_upload_cmd": "post_upload.py --tinderbox-builds-dir %(user)s-%(revision)s -p b2g -i %(buildid)s --revision %(revision)s --who %(user)s --builddir try-%(target)s --release-to-try-builds",
         },

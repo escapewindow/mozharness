@@ -26,8 +26,8 @@ config = {
             "upload_dep_target_exclusions": ["inari", "leo", "hamachi"],
         },
         "public": {
-            "ssh_key": os.path.expanduser("~/.ssh/b2gbld_dsa"),
-            "ssh_user": "b2gbld",
+            "ssh_key": os.path.expanduser("~/.ssh/ffxbld_dsa"),
+            "ssh_user": "ffxbld",
             "upload_remote_host": "stage.mozilla.org",
             "post_upload_cmd": "post_upload.py --tinderbox-builds-dir ${branch}s-%(target)s -p b2g -i %(buildid)s --revision %(revision)s --release-to-tinderbox-dated-builds",
             "post_upload_nightly_cmd": "post_upload.py --tinderbox-builds-dir %(branch)s-%(target)s -b %(branch)s -p b2g -i %(buildid)s --revision %(revision)s --release-to-tinderbox-dated-builds --release-to-latest --release-to-dated",
