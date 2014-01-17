@@ -1212,7 +1212,7 @@ class B2GBuild(LocalesMixin, MockMixin, PurgeMixin, BaseScript, VCSMixin,
                     # a post_upload.py call on a fileserver, which is probably
                     # not windows
                     path = '%s/%s' % (dirpath, f)
-                    path.replace(upload_dir, remote_path)
+                    path = path.replace(upload_dir, remote_path)
                     filelist.append(path)
             cmd = [ssh,
                    '-l', ssh_user,
