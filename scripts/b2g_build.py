@@ -1218,7 +1218,7 @@ class B2GBuild(LocalesMixin, MockMixin, PurgeMixin, BaseScript, VCSMixin,
                    '-l', ssh_user,
                    '-i', ssh_key,
                    remote_host,
-                   '%s %s "%s"' % (postupload_cmd, remote_path, '" "'.join(filelist))
+                   '%s %s %s' % (postupload_cmd, remote_path, ' '.join(filelist))
                    ]
             retval = self.run_command(cmd)
             if retval != 0:
