@@ -1093,8 +1093,7 @@ class B2GBuild(LocalesMixin, MockMixin, PurgeMixin, BaseScript, VCSMixin,
 
         public_files = []
         public_upload_patterns = []
-        if self.query_is_nightly():
-            public_upload_patterns = gecko_config.get('public_upload_files', [])
+        public_upload_patterns = gecko_config.get('public_upload_files', [])
         # Copy gaia profile
         if gecko_config.get('package_gaia', True):
             zip_name = os.path.join(dirs['work_dir'], "gaia.zip")
