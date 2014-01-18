@@ -23,7 +23,7 @@ config = {
             "ssh_key": os.path.expanduser("~/.ssh/trybld_dsa"),
             "ssh_user": "trybld",
             "upload_remote_host": "stage.mozilla.org",
-            "post_upload_cmd": "post_upload.py --tinderbox-builds-dir %(user)s-%(revision)s -p b2g -i %(buildid)s --revision %(revision)s --builddir en-US --who %(user)s --builddir try-%(target)s --release-to-try-builds",
+            "post_upload_cmd": "post_upload.py --tinderbox-builds-dir %(user)s-%(revision)s -p b2g -i %(buildid)s --revision %(revision)s --who %(user)s --builddir try-%(target)s --release-to-try-builds",
         },
     },
     "tooltool_servers": ["http://runtime-binaries.pvt.build.mozilla.org/tooltool/"],
