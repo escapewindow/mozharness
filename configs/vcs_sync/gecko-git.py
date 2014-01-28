@@ -114,9 +114,9 @@ config = {
             ],
         },
     }, {
-        "repo": "https://hg.mozilla.org/releases/mozilla-b2g28_v1.3t",
+        "repo": "https://hg.mozilla.org/releases/mozilla-b2g28_v1_3t",
         "revision": "default",
-        "repo_name": "mozilla-b2g28_v1.3t",
+        "repo_name": "mozilla-b2g28_v1_3t",
         "targets": [{
             "target_dest": "gecko-git/.git",
             "vcs": "git",
