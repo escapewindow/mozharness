@@ -185,14 +185,8 @@ class Beta2Release(TransferMixin, MercurialScript):
                 )
 
     def pull(self):
-        """ Pull tools first, then use hgtool for the gecko repos
+        """ Pull gecko repos
             """
-#        repos = [{
-#            "repo": self.config["tools_repo_url"],
-#            "revision": self.config["tools_repo_revision"],
-#            "dest": "tools",
-#            "vcs": "hg",
-#        }] + self.query_gecko_repos()
         repos = self.query_gecko_repos()
         self.revisions = super(Beta2Release, self).pull(repos=repos)
 
