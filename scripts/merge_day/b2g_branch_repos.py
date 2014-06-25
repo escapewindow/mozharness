@@ -245,6 +245,7 @@ e.g. --branch-order v2.0,master"""
             """
         if self.branch_repo_dict is not None:
             return self.branch_repo_dict
+        self.info("Building branch_repo_dict...")
         branch_repo_dict = {
             'b2g-manifest': {
                 'fetch': self.config['manifest_repo_url'],

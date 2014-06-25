@@ -40,6 +40,7 @@ class Beta2Release(TransferMixin, MercurialScript):
 #            "help": "Specify the date string to use in the tag name."
 #        }],
     ]
+    gecko_repos = None
 
     def __init__(self, require_config_file=True):
         super(Beta2Release, self).__init__(
@@ -61,6 +62,29 @@ class Beta2Release(TransferMixin, MercurialScript):
         )
 
 # Helper methods {{{1
+    def query_gecko_repos(self):
+        """ Build a list of repos to clone.
+            """
+        if self.gecko_repos:
+            return self.gecko_repos
+        self.info("Building gecko_repos list...")
+        self.gecko_repos = [{
+            "repo": self.config["tools_repo_url"],
+            "revision": self.config["tools_repo_revision"],
+            "dest": "tools",
+            "vcs": "hg",
+        }]
+        for k in ('from_repo', 'to_repo'):
+            url = self.config["%s_url" % k]
+            self.gecko_repos.append({
+                "repo": url,
+                "revision": self.config.get("%s_revision", "default"),
+                "dest": self.config.get("%s_dir", self.get_filename_from_url(url)),
+                "vcs": "hgtool",
+            })
+        self.info(pprint.pformat(self.gecko_repos))
+        return self.gecko_repos
+
 #def replace(file_name, from_, to_):
 #    text = open(file_name).read()
 #    new_text = text.replace(from_, to_)
@@ -120,7 +144,8 @@ class Beta2Release(TransferMixin, MercurialScript):
             'substr': r'''abort: empty revision set''', 'level': INFO,
             'explanation': "Nothing to clean up; we're good!",
         }] + HgErrorList
-        for repo_name in hg_repos:
+        for repo_config in hg_repos:
+            repo_name = repo_config["dest"]
             repo_path = os.path.join(dirs['abs_work_dir'], repo_name)
             if os.path.exists(repo_path):
                 self.retry(
@@ -145,12 +170,11 @@ class Beta2Release(TransferMixin, MercurialScript):
             this action makes sure we have an up-to-date clone on disk to
             operate on.
             """
-        hg_repos = []
-        for repo_name in self.query_gecko_repos():
-            b2g_branch_config = self.config['b2g_branches'][repo_name]
-            hg_repos.append(self.query_repo_pull_config(repo_name, b2g_branch_config))
-        self.debug("HG repos: %s" % pprint.pformat(hg_repos))
-        super(Beta2Release, self).pull(repos=hg_repos)
+        repos = self.query_gecko_repos()
+#            b2g_branch_config = self.config['b2g_branches'][repo_name]
+#            hg_repos.append(self.query_repo_pull_config(repo_name, b2g_branch_config))
+#        self.debug("HG repos: %s" % pprint.pformat(hg_repos))
+        super(Beta2Release, self).pull(repos=repos)
 
     def push_loop(self):
         """ Create the tag and push for each gecko+gaia pair.
@@ -162,19 +186,6 @@ class Beta2Release(TransferMixin, MercurialScript):
             super(Beta2Release, self).pull(repos=[repo_config])
 
 #aki
-##!/usr/bin/env python
-#"""A merge day helper script for Beta-->Release migration to go along with
-#https://wiki.mozilla.org/Release_Management/Merge_Documentation"""
-#
-#
-#
-#def strip_outgoing(dest):
-#    try:
-#        run_cmd(["hg", "strip", "--no-backup", "outgoing()"], cwd=dest)
-#    except Exception:
-#        log.warn("Ignoring strip error in %s", dest)
-#
-#
 #def remove_locales(file_name, locales):
 #    _, tmp_file_path = mkstemp()
 #    with open(file_name) as f:
