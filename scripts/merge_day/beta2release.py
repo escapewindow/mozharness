@@ -21,6 +21,7 @@ from mozharness.base.errors import HgErrorList, VCSException
 from mozharness.base.log import INFO
 from mozharness.base.transfer import TransferMixin
 from mozharness.base.vcs.vcsbase import MercurialScript
+from mozharness.base.vcs.mercurial import MercurialVCS
 
 
 # Beta2Release {{{1
@@ -41,6 +42,7 @@ class Beta2Release(TransferMixin, MercurialScript):
 #        }],
     ]
     gecko_repos = None
+    revisions = {}
 
     def __init__(self, require_config_file=True):
         super(Beta2Release, self).__init__(
@@ -49,14 +51,14 @@ class Beta2Release(TransferMixin, MercurialScript):
                 'clobber',
                 'clean-repos',
                 'pull',
+                'migrate',
                 'push-loop',
-                'summary',
             ],
             default_actions=[
                 'clean-repos',
                 'pull',
-                'push-loop',
-                'summary',
+                # 'migrate',
+                # 'push',
             ],
             require_config_file=require_config_file
         )
@@ -68,22 +70,27 @@ class Beta2Release(TransferMixin, MercurialScript):
         if self.gecko_repos:
             return self.gecko_repos
         self.info("Building gecko_repos list...")
-        self.gecko_repos = [{
-            "repo": self.config["tools_repo_url"],
-            "revision": self.config["tools_repo_revision"],
-            "dest": "tools",
-            "vcs": "hg",
-        }]
+        self.gecko_repos = []
         for k in ('from_repo', 'to_repo'):
             url = self.config["%s_url" % k]
             self.gecko_repos.append({
                 "repo": url,
                 "revision": self.config.get("%s_revision", "default"),
                 "dest": self.config.get("%s_dir", self.get_filename_from_url(url)),
-                "vcs": "hgtool",
+                "vcs": "hg",
             })
         self.info(pprint.pformat(self.gecko_repos))
         return self.gecko_repos
+
+    def query_revision(self, path):
+        dirname = os.path.basename(path)
+        if self.revisions and dirname in self.revisions:
+            return self.revisions[dirname]['revision']
+        else:
+            m = MercurialVCS()
+            revision = m.get_revision_from_path(path)
+            self.revisions.setdefault(dirname, {})['revision'] = revision
+            return revision
 
 #def replace(file_name, from_, to_):
 #    text = open(file_name).read()
@@ -161,29 +168,27 @@ class Beta2Release(TransferMixin, MercurialScript):
                 )
 
     def pull(self):
-        """ Pull action.
-
-            Builds an hg repo list-of-dicts and sends them to
-            MercurialScript.pull().  Also pulls the gaia_url.
-
-            We'll potentially run another pull in the push-loop action, but
-            this action makes sure we have an up-to-date clone on disk to
-            operate on.
+        """ Pull tools first, then use hgtool for the gecko repos
             """
-        repos = self.query_gecko_repos()
-#            b2g_branch_config = self.config['b2g_branches'][repo_name]
-#            hg_repos.append(self.query_repo_pull_config(repo_name, b2g_branch_config))
-#        self.debug("HG repos: %s" % pprint.pformat(hg_repos))
-        super(Beta2Release, self).pull(repos=repos)
+        repos = [{
+            "repo": self.config["tools_repo_url"],
+            "revision": self.config["tools_repo_revision"],
+            "dest": "tools",
+            "vcs": "hg",
+        }] + self.query_gecko_repos()
+        self.revisions = super(Beta2Release, self).pull(repos=repos)
 
-    def push_loop(self):
-        """ Create the tag and push for each gecko+gaia pair.
-            This sometimes requires a pull+rebase, hence the loop.
+    def migrate(self):
+        """
             """
-        for repo_name in self.query_gecko_repos():
-            b2g_branch_config = self.config['b2g_branches'][repo_name]
-            repo_config = self.query_repo_pull_config(repo_name, b2g_branch_config)
-            super(Beta2Release, self).pull(repos=[repo_config])
+        dirs = self.query_abs_dirs()
+        self.info(self.query_revision(os.path.join(dirs['abs_work_dir'], 'mozilla-beta')))
+        pass
+
+    def push(self):
+        """
+            """
+        pass
 
 #aki
 #def remove_locales(file_name, locales):
@@ -201,31 +206,12 @@ class Beta2Release(TransferMixin, MercurialScript):
 #
 #
 #def main():
-#    logging.basicConfig(format="%(asctime)s - %(message)s", level=logging.INFO)
-#    parser = argparse.ArgumentParser()
-#    parser.add_argument("--from-dir", default="mozilla-beta",
-#                        help="Working directory of repo to be merged from")
-#    parser.add_argument("--from-repo",
-#                        default="ssh://hg.mozilla.org/releases/mozilla-beta",
-#                        help="Repo to be merged from")
-#    parser.add_argument("--to-dir", default="mozilla-release",
-#                        help="Working directory of repo to be merged to")
-#    parser.add_argument(
-#        "--to-repo", default="ssh://hg.mozilla.org/releases/mozilla-release",
-#        help="Repo to be merged to")
 #    parser.add_argument("--hg-user", default="ffxbld <release@mozilla.com>",
 #                        help="Mercurial username to be passed to hg -u")
 #    parser.add_argument("--remove-locale", dest="remove_locales", action="append",
 #                        required=True,
 #                        help="Locales to be removed from release shipped-locales")
-#
-#    args = parser.parse_args()
-#    from_dir = args.from_dir
-#    to_dir = args.to_dir
-#    from_repo = args.from_repo
-#    to_repo = args.to_repo
-#    hg_user = args.hg_user
-#
+
 #    with retrying(mercurial) as clone:
 #        for (d, repo) in ((from_dir, from_repo), (to_dir, to_repo)):
 #            clone(repo, d)
