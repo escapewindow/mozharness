@@ -17,6 +17,8 @@ config = {
     "from_repo_url": "ssh://hg.mozilla.org/releases/mozilla-beta",
     "to_repo_url": "ssh://hg.mozilla.org/releases/mozilla-release",
 
+    "tag_base_name": "RELEASE_",
+
     # any hg command line options
     "exes": {
         "hg": [
