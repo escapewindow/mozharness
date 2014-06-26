@@ -5,10 +5,10 @@
 # License, v. 2.0. If a copy of the MPL was not distributed with this file,
 # You can obtain one at http://mozilla.org/MPL/2.0/.
 # ***** END LICENSE BLOCK *****
-""" beta2release.py
+""" gecko_migration.py
 
-Merge mozilla-beta -> mozilla-release.
-Hopefully we can refactor this to work with the other gecko merges as well.
+Merge day script for gecko (mozilla-central -> mozilla-aurora,
+mozilla-aurora -> mozilla-beta, mozilla-beta -> mozilla-release).
 """
 
 import os
@@ -28,8 +28,8 @@ VALID_MIGRATION_BEHAVIORS = (
 )
 
 
-# Beta2Release {{{1
-class Beta2Release(TransferMixin, MercurialScript):
+# GeckoMigration {{{1
+class GeckoMigration(TransferMixin, MercurialScript):
     config_options = [
         [['--hg-user', ], {
             "action": "store",
@@ -48,7 +48,7 @@ class Beta2Release(TransferMixin, MercurialScript):
     gecko_repos = None
 
     def __init__(self, require_config_file=True):
-        super(Beta2Release, self).__init__(
+        super(GeckoMigration, self).__init__(
             config_options=self.config_options,
             all_actions=[
                 'clobber',
@@ -83,7 +83,7 @@ class Beta2Release(TransferMixin, MercurialScript):
             """
         if self.abs_dirs:
             return self.abs_dirs
-        dirs = super(Beta2Release, self).query_abs_dirs()
+        dirs = super(GeckoMigration, self).query_abs_dirs()
         self.abs_dirs['abs_tools_dir'] = os.path.join(
             dirs['abs_work_dir'], 'tools'
         )
@@ -284,14 +284,10 @@ class Beta2Release(TransferMixin, MercurialScript):
             "dest": "tools",
             "vcs": "hg",
         }] + self.query_gecko_repos()
-        super(Beta2Release, self).pull(repos=repos)
+        super(GeckoMigration, self).pull(repos=repos)
 
     def migrate(self):
         """ Perform the migration.
-
-            I'd like this to be a repo-agnostic method, so we should be able to
-            toggle behavior via config flags rather than "is this
-            mozilla-aurora" type hardcodes.
             """
         dirs = self.query_abs_dirs()
         from_fx_major_version = self.get_fx_major_version(dirs['abs_from_dir'])
@@ -342,5 +338,5 @@ class Beta2Release(TransferMixin, MercurialScript):
 
 # __main__ {{{1
 if __name__ == '__main__':
-    beta2release = Beta2Release()
-    beta2release.run_and_exit()
+    gecko_migration = GeckoMigration()
+    gecko_migration.run_and_exit()
