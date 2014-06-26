@@ -43,7 +43,6 @@ class Beta2Release(TransferMixin, MercurialScript):
         }],
     ]
     gecko_repos = None
-    revisions = {}
 
     def __init__(self, require_config_file=True):
         super(Beta2Release, self).__init__(
@@ -117,10 +116,8 @@ class Beta2Release(TransferMixin, MercurialScript):
         """ Avoid making 'pull' a required action every run, by being able
             to fall back to figuring out the revision from the cloned repo
             """
-        dirname = os.path.basename(path)
         m = MercurialVCS(log_obj=self.log_obj)
         revision = m.get_revision_from_path(path)
-        self.revisions.setdefault(dirname, {})['revision'] = revision
         return revision
 
     def query_from_revision(self):
@@ -189,7 +186,7 @@ class Beta2Release(TransferMixin, MercurialScript):
             "dest": "tools",
             "vcs": "hg",
         }] + self.query_gecko_repos()
-        self.revisions = super(Beta2Release, self).pull(repos=repos)
+        super(Beta2Release, self).pull(repos=repos)
 
     def migrate(self):
         """ Perform the migration.
