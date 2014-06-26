@@ -1,5 +1,5 @@
 config = {
-    "log_name": "beta2release",
+    "log_name": "beta_to_release",
 
     "branding_dirs": ["mobile/android/config/mozconfigs/android/",
                       "mobile/android/config/mozconfigs/android-armv6/",
