@@ -11,7 +11,6 @@ Merge mozilla-beta -> mozilla-release.
 Hopefully we can refactor this to work with the other gecko merges as well.
 """
 
-import datetime
 import os
 import pprint
 import sys
@@ -19,7 +18,7 @@ import sys
 sys.path.insert(1, os.path.dirname(os.path.dirname(sys.path[0])))
 
 from mozharness.base.errors import HgErrorList
-from mozharness.base.log import INFO
+from mozharness.base.log import INFO, FATAL
 from mozharness.base.transfer import TransferMixin
 from mozharness.base.vcs.vcsbase import MercurialScript
 from mozharness.base.vcs.mercurial import MercurialVCS
@@ -132,6 +131,30 @@ class Beta2Release(TransferMixin, MercurialScript):
         dirs = self.query_abs_dirs()
         return self.query_revision(dirs['abs_to_dir'])
 
+    def get_fx_major_version(self, path):
+        version_path = os.path.join(path, "browser", "config", "version.txt")
+        contents = self.read_from_file(version_path, error_level=FATAL)
+        return contents.split(".")[0]
+
+    def hg_tag(self, cwd, tags, user=None, message=None, revision=None,
+               force=None, halt_on_failure=True):
+        cmd = self.query_exe('hg', return_type='list') + ['tag']
+        if user:
+            cmd.extend(['-u', user])
+        if message:
+            cmd.extend(['-m', message])
+        if revision:
+            cmd.extend(['-r', revision])
+        if force:
+            cmd.append('-f')
+        if isinstance(tags, basestring):
+            tags = [tags]
+        cmd.extend(tags)
+        return self.run_command(
+            cmd, cwd=cwd, halt_on_failure=halt_on_failure,
+            error_list=HgErrorList
+        )
+
 #def replace(file_name, from_, to_):
 #    text = open(file_name).read()
 #    new_text = text.replace(from_, to_)
@@ -195,25 +218,19 @@ class Beta2Release(TransferMixin, MercurialScript):
             toggle behavior via config flags rather than "is this
             mozilla-aurora" type hardcodes.
             """
-        now = datetime.datetime.now()
-        date = now.strftime("%Y%m%d")
         dirs = self.query_abs_dirs()
-        hg = self.query_exe('hg', return_type='list')
-        base_tag = "%sBASE_%s" % (self.config["tag_base_name"], date)
+        from_fx_major_version = self.get_fx_major_version(dirs['abs_from_dir'])
         base_from_rev = self.query_from_revision()
         base_to_rev = self.query_to_revision()
-        self.info("Tagging %s beta with %s" % (base_from_rev, base_tag))
-        cmd = hg + [
-            'tag', '-u', self.config['hg_user'], '-r', base_from_rev, '-m',
-            "Added %s tag for changeset %s. DONTBUILD CLOSED TREE a=release" %
-            (base_tag, base_from_rev),
-            base_tag
-        ]
-        self.run_command(
-            cmd,
-            cwd=dirs['abs_from_dir'],
-            error_list=HgErrorList,
-            halt_on_failure=True,
+        tags = []
+        for tag in self.config['tags']:
+            tags.append(tag % {'major_version': from_fx_major_version})
+        self.info("Tagging %s %s with %s" % (dirs['abs_from_dir'], base_from_rev, tags))
+        self.hg_tag(
+            dirs['abs_from_dir'], tags, user=self.config['hg_user'],
+            message="Added %s tag(s) for changeset %s. DONTBUILD CLOSED TREE a=release" %
+                    (', '.join(tags), base_from_rev),
+            revision=base_from_rev,
         )
         new_from_rev = self.query_from_revision()
         self.info("New revision %s" % new_from_rev)

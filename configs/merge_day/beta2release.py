@@ -14,7 +14,8 @@ config = {
     "from_repo_url": "ssh://hg.mozilla.org/releases/mozilla-beta",
     "to_repo_url": "ssh://hg.mozilla.org/releases/mozilla-release",
 
-    "tag_base_name": "RELEASE_",
+    "tags": ["FIREFOX_RELEASE_%(major_version)s_BASE"],
+    # "FIREFOX_BETA_%(major_version)s_END",  # not for the m-b->m-r script
 
     # any hg command line options
     "exes": {
