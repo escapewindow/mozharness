@@ -59,13 +59,13 @@ class GeckoMigration(MercurialScript):
                 'clean-repos',
                 'pull',
                 'migrate',
+                'commit-changes',
                 'push',
             ],
             default_actions=[
                 'clean-repos',
                 'pull',
                 'migrate',
-                # 'push',
             ],
             require_config_file=require_config_file
         )
@@ -379,7 +379,6 @@ class GeckoMigration(MercurialScript):
         """ Perform the migration.
             """
         dirs = self.query_abs_dirs()
-        hg = self.query_exe("hg", return_type="list")
         from_fx_major_version = self.get_fx_major_version(dirs['abs_from_dir'])
         to_fx_major_version = self.get_fx_major_version(dirs['abs_to_dir'])
         base_from_rev = self.query_from_revision()
@@ -413,13 +412,18 @@ class GeckoMigration(MercurialScript):
         if not hasattr(self, self.config['migration_behavior']):
             self.fatal("Don't know how to proceed with migration_behavior %s !" % self.config['migration_behavior'])
         getattr(self, self.config['migration_behavior'])()
+        self.info("Verify the diff, and apply any manual changes, such as disabling features.")
 
+    def commit_changes(self):
+        """ Do the commit.
+            """
+        hg = self.query_exe("hg", return_type="list")
+        dirs = self.query_abs_dirs()
         self.run_command(hg + ["diff"], cwd=dirs['abs_to_dir'])
         self.hg_commit(
             dirs['abs_to_dir'], user=self.config['hg_user'],
             message="Update configs. IGNORE BROKEN CHANGESETS CLOSED TREE NO BUG a=release ba=release"
         )
-        self.info("Apply any manual changes, such as disabling features.")
 
     def push(self):
         """
