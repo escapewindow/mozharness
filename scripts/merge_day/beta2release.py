@@ -115,7 +115,7 @@ class Beta2Release(TransferMixin, MercurialScript):
         """ Avoid making 'pull' a required action every run, by being able
             to fall back to figuring out the revision from the cloned repo
             """
-        m = MercurialVCS(log_obj=self.log_obj)
+        m = MercurialVCS(log_obj=self.log_obj, config=self.config)
         revision = m.get_revision_from_path(path)
         return revision
 
@@ -138,6 +138,11 @@ class Beta2Release(TransferMixin, MercurialScript):
 
     def hg_tag(self, cwd, tags, user=None, message=None, revision=None,
                force=None, halt_on_failure=True):
+        message = "Tagging %s" % cwd
+        if revision:
+            message = "%s %s" % (message, revision)
+        message = "%s with %s" % (message, ', '.join(tags))
+        self.info(message)
         cmd = self.query_exe('hg', return_type='list') + ['tag']
         if user:
             cmd.extend(['-u', user])
@@ -154,6 +159,28 @@ class Beta2Release(TransferMixin, MercurialScript):
             cmd, cwd=cwd, halt_on_failure=halt_on_failure,
             error_list=HgErrorList
         )
+
+    def hg_commit(self, cwd, message, user=None):
+        """ Commit changes to hg.
+            """
+        cmd = self.query_exe('hg', return_type='list') + [
+            'commit', '-m', message]
+        if user:
+            cmd.extend(['-u', user])
+        self.run_command(cmd, cwd=cwd, error_list=HgErrorList,
+                         halt_on_failure=True)
+        return self.query_revision(cwd)
+
+    def hg_merge_via_debugsetparents(self, cwd, old_head, new_head, message,
+                                     user=None):
+        """ Merge 2 heads avoiding non-fastforward commits
+            """
+        cmd = self.query_exe('hg', return_type='list') + [
+            'debugsetparents', new_head, old_head
+        ]
+        self.run_command(cmd, cwd=cwd, error_list=HgErrorList,
+                         halt_on_failure=True)
+        self.hg_commit(cwd, message=message, user=user)
 
 #def replace(file_name, from_, to_):
 #    text = open(file_name).read()
@@ -220,25 +247,37 @@ class Beta2Release(TransferMixin, MercurialScript):
             """
         dirs = self.query_abs_dirs()
         from_fx_major_version = self.get_fx_major_version(dirs['abs_from_dir'])
+        to_fx_major_version = self.get_fx_major_version(dirs['abs_to_dir'])
         base_from_rev = self.query_from_revision()
         base_to_rev = self.query_to_revision()
-        tags = []
-        for tag in self.config['tags']:
-            tags.append(tag % {'major_version': from_fx_major_version})
-        self.info("Tagging %s %s with %s" % (dirs['abs_from_dir'], base_from_rev, tags))
+        base_tag = self.config['base_tag'] % {'major_version': from_fx_major_version}
+        end_tag = self.config['end_tag'] % {'major_version': to_fx_major_version}
         self.hg_tag(
-            dirs['abs_from_dir'], tags, user=self.config['hg_user'],
-            message="Added %s tag(s) for changeset %s. DONTBUILD CLOSED TREE a=release" %
-                    (', '.join(tags), base_from_rev),
+            dirs['abs_from_dir'], base_tag, user=self.config['hg_user'],
+            message="Added %s tag for changeset %s. DONTBUILD CLOSED TREE a=release" %
+                    (base_tag, base_from_rev),
             revision=base_from_rev,
         )
         new_from_rev = self.query_from_revision()
         self.info("New revision %s" % new_from_rev)
-#    pull(from_dir, dest=to_dir)
-#    merge_via_debugsetparents(
-#        to_dir, old_head=release_rev, new_head=new_beta_rev, user=hg_user,
-#        msg="Merge old head via |hg debugsetparents %s %s|. "
-#        "CLOSED TREE DONTBUILD a=release" % (new_beta_rev, release_rev))
+        # TODO bump_version in from_dir if self.config['bump_from_version']
+        m = MercurialVCS(log_obj=self.log_obj, config=self.config)
+        m.pull(dirs['abs_from_dir'], dirs['abs_to_dir'])
+        self.hg_merge_via_debugsetparents(
+            dirs['abs_to_dir'], old_head=base_to_rev, new_head=new_from_rev,
+            user=self.config['hg_user'],
+            message="Merge old head via |hg debugsetparents %s %s|. "
+            "CLOSED TREE DONTBUILD a=release" % (new_from_rev, base_to_rev)
+        )
+        self.hg_tag(
+            dirs['abs_to_dir'], end_tag, user=self.config['hg_user'],
+            message="Added %s tag for changeset %s. DONTBUILD CLOSED TREE a=release" %
+                    (end_tag, base_to_rev),
+            revision=base_to_rev,
+        )
+
+        # TODO revert locale_files if self.config['revert_locale_files']
+        # TODO bump version
 
     def push(self):
         """
@@ -269,12 +308,6 @@ class Beta2Release(TransferMixin, MercurialScript):
 #    beta_rev = get_revision(from_dir)
 #    release_rev = get_revision(to_dir)
 
-#    pull(from_dir, dest=to_dir)
-#    merge_via_debugsetparents(
-#        to_dir, old_head=release_rev, new_head=new_beta_rev, user=hg_user,
-#        msg="Merge old head via |hg debugsetparents %s %s|. "
-#        "CLOSED TREE DONTBUILD a=release" % (new_beta_rev, release_rev))
-#
 #    replace(
 #        path.join(to_dir, "browser/confvars.sh"),
 #        "ACCEPTED_MAR_CHANNEL_IDS=firefox-mozilla-beta,firefox-mozilla-release",
