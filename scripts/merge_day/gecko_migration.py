@@ -259,6 +259,7 @@ class GeckoMigration(MercurialScript):
             """
         # TODO
         pass
+        # TODO CLOBBER file
 
     def aurora_to_beta(self):
         """ mozilla-aurora -> mozilla-beta behavior.
@@ -290,6 +291,7 @@ class GeckoMigration(MercurialScript):
                     "ac_add_options --with-branding=mobile/android/branding/aurora",
                     "ac_add_options --with-branding=mobile/android/branding/beta")
         # TODO mozconfig diffing
+        # TODO CLOBBER file
 
     def beta_to_release(self):
         """ mozilla-beta -> mozilla-release behavior.
@@ -322,7 +324,7 @@ class GeckoMigration(MercurialScript):
                 os.path.join(dirs['abs_to_dir'], "browser/locales/shipped-locales"),
                 self.config['remove_locales']
             )
-        self.info("Apply any manual changes, such as disabling features.")
+        # TODO CLOBBER file
 
 # Actions {{{1
     def clean_repos(self):
@@ -355,6 +357,12 @@ class GeckoMigration(MercurialScript):
                         'success_codes': (0, 255),
                     },
                 )
+                self.run_command(
+                    hg + ["up", "-C", "-r", repo_config['revision']],
+                    cwd=repo_path,
+                    error_list=HgErrorList,
+                    halt_on_failure=True,
+                )
 
     def pull(self):
         """ Pull tools first, then use hgtool for the gecko repos
@@ -371,6 +379,7 @@ class GeckoMigration(MercurialScript):
         """ Perform the migration.
             """
         dirs = self.query_abs_dirs()
+        hg = self.query_exe("hg", return_type="list")
         from_fx_major_version = self.get_fx_major_version(dirs['abs_from_dir'])
         to_fx_major_version = self.get_fx_major_version(dirs['abs_to_dir'])
         base_from_rev = self.query_from_revision()
@@ -405,10 +414,12 @@ class GeckoMigration(MercurialScript):
             self.fatal("Don't know how to proceed with migration_behavior %s !" % self.config['migration_behavior'])
         getattr(self, self.config['migration_behavior'])()
 
+        self.run_command(hg + ["diff"], cwd=dirs['abs_to_dir'])
         self.hg_commit(
             dirs['abs_to_dir'], user=self.config['hg_user'],
             message="Update configs. IGNORE BROKEN CHANGESETS CLOSED TREE NO BUG a=release ba=release"
         )
+        self.info("Apply any manual changes, such as disabling features.")
 
     def push(self):
         """
