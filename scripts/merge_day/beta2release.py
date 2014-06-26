@@ -119,7 +119,7 @@ class Beta2Release(TransferMixin, MercurialScript):
         self.info(pprint.pformat(self.gecko_repos))
         return self.gecko_repos
 
-    def query_revision(self, path):
+    def query_hg_revision(self, path):
         """ Avoid making 'pull' a required action every run, by being able
             to fall back to figuring out the revision from the cloned repo
             """
@@ -131,13 +131,13 @@ class Beta2Release(TransferMixin, MercurialScript):
         """ Shortcut to get the revision for the from repo
             """
         dirs = self.query_abs_dirs()
-        return self.query_revision(dirs['abs_from_dir'])
+        return self.query_hg_revision(dirs['abs_from_dir'])
 
     def query_to_revision(self):
         """ Shortcut to get the revision for the to repo
             """
         dirs = self.query_abs_dirs()
-        return self.query_revision(dirs['abs_to_dir'])
+        return self.query_hg_revision(dirs['abs_to_dir'])
 
     def get_fx_major_version(self, path):
         version_path = os.path.join(path, "browser", "config", "version.txt")
@@ -146,6 +146,8 @@ class Beta2Release(TransferMixin, MercurialScript):
 
     def hg_tag(self, cwd, tags, user=None, message=None, revision=None,
                force=None, halt_on_failure=True):
+        if isinstance(tags, basestring):
+            tags = [tags]
         message = "Tagging %s" % cwd
         if revision:
             message = "%s %s" % (message, revision)
@@ -160,8 +162,6 @@ class Beta2Release(TransferMixin, MercurialScript):
             cmd.extend(['-r', revision])
         if force:
             cmd.append('-f')
-        if isinstance(tags, basestring):
-            tags = [tags]
         cmd.extend(tags)
         return self.run_command(
             cmd, cwd=cwd, halt_on_failure=halt_on_failure,
@@ -177,7 +177,7 @@ class Beta2Release(TransferMixin, MercurialScript):
             cmd.extend(['-u', user])
         self.run_command(cmd, cwd=cwd, error_list=HgErrorList,
                          halt_on_failure=True)
-        return self.query_revision(cwd)
+        return self.query_hg_revision(cwd)
 
     def hg_merge_via_debugsetparents(self, cwd, old_head, new_head, message,
                                      user=None):
