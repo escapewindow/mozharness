@@ -199,6 +199,17 @@ class Beta2Release(TransferMixin, MercurialScript):
                 (from_, to_, file_name))
         self.write_to_file(file_name, new_text)
 
+    def remove_locales(self, file_name, locales):
+        contents = self.read_from_file(file_name)
+        new_contents = ""
+        for line in contents.splitlines():
+            locale = line.split()[0]
+            if locale not in locales:
+                new_contents += line
+            else:
+                self.info("Removed locale: %s", locale)
+        self.write_to_file(file_name, new_contents)
+
     def beta_to_release(self):
         """ mozilla-beta -> mozilla-release behavior.
 
@@ -218,20 +229,19 @@ class Beta2Release(TransferMixin, MercurialScript):
             "MAR_CHANNEL_ID=firefox-mozilla-beta",
             "MAR_CHANNEL_ID=firefox-mozilla-release"
         )
-#
-#    for d in branding_dirs:
-#        for f in branding_files:
-#            replace(
-#                path.join(to_dir, d, f),
-#                "ac_add_options --with-branding=mobile/android/branding/beta",
-#                "ac_add_options --with-branding=mobile/android/branding/official")
-#
-#    if args.remove_locales:
-#        log.info("Removing locales: %s", args.remove_locales)
-#        remove_locales(path.join(to_dir, "browser/locales/shipped-locales"),
-#                       args.remove_locales)
-#
-#    log.warn("Apply any manual changes, such as disabling features.")
+
+        for d in self.config['branding_dirs']:
+            for f in self.config['branding_files']:
+                self.replace(
+                    os.path.join(dirs['abs_to_dir'], d, f),
+                    "ac_add_options --with-branding=mobile/android/branding/beta",
+                    "ac_add_options --with-branding=mobile/android/branding/official")
+        if self.config.get("remove_locales"):
+            self.remove_locales(
+                os.path.join(dirs['abs_to_dir'], "browser/locales/shipped-locales"),
+                self.config['remove_locales']
+            )
+        self.info("Apply any manual changes, such as disabling features.")
 
 # Actions {{{1
     def clean_repos(self):
@@ -314,68 +324,20 @@ class Beta2Release(TransferMixin, MercurialScript):
             revision=base_to_rev,
         )
 
-        # TODO revert locale_files if self.config['revert_locale_files']
-        # TODO bump version
+        # Call beta_to_release etc.
+        if not hasattr(self, self.config['migration_behavior']):
+            self.fatal("Don't know how to proceed with migration_behavior %s !" % self.config['migration_behavior'])
+        getattr(self, self.config['migration_behavior'])()
+
+        self.hg_commit(
+            dirs['abs_to_dir'], user=self.config['hg_user'],
+            message="Update configs. CLOSED TREE a=release ba=release"
+        )
 
     def push(self):
         """
             """
         pass
-
-#def remove_locales(file_name, locales):
-#    _, tmp_file_path = mkstemp()
-#    with open(file_name) as f:
-#        lines = f.readlines()
-#    with open(tmp_file_path, "w") as out:
-#        for line in lines:
-#            locale = line.split()[0]
-#            if locale not in locales:
-#                out.write(line)
-#            else:
-#                log.warn("Removied locale: %s", locale)
-#    shutil.move(tmp_file_path, file_name)
-#
-#
-#def main():
-#    parser.add_argument("--hg-user", default="ffxbld <release@mozilla.com>",
-#                        help="Mercurial username to be passed to hg -u")
-#    parser.add_argument("--remove-locale", dest="remove_locales", action="append",
-#                        required=True,
-#                        help="Locales to be removed from release shipped-locales")
-
-#    beta_rev = get_revision(from_dir)
-#    release_rev = get_revision(to_dir)
-
-#    replace(
-#        path.join(to_dir, "browser/confvars.sh"),
-#        "ACCEPTED_MAR_CHANNEL_IDS=firefox-mozilla-beta,firefox-mozilla-release",
-#        "ACCEPTED_MAR_CHANNEL_IDS=firefox-mozilla-release")
-#    replace(path.join(to_dir, "browser/confvars.sh"),
-#            "MAR_CHANNEL_ID=firefox-mozilla-beta",
-#            "MAR_CHANNEL_ID=firefox-mozilla-release")
-#
-#    for d in branding_dirs:
-#        for f in branding_files:
-#            replace(
-#                path.join(to_dir, d, f),
-#                "ac_add_options --with-branding=mobile/android/branding/beta",
-#                "ac_add_options --with-branding=mobile/android/branding/official")
-#
-#    if args.remove_locales:
-#        log.info("Removing locales: %s", args.remove_locales)
-#        remove_locales(path.join(to_dir, "browser/locales/shipped-locales"),
-#                       args.remove_locales)
-#
-#    log.warn("Apply any manual changes, such as disabling features.")
-#    raw_input("Hit 'return' to display channel, branding, and feature diffs onscreen")
-#    run_cmd(["hg", "diff"], cwd=to_dir)
-#    raw_input("If the diff looks good hit return to commit those changes")
-#    commit(to_dir, user=hg_user,
-#           msg="Update configs. CLOSED TREE a=release ba=release")
-#    raw_input("Go ahead and push mozilla-release changes.")
-#
-#if __name__ == "__main__":
-#    main()
 
 
 # __main__ {{{1
