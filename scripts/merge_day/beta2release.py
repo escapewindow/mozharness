@@ -27,7 +27,21 @@ from mozharness.base.vcs.mercurial import MercurialVCS
 
 # Beta2Release {{{1
 class Beta2Release(TransferMixin, MercurialScript):
-    config_options = []
+    config_options = [
+        [['--hg-user', ], {
+            "action": "store",
+            "dest": "hg_user",
+            "type": "string",
+            "default": "ffxbld <release@mozilla.com>",
+            "help": "Specify what user to use to commit to hg.",
+        }],
+        [['--remove-locale', ], {
+            "action": "extend",
+            "dest": "remove_locales",
+            "type": "string",
+            "help": "Comma separated list of locales to remove from the 'to' repo.",
+        }],
+    ]
     gecko_repos = None
     revisions = {}
 
@@ -39,24 +53,37 @@ class Beta2Release(TransferMixin, MercurialScript):
                 'clean-repos',
                 'pull',
                 'migrate',
-                'push-loop',
+                'push',
             ],
             default_actions=[
                 'clean-repos',
                 'pull',
-                # 'migrate',
+                'migrate',
                 # 'push',
             ],
             require_config_file=require_config_file
         )
+        self.run_sanity_check()
 
 # Helper methods {{{1
+    def run_sanity_check(self):
+        """ Verify the configs look sane before proceeding.
+            """
+        # TODO flag to require remove_locales
+        pass
+
     def query_abs_dirs(self):
         """ Allow for abs_from_dir and abs_to_dir
             """
         if self.abs_dirs:
             return self.abs_dirs
         dirs = super(Beta2Release, self).query_abs_dirs()
+        self.abs_dirs['abs_tools_dir'] = os.path.join(
+            dirs['abs_work_dir'], 'tools'
+        )
+        self.abs_dirs['abs_tools_lib_dir'] = os.path.join(
+            dirs['abs_work_dir'], 'tools', 'lib', 'python'
+        )
         for k in ('from', 'to'):
             dir_name = self.config.get(
                 "%s_repo_dir",
@@ -124,36 +151,6 @@ class Beta2Release(TransferMixin, MercurialScript):
 #        out.write(new_text)
 #    shutil.move(tmp_file_path, file_name)
 
-#    def hg_tag(self, repo_name, b2g_branch_config):
-#        """ Attempt to tag and push gecko.  This assumes the trees are open.
-#
-#            On failure, throw a VCSException.
-#            """
-#        hg = self.query_exe("hg", return_type="list")
-#        dirs = self.query_abs_dirs()
-#        hg_dir = os.path.join(dirs["abs_work_dir"], repo_name)
-#        tag_name = self.query_tag_name(b2g_branch_config)
-#        short_tag_name = self.query_short_tag_name(b2g_branch_config)
-#        push_url = self.query_repo_push_url(repo_name)
-#        cmd = hg + ["tag", tag_name, "-m",
-#                    "tagging %s for mergeday. r=a=mergeday DONTBUILD" % short_tag_name,
-#                    ]
-#        if self.run_command(cmd, cwd=hg_dir, error_list=HgErrorList):
-#            raise VCSException("Can't tag %s with %s" % (repo_name, tag_name))
-#        # Debugging! Echo only for now.
-#        # cmd = hg + ["push", push_url]
-#        cmd = ["echo"] + hg + ["push", push_url]
-#        if self.run_command(cmd, cwd=hg_dir, error_list=HgErrorList):
-#            self.run_command(hg + ["--config", "extensions.mq=",
-#                                   "strip", "--no-backup", "outgoing()"],
-#                             cwd=hg_dir)
-#            self.run_command(hg + ["up", "-C"],
-#                             cwd=hg_dir)
-#            self.run_command(hg + ["--config", "extensions.purge=",
-#                                   "purge", "--all"],
-#                             cwd=hg_dir)
-#            raise VCSException("Can't push to %s!" % push_url)
-
 # Actions {{{1
     def clean_repos(self):
         """ We may end up with contaminated local repos at some point, but
@@ -198,17 +195,27 @@ class Beta2Release(TransferMixin, MercurialScript):
         self.revisions = super(Beta2Release, self).pull(repos=repos)
 
     def migrate(self):
-        """
+        """ Perform the migration.
+
+            I'd like this to be a repo-agnostic method, so we should be able to
+            toggle behavior via config flags rather than "is this
+            mozilla-aurora" type hardcodes.
             """
         now = datetime.datetime.now()
         date = now.strftime("%Y%m%d")
+        dirs = self.query_abs_dirs()
         # TODO: make this tag consistent with other branches
         base_tag = "%s_BASE_%s" (self.config["tag_base_name"], date)
-        from_rev = self.query_from_revision()
-        self.info("Tagging %s beta with %s", from_rev, base_tag)
-#    tag(from_dir, tags=[release_base_tag], rev=beta_rev, user=hg_user,
-#        msg="Added %s tag for changeset %s. DONTBUILD CLOSED TREE a=release" %
-#        (release_base_tag, beta_rev))
+        base_from_rev = self.query_from_revision()
+        self.info("Tagging %s beta with %s", base_from_rev, base_tag)
+        sys.path.append(dirs['abs_tools_lib_dir'])
+        import util.hg as tools_hg
+        tools_hg.tag(
+            dirs['abs_from_dir'], tags=[base_tag], rev=base_from_rev,
+            user=self.config.get('hg_user'),
+            msg="Added %s tag for changeset %s. DONTBUILD CLOSED TREE a=release" %
+            (base_tag, base_from_rev)
+        )
 #    new_beta_rev = get_revision(from_dir)
 #    raw_input("Push mozilla-beta and hit Return")
 
