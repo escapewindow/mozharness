@@ -71,10 +71,11 @@ class GeckoMigration(TransferMixin, MercurialScript):
     def run_sanity_check(self):
         """ Verify the configs look sane before proceeding.
             """
-        # TODO flag to require remove_locales
         message = ""
         if self.config['migration_behavior'] not in VALID_MIGRATION_BEHAVIORS:
             message += "%s must be one of %s!\n" % (self.config['migration_behavior'], VALID_MIGRATION_BEHAVIORS)
+        if self.config.get("require_remove_locales") and not self.config.get("remove_locales"):
+            message += "You must specify --remove-locales!\n"
         if message:
             self.fatal(message)
 
