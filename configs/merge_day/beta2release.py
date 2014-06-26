@@ -17,18 +17,5 @@ config = {
     "base_tag": "FIREFOX_RELEASE_%(major_version)s_BASE",
     "end_tag": "FIREFOX_RELEASE_%(major_version)s_END",
 
-    "migration_behavior": "mozilla-release",
-
-    # any hg command line options
-    "exes": {
-        "hg": [
-            "hg", "--config",
-            "hostfingerprints.hg.mozilla.org=af:27:b9:34:47:4e:e5:98:01:f6:83:2b:51:c9:aa:d8:df:fb:1a:27",
-        ],
-    }
+    "migration_behavior": "beta_to_release",
 }
-#    parser.add_argument("--hg-user", default="ffxbld <release@mozilla.com>",
-#                        help="Mercurial username to be passed to hg -u")
-#    parser.add_argument("--remove-locale", dest="remove_locales", action="append",
-#                        required=True,
-#                        help="Locales to be removed from release shipped-locales")

@@ -23,6 +23,10 @@ from mozharness.base.transfer import TransferMixin
 from mozharness.base.vcs.vcsbase import MercurialScript
 from mozharness.base.vcs.mercurial import MercurialVCS
 
+VALID_MIGRATION_BEHAVIORS = (
+    "beta_to_release", "aurora_to_beta", "central_to_aurora"
+)
+
 
 # Beta2Release {{{1
 class Beta2Release(TransferMixin, MercurialScript):
@@ -68,7 +72,11 @@ class Beta2Release(TransferMixin, MercurialScript):
         """ Verify the configs look sane before proceeding.
             """
         # TODO flag to require remove_locales
-        pass
+        message = ""
+        if self.config['migration_behavior'] not in VALID_MIGRATION_BEHAVIORS:
+            message += "%s must be one of %s!\n" % (self.config['migration_behavior'], VALID_MIGRATION_BEHAVIORS)
+        if message:
+            self.fatal(message)
 
     def query_abs_dirs(self):
         """ Allow for abs_from_dir and abs_to_dir
@@ -182,18 +190,48 @@ class Beta2Release(TransferMixin, MercurialScript):
                          halt_on_failure=True)
         self.hg_commit(cwd, message=message, user=user)
 
-#def replace(file_name, from_, to_):
-#    text = open(file_name).read()
-#    new_text = text.replace(from_, to_)
-#    if text == new_text:
-#        raise RuntimeError(
-#            "Cannot replace '%s' to '%s' in '%s'" %
-#            (from_, to_, file_name))
+    def replace(self, file_name, from_, to_):
+        text = self.read_from_file(file_name)
+        new_text = text.replace(from_, to_)
+        if text == new_text:
+            raise RuntimeError(
+                "Cannot replace '%s' to '%s' in '%s'" %
+                (from_, to_, file_name))
+        self.write_to_file(file_name, new_text)
+
+    def beta_to_release(self):
+        """ mozilla-beta -> mozilla-release behavior.
+
+            We could have all of these individually toggled by flags, but
+            by separating into workflow methods we can be more precise about
+            what happens in each workflow.
+            """
+        dirs = self.query_abs_dirs()
+        self.replace(
+            os.path.join(dirs['abs_to_dir'], "browser/confvars.sh"),
+            "ACCEPTED_MAR_CHANNEL_IDS=firefox-mozilla-beta,firefox-mozilla-release",
+            "ACCEPTED_MAR_CHANNEL_IDS=firefox-mozilla-release"
+        )
+        self.replace(
+            os.path.join(
+                dirs['abs_to_dir'], "browser/confvars.sh"),
+            "MAR_CHANNEL_ID=firefox-mozilla-beta",
+            "MAR_CHANNEL_ID=firefox-mozilla-release"
+        )
 #
-#    _, tmp_file_path = mkstemp()
-#    with open(tmp_file_path, "w") as out:
-#        out.write(new_text)
-#    shutil.move(tmp_file_path, file_name)
+#    for d in branding_dirs:
+#        for f in branding_files:
+#            replace(
+#                path.join(to_dir, d, f),
+#                "ac_add_options --with-branding=mobile/android/branding/beta",
+#                "ac_add_options --with-branding=mobile/android/branding/official")
+#
+#    if args.remove_locales:
+#        log.info("Removing locales: %s", args.remove_locales)
+#        remove_locales(path.join(to_dir, "browser/locales/shipped-locales"),
+#                       args.remove_locales)
+#
+#    log.warn("Apply any manual changes, such as disabling features.")
 
 # Actions {{{1
     def clean_repos(self):
