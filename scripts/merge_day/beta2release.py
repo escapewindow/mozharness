@@ -27,21 +27,7 @@ from mozharness.base.vcs.mercurial import MercurialVCS
 
 # Beta2Release {{{1
 class Beta2Release(TransferMixin, MercurialScript):
-    config_options = [
-#        [['--gecko-repo', ], {
-#            "action": "extend",
-#            "dest": "gecko_repos",
-#            "type": "string",
-#            "help": "Specify which gecko repo(s) to tag, along with gaia."
-#        }],
-#        [['--date-string', ], {
-#            "action": "store",
-#            "dest": "date_string",
-#            "type": "string",
-#            "default": time.strftime('%Y%m%d'),
-#            "help": "Specify the date string to use in the tag name."
-#        }],
-    ]
+    config_options = []
     gecko_repos = None
     revisions = {}
 
@@ -201,9 +187,14 @@ class Beta2Release(TransferMixin, MercurialScript):
                 )
 
     def pull(self):
-        """ Pull gecko repos
+        """ Pull tools first, then use hgtool for the gecko repos
             """
-        repos = self.query_gecko_repos()
+        repos = [{
+            "repo": self.config["tools_repo_url"],
+            "revision": self.config["tools_repo_revision"],
+            "dest": "tools",
+            "vcs": "hg",
+        }] + self.query_gecko_repos()
         self.revisions = super(Beta2Release, self).pull(repos=repos)
 
     def migrate(self):
