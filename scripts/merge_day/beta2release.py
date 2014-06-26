@@ -130,13 +130,13 @@ class Beta2Release(TransferMixin, MercurialScript):
         """ Shortcut to get the revision for the from repo
             """
         dirs = self.query_abs_dirs()
-        return self.query_revision(self, dirs['abs_from_dir'])
+        return self.query_revision(dirs['abs_from_dir'])
 
     def query_to_revision(self):
         """ Shortcut to get the revision for the to repo
             """
         dirs = self.query_abs_dirs()
-        return self.query_revision(self, dirs['abs_to_dir'])
+        return self.query_revision(dirs['abs_to_dir'])
 
 #def replace(file_name, from_, to_):
 #    text = open(file_name).read()
@@ -205,9 +205,9 @@ class Beta2Release(TransferMixin, MercurialScript):
         date = now.strftime("%Y%m%d")
         dirs = self.query_abs_dirs()
         # TODO: make this tag consistent with other branches
-        base_tag = "%s_BASE_%s" (self.config["tag_base_name"], date)
+        base_tag = "%s_BASE_%s" % (self.config["tag_base_name"], date)
         base_from_rev = self.query_from_revision()
-        self.info("Tagging %s beta with %s", base_from_rev, base_tag)
+        self.info("Tagging %s beta with %s" % (base_from_rev, base_tag))
         sys.path.append(dirs['abs_tools_lib_dir'])
         import util.hg as tools_hg
         tools_hg.tag(
@@ -216,8 +216,7 @@ class Beta2Release(TransferMixin, MercurialScript):
             msg="Added %s tag for changeset %s. DONTBUILD CLOSED TREE a=release" %
             (base_tag, base_from_rev)
         )
-#    new_beta_rev = get_revision(from_dir)
-#    raw_input("Push mozilla-beta and hit Return")
+        new_from_rev = tools_hg.get_revision(dirs['abs_from_dir'])
 
     def push(self):
         """
