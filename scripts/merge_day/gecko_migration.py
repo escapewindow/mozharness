@@ -257,8 +257,70 @@ class GeckoMigration(MercurialScript):
             what happens in each workflow, while allowing for things like
             staging beta user repo migrations.
             """
-        # TODO
         pass
+        # bump_version(mc_dir, curr_mc_version, next_mc_version, "a1", "a1",
+        #              bump_major=True)
+
+        # raw_input("Hit 'return' to display diffs onscreen")
+        # run_cmd(["hg", "diff"], cwd=mc_dir)
+        # raw_input("If the diff looks good hit return to commit those changes")
+        # commit(mc_dir, user=hg_user,
+        #        msg="Version bump. IGNORE BROKEN CHANGESETS CLOSED TREE NO BUG a=release")
+        # raw_input("Go ahead and push mozilla-central...and continue to "
+        #           "mozilla-aurora to mozilla-beta uplift ")
+
+        # # mozilla-aurora
+        # ma_revision = get_revision(ma_dir)
+        # ma_tag = "FIREFOX_BETA_%s_BASE" % curr_ma_version
+        # ma_end_tag = "FIREFOX_AURORA_%s_END" % curr_ma_version
+        # # pull must use revision not tag
+        # pull(mc_dir, dest=ma_dir, revision=new_mc_revision)
+        # merge_via_debugsetparents(
+        #     ma_dir, old_head=ma_revision, new_head=new_mc_revision,
+        #     user=hg_user, msg="Merge old head via |hg debugsetparents %s %s|. "
+        #     "CLOSED TREE DONTBUILD a=release" % (new_mc_revision, ma_revision))
+        # tag(ma_dir, tags=[ma_tag, ma_end_tag], rev=ma_revision, user=hg_user,
+        #     msg="Added %s %s tags for changeset %s. IGNORE BROKEN CHANGESETS DONTBUILD CLOSED TREE NO BUG a=release" %
+        #     (ma_tag, ma_end_tag,  ma_revision))
+        # log.info("Reverting locales")
+        # for f in locale_files:
+        #     run_cmd(["hg", "revert", "-r", ma_end_tag, f], cwd=ma_dir)
+        # bump_version(ma_dir, next_ma_version, next_ma_version, "a1", "a2")
+        # raw_input("Hit 'return' to display diffs onscreen")
+        # run_cmd(["hg", "diff"], cwd=ma_dir)
+        # raw_input("If the diff looks good hit return to commit those changes")
+        # commit(ma_dir, user=hg_user, msg="Version bump. IGNORE BROKEN CHANGESETS CLOSED TREE NO BUG a=release")
+
+        # replace(path.join(ma_dir, "browser/confvars.sh"),
+        #         "MOZ_BRANDING_DIRECTORY=browser/branding/nightly",
+        #         "MOZ_BRANDING_DIRECTORY=browser/branding/aurora")
+        # replace(path.join(ma_dir, "browser/confvars.sh"),
+        #         "ACCEPTED_MAR_CHANNEL_IDS=firefox-mozilla-central",
+        #         "ACCEPTED_MAR_CHANNEL_IDS=firefox-mozilla-aurora")
+        # replace(path.join(ma_dir, "browser/confvars.sh"),
+        #         "MAR_CHANNEL_ID=firefox-mozilla-central",
+        #         "MAR_CHANNEL_ID=firefox-mozilla-aurora")
+        # for d in branding_dirs:
+        #     for f in branding_files:
+        #         replace(path.join(ma_dir, d, f),
+        #                 "ac_add_options --with-branding=mobile/android/branding/nightly",
+        #                 "ac_add_options --with-branding=mobile/android/branding/aurora")
+        #         if f == "l10n-nightly":
+        #             replace(path.join(ma_dir, d, f),
+        #                     "ac_add_options --with-l10n-base=../../l10n-central",
+        #                     "ac_add_options --with-l10n-base=..")
+        # for f in profiling_files:
+        #     replace(path.join(ma_dir, f), "ac_add_options --enable-profiling", "")
+        # for f in elf_hack_files:
+        #     replace(path.join(ma_dir, f),
+        #             "ac_add_options --disable-elf-hack # --enable-elf-hack conflicts with --enable-profiling", "")
+
+        # raw_input("Hit 'return' to display diffs onscreen")
+        # run_cmd(["hg", "diff"], cwd=ma_dir)
+        # raw_input("If the diff looks good hit return to commit those changes")
+        # commit(ma_dir, user=hg_user,
+        #        msg="Update configs. IGNORE BROKEN CHANGESETS CLOSED TREE NO BUG a=release ba=release")
+        # raw_input("Go ahead and push mozilla-aurora changes.")
         # TODO CLOBBER file
 
     def aurora_to_beta(self):
@@ -407,7 +469,6 @@ class GeckoMigration(MercurialScript):
                     (end_tag, base_to_rev),
             revision=base_to_rev,
         )
-
         # Call beta_to_release etc.
         if not hasattr(self, self.config['migration_behavior']):
             self.fatal("Don't know how to proceed with migration_behavior %s !" % self.config['migration_behavior'])
@@ -419,11 +480,15 @@ class GeckoMigration(MercurialScript):
             """
         hg = self.query_exe("hg", return_type="list")
         dirs = self.query_abs_dirs()
-        self.run_command(hg + ["diff"], cwd=dirs['abs_to_dir'])
-        self.hg_commit(
-            dirs['abs_to_dir'], user=self.config['hg_user'],
-            message="Update configs. IGNORE BROKEN CHANGESETS CLOSED TREE NO BUG a=release ba=release"
-        )
+        commit_dirs = [dirs['abs_to_dir']]
+        if self.config['migration_behavior'] == 'central_to_aurora':
+            commit_dirs.append(dirs['abs_from_dir'])
+        for cwd in commit_dirs:
+            self.run_command(hg + ["diff"], cwd=cwd)
+            self.hg_commit(
+                cwd, user=self.config['hg_user'],
+                message="Update configs. IGNORE BROKEN CHANGESETS CLOSED TREE NO BUG a=release ba=release"
+            )
 
     def push(self):
         """
