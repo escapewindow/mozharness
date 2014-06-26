@@ -118,13 +118,10 @@ class Beta2Release(TransferMixin, MercurialScript):
             to fall back to figuring out the revision from the cloned repo
             """
         dirname = os.path.basename(path)
-        if self.revisions and dirname in self.revisions:
-            return self.revisions[dirname]['revision']
-        else:
-            m = MercurialVCS()
-            revision = m.get_revision_from_path(path)
-            self.revisions.setdefault(dirname, {})['revision'] = revision
-            return revision
+        m = MercurialVCS(log_obj=self.log_obj)
+        revision = m.get_revision_from_path(path)
+        self.revisions.setdefault(dirname, {})['revision'] = revision
+        return revision
 
     def query_from_revision(self):
         """ Shortcut to get the revision for the from repo
@@ -204,19 +201,30 @@ class Beta2Release(TransferMixin, MercurialScript):
         now = datetime.datetime.now()
         date = now.strftime("%Y%m%d")
         dirs = self.query_abs_dirs()
-        # TODO: make this tag consistent with other branches
-        base_tag = "%s_BASE_%s" % (self.config["tag_base_name"], date)
+        hg = self.query_exe('hg', return_type='list')
+        base_tag = "%sBASE_%s" % (self.config["tag_base_name"], date)
         base_from_rev = self.query_from_revision()
+        base_to_rev = self.query_to_revision()
         self.info("Tagging %s beta with %s" % (base_from_rev, base_tag))
-        sys.path.append(dirs['abs_tools_lib_dir'])
-        import util.hg as tools_hg
-        tools_hg.tag(
-            dirs['abs_from_dir'], tags=[base_tag], rev=base_from_rev,
-            user=self.config.get('hg_user'),
-            msg="Added %s tag for changeset %s. DONTBUILD CLOSED TREE a=release" %
-            (base_tag, base_from_rev)
+        cmd = hg + [
+            'tag', '-u', self.config['hg_user'], '-r', base_from_rev, '-m',
+            "Added %s tag for changeset %s. DONTBUILD CLOSED TREE a=release" %
+            (base_tag, base_from_rev),
+            base_tag
+        ]
+        self.run_command(
+            cmd,
+            cwd=dirs['abs_from_dir'],
+            error_list=HgErrorList,
+            halt_on_failure=True,
         )
-        new_from_rev = tools_hg.get_revision(dirs['abs_from_dir'])
+        new_from_rev = self.query_from_revision()
+        self.info("New revision %s" % new_from_rev)
+#    pull(from_dir, dest=to_dir)
+#    merge_via_debugsetparents(
+#        to_dir, old_head=release_rev, new_head=new_beta_rev, user=hg_user,
+#        msg="Merge old head via |hg debugsetparents %s %s|. "
+#        "CLOSED TREE DONTBUILD a=release" % (new_beta_rev, release_rev))
 
     def push(self):
         """
@@ -247,7 +255,6 @@ class Beta2Release(TransferMixin, MercurialScript):
 #    beta_rev = get_revision(from_dir)
 #    release_rev = get_revision(to_dir)
 
-#
 #    pull(from_dir, dest=to_dir)
 #    merge_via_debugsetparents(
 #        to_dir, old_head=release_rev, new_head=new_beta_rev, user=hg_user,
