@@ -71,12 +71,12 @@ class Beta2Release(TransferMixin, MercurialScript):
         if self.abs_dirs:
             return self.abs_dirs
         dirs = super(Beta2Release, self).query_abs_dirs()
-        for s in ('from', 'to'):
+        for k in ('from', 'to'):
             dir_name = self.config.get(
                 "%s_repo_dir",
-                self.get_filename_from_url(self.config["%s_repo_url" % s])
+                self.get_filename_from_url(self.config["%s_repo_url" % k])
             )
-            self.abs_dirs['abs_%s_dir' % s] = os.path.join(
+            self.abs_dirs['abs_%s_dir' % k] = os.path.join(
                 dirs['abs_work_dir'], dir_name
             )
         return self.abs_dirs
@@ -87,19 +87,23 @@ class Beta2Release(TransferMixin, MercurialScript):
         if self.gecko_repos:
             return self.gecko_repos
         self.info("Building gecko_repos list...")
+        dirs = self.query_abs_dirs()
         self.gecko_repos = []
         for k in ('from', 'to'):
             url = self.config["%s_repo_url" % k]
             self.gecko_repos.append({
                 "repo": url,
                 "revision": self.config.get("%s_repo_revision", "default"),
-                "dest": self.config.get("%s_repo_dir", self.get_filename_from_url(url)),
+                "dest": dirs['abs_%s_dir' % k],
                 "vcs": "hg",
             })
         self.info(pprint.pformat(self.gecko_repos))
         return self.gecko_repos
 
     def query_revision(self, path):
+        """ Avoid making 'pull' a required action every run, by being able
+            to fall back to figuring out the revision from the cloned repo
+            """
         dirname = os.path.basename(path)
         if self.revisions and dirname in self.revisions:
             return self.revisions[dirname]['revision']
@@ -108,6 +112,18 @@ class Beta2Release(TransferMixin, MercurialScript):
             revision = m.get_revision_from_path(path)
             self.revisions.setdefault(dirname, {})['revision'] = revision
             return revision
+
+    def query_from_revision(self):
+        """ Shortcut to get the revision for the from repo
+            """
+        dirs = self.query_abs_dirs()
+        return self.query_revision(self, dirs['abs_from_dir'])
+
+    def query_to_revision(self):
+        """ Shortcut to get the revision for the to repo
+            """
+        dirs = self.query_abs_dirs()
+        return self.query_revision(self, dirs['abs_to_dir'])
 
 #def replace(file_name, from_, to_):
 #    text = open(file_name).read()
@@ -193,12 +209,12 @@ class Beta2Release(TransferMixin, MercurialScript):
     def migrate(self):
         """
             """
-        dirs = self.query_abs_dirs()
         now = datetime.datetime.now()
         date = now.strftime("%Y%m%d")
         # TODO: make this tag consistent with other branches
         base_tag = "%s_BASE_%s" (self.config["tag_base_name"], date)
-#        self.info("Tagging %s beta with %s", beta_rev, release_base_tag)
+        from_rev = self.query_from_revision()
+        self.info("Tagging %s beta with %s", from_rev, base_tag)
 #    tag(from_dir, tags=[release_base_tag], rev=beta_rev, user=hg_user,
 #        msg="Added %s tag for changeset %s. DONTBUILD CLOSED TREE a=release" %
 #        (release_base_tag, beta_rev))
@@ -234,12 +250,6 @@ class Beta2Release(TransferMixin, MercurialScript):
 #    beta_rev = get_revision(from_dir)
 #    release_rev = get_revision(to_dir)
 
-#    log.info("Tagging %s beta with %s", beta_rev, release_base_tag)
-#    tag(from_dir, tags=[release_base_tag], rev=beta_rev, user=hg_user,
-#        msg="Added %s tag for changeset %s. DONTBUILD CLOSED TREE a=release" %
-#        (release_base_tag, beta_rev))
-#    new_beta_rev = get_revision(from_dir)
-#    raw_input("Push mozilla-beta and hit Return")
 #
 #    pull(from_dir, dest=to_dir)
 #    merge_via_debugsetparents(
