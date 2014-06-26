@@ -217,10 +217,20 @@ class GeckoMigration(MercurialScript):
         for line in contents.splitlines():
             locale = line.split()[0]
             if locale not in locales:
-                new_contents += line
+                new_contents += "%s\n" % line
             else:
                 self.info("Removed locale: %s", locale)
         self.write_to_file(file_name, new_contents)
+
+    def touch_clobber_file(self, cwd):
+        clobber_file = os.path.join(cwd, 'CLOBBER')
+        contents = self.read_from_file(clobber_file)
+        new_contents = ""
+        for line in contents.splitlines():
+            if line.startswith("#") or line == '':
+                new_contents += "%s\n" % line
+        new_contents += "Merge day clobber"
+        self.write_to_file(clobber_file, new_contents)
 
     def bump_version(self, cwd, curr_version, next_version, curr_suffix,
                      next_suffix, bump_major=False):
@@ -257,7 +267,7 @@ class GeckoMigration(MercurialScript):
             what happens in each workflow, while allowing for things like
             staging beta user repo migrations.
             """
-        pass
+        dirs = self.query_abs_dirs()
         # bump_version(mc_dir, curr_mc_version, next_mc_version, "a1", "a1",
         #              bump_major=True)
 
@@ -321,7 +331,8 @@ class GeckoMigration(MercurialScript):
         # commit(ma_dir, user=hg_user,
         #        msg="Update configs. IGNORE BROKEN CHANGESETS CLOSED TREE NO BUG a=release ba=release")
         # raw_input("Go ahead and push mozilla-aurora changes.")
-        # TODO CLOBBER file
+        self.touch_clobber_file(dirs['abs_from_dir'])
+        self.touch_clobber_file(dirs['abs_to_dir'])
 
     def aurora_to_beta(self):
         """ mozilla-aurora -> mozilla-beta behavior.
@@ -352,8 +363,8 @@ class GeckoMigration(MercurialScript):
                     os.path.join(dirs['abs_to_dir'], d, f),
                     "ac_add_options --with-branding=mobile/android/branding/aurora",
                     "ac_add_options --with-branding=mobile/android/branding/beta")
+        self.touch_clobber_file(dirs['abs_to_dir'])
         # TODO mozconfig diffing
-        # TODO CLOBBER file
 
     def beta_to_release(self):
         """ mozilla-beta -> mozilla-release behavior.
@@ -386,7 +397,7 @@ class GeckoMigration(MercurialScript):
                 os.path.join(dirs['abs_to_dir'], "browser/locales/shipped-locales"),
                 self.config['remove_locales']
             )
-        # TODO CLOBBER file
+        self.touch_clobber_file(dirs['abs_to_dir'])
 
 # Actions {{{1
     def clean_repos(self):
@@ -408,7 +419,15 @@ class GeckoMigration(MercurialScript):
             repo_name = repo_config["dest"]
             repo_path = os.path.join(dirs['abs_work_dir'], repo_name)
             if os.path.exists(repo_path):
-                self.retry(
+                # hg up -C to discard uncommitted changes
+                self.run_command(
+                    hg + ["up", "-C", "-r", repo_config['revision']],
+                    cwd=repo_path,
+                    error_list=HgErrorList,
+                    halt_on_failure=True,
+                )
+                # discard unpushed commits
+                status = self.retry(
                     self.run_command,
                     args=(hg + ["--config", "extensions.mq=", "strip",
                           "--no-backup", "outgoing()"], ),
@@ -419,6 +438,10 @@ class GeckoMigration(MercurialScript):
                         'success_codes': (0, 255),
                     },
                 )
+                if status not in [0, 255]:
+                    self.fatal("Issues stripping outgoing revisions!")
+                # 2nd hg up -C to make sure we're not on a stranded head
+                # which can happen when reverting debugsetparents
                 self.run_command(
                     hg + ["up", "-C", "-r", repo_config['revision']],
                     cwd=repo_path,
