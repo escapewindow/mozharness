@@ -400,6 +400,11 @@ class GeckoMigration(MercurialScript):
                     "ac_add_options --with-branding=mobile/android/branding/beta")
         self.touch_clobber_file(dirs['abs_to_dir'])
         # TODO mozconfig diffing
+        # The build/tools version only checks the mozconfigs from hgweb, so
+        # can't help pre-push.  The in-tree mozconfig diffing requires a mach
+        # virtualenv to be installed.  If we want this sooner we can put this
+        # in the push action; otherwise we may just wait until we have in-tree
+        # mozconfig checking.
 
     def beta_to_release(self, *args, **kwargs):
         """ mozilla-beta -> mozilla-release behavior.
