@@ -18,6 +18,7 @@ http://hg.mozilla.org/build/tools/file/084bc4e2fc76/release/merge_helper.py
 
 import os
 import pprint
+import subprocess
 import sys
 
 sys.path.insert(1, os.path.dirname(os.path.dirname(sys.path[0])))
@@ -188,16 +189,55 @@ class GeckoMigration(MercurialScript):
                          halt_on_failure=True)
         return self.query_hg_revision(cwd)
 
-    def hg_merge_via_debugsetparents(self, cwd, old_head, new_head, message,
-                                     user=None):
+    def hg_merge_via_debugsetparents(self, cwd, old_head, new_head,
+                                     preserve_tags=True, user=None):
         """ Merge 2 heads avoiding non-fastforward commits
             """
-        cmd = self.query_exe('hg', return_type='list') + [
-            'debugsetparents', new_head, old_head
-        ]
+        hg = self.query_exe('hg', return_type='list')
+        cmd = hg + ['debugsetparents', new_head, old_head]
         self.run_command(cmd, cwd=cwd, error_list=HgErrorList,
                          halt_on_failure=True)
-        self.hg_commit(cwd, message=message, user=user)
+        self.hg_commit(
+            cwd,
+            message="Merge old head via |hg debugsetparents %s %s|. "
+            "CLOSED TREE DONTBUILD a=release" % (new_head, old_head),
+            user=user
+        )
+        if preserve_tags:
+            # I don't know how to do this elegantly.
+            # I'm reverting .hgtags to old_head, then appending the new tags
+            # from new_head to .hgtags, and hoping nothing goes wrong.
+            self.info("Trying to preserve tags from before debugsetparents...")
+            dirs = self.query_abs_dirs()
+            patch_file = os.path.join(dirs['abs_work_dir'], 'patch_file')
+            self.run_command(
+                subprocess.list2cmdline(hg + ['diff', '-r', old_head, '.hgtags', '-U9', '>', patch_file]),
+                cwd=cwd
+            )
+            self.run_command(
+                'patch -R -p1 < %s' % patch_file,
+                cwd=cwd,
+                halt_on_failure=True
+            )
+            tag_diff = self.read_from_file(patch_file)
+            with self.opened(os.path.join(cwd, '.hgtags'), open_mode='a') as (fh, err):
+                if err:
+                    self.fatal("Can't append to .hgtags!")
+                for line in tag_diff.splitlines():
+                    if not line.startswith('+'):
+                        continue
+                    line = line.replace('+', '')
+                    (changeset, tag) = line.split(' ')
+                    if len(changeset) != 40:
+                        continue
+                    fh.write("%s\n" % line)
+                fh.close()
+                self.hg_commit(
+                    cwd,
+                    message="Preserve old tags after debugsetparents. "
+                    "CLOSED TREE DONTBUILD a=release",
+                    user=user
+                )
 
     def replace(self, file_name, from_, to_):
         """ Replace text in a file.
@@ -268,69 +308,52 @@ class GeckoMigration(MercurialScript):
             staging beta user repo migrations.
             """
         dirs = self.query_abs_dirs()
-        # bump_version(mc_dir, curr_mc_version, next_mc_version, "a1", "a1",
-        #              bump_major=True)
 
-        # raw_input("Hit 'return' to display diffs onscreen")
-        # run_cmd(["hg", "diff"], cwd=mc_dir)
-        # raw_input("If the diff looks good hit return to commit those changes")
-        # commit(mc_dir, user=hg_user,
-        #        msg="Version bump. IGNORE BROKEN CHANGESETS CLOSED TREE NO BUG a=release")
-        # raw_input("Go ahead and push mozilla-central...and continue to "
-        #           "mozilla-aurora to mozilla-beta uplift ")
-
-        # # mozilla-aurora
-        # ma_revision = get_revision(ma_dir)
-        # ma_tag = "FIREFOX_BETA_%s_BASE" % curr_ma_version
-        # ma_end_tag = "FIREFOX_AURORA_%s_END" % curr_ma_version
-        # # pull must use revision not tag
-        # pull(mc_dir, dest=ma_dir, revision=new_mc_revision)
-        # merge_via_debugsetparents(
-        #     ma_dir, old_head=ma_revision, new_head=new_mc_revision,
-        #     user=hg_user, msg="Merge old head via |hg debugsetparents %s %s|. "
-        #     "CLOSED TREE DONTBUILD a=release" % (new_mc_revision, ma_revision))
-        # tag(ma_dir, tags=[ma_tag, ma_end_tag], rev=ma_revision, user=hg_user,
+        # ma_revision = get_revision(dirs['abs_to_dir'])
+        # tag(dirs['abs_to_dir'], tags=[ma_tag, ma_end_tag], rev=ma_revision, user=hg_user,
         #     msg="Added %s %s tags for changeset %s. IGNORE BROKEN CHANGESETS DONTBUILD CLOSED TREE NO BUG a=release" %
         #     (ma_tag, ma_end_tag,  ma_revision))
         # log.info("Reverting locales")
         # for f in locale_files:
-        #     run_cmd(["hg", "revert", "-r", ma_end_tag, f], cwd=ma_dir)
-        # bump_version(ma_dir, next_ma_version, next_ma_version, "a1", "a2")
+        #     run_cmd(["hg", "revert", "-r", ma_end_tag, f], cwd=dirs['abs_to_dir'])
+        # bump_version(dirs['abs_to_dir'], next_ma_version, next_ma_version, "a1", "a2")
         # raw_input("Hit 'return' to display diffs onscreen")
-        # run_cmd(["hg", "diff"], cwd=ma_dir)
+        # run_cmd(["hg", "diff"], cwd=dirs['abs_to_dir'])
         # raw_input("If the diff looks good hit return to commit those changes")
-        # commit(ma_dir, user=hg_user, msg="Version bump. IGNORE BROKEN CHANGESETS CLOSED TREE NO BUG a=release")
+        # commit(dirs['abs_to_dir'], user=hg_user, msg="Version bump. IGNORE BROKEN CHANGESETS CLOSED TREE NO BUG a=release")
 
-        # replace(path.join(ma_dir, "browser/confvars.sh"),
+        # replace(path.join(dirs['abs_to_dir'], "browser/confvars.sh"),
         #         "MOZ_BRANDING_DIRECTORY=browser/branding/nightly",
         #         "MOZ_BRANDING_DIRECTORY=browser/branding/aurora")
-        # replace(path.join(ma_dir, "browser/confvars.sh"),
+        # replace(path.join(dirs['abs_to_dir'], "browser/confvars.sh"),
         #         "ACCEPTED_MAR_CHANNEL_IDS=firefox-mozilla-central",
         #         "ACCEPTED_MAR_CHANNEL_IDS=firefox-mozilla-aurora")
-        # replace(path.join(ma_dir, "browser/confvars.sh"),
+        # replace(path.join(dirs['abs_to_dir'], "browser/confvars.sh"),
         #         "MAR_CHANNEL_ID=firefox-mozilla-central",
         #         "MAR_CHANNEL_ID=firefox-mozilla-aurora")
         # for d in branding_dirs:
         #     for f in branding_files:
-        #         replace(path.join(ma_dir, d, f),
+        #         replace(path.join(dirs['abs_to_dir'], d, f),
         #                 "ac_add_options --with-branding=mobile/android/branding/nightly",
         #                 "ac_add_options --with-branding=mobile/android/branding/aurora")
         #         if f == "l10n-nightly":
-        #             replace(path.join(ma_dir, d, f),
+        #             replace(path.join(dirs['abs_to_dir'], d, f),
         #                     "ac_add_options --with-l10n-base=../../l10n-central",
         #                     "ac_add_options --with-l10n-base=..")
         # for f in profiling_files:
-        #     replace(path.join(ma_dir, f), "ac_add_options --enable-profiling", "")
+        #     replace(path.join(dirs['abs_to_dir'], f), "ac_add_options --enable-profiling", "")
         # for f in elf_hack_files:
-        #     replace(path.join(ma_dir, f),
+        #     replace(path.join(dirs['abs_to_dir'], f),
         #             "ac_add_options --disable-elf-hack # --enable-elf-hack conflicts with --enable-profiling", "")
 
-        # raw_input("Hit 'return' to display diffs onscreen")
-        # run_cmd(["hg", "diff"], cwd=ma_dir)
-        # raw_input("If the diff looks good hit return to commit those changes")
-        # commit(ma_dir, user=hg_user,
-        #        msg="Update configs. IGNORE BROKEN CHANGESETS CLOSED TREE NO BUG a=release ba=release")
-        # raw_input("Go ahead and push mozilla-aurora changes.")
+        # bump m-c version
+        curr_mc_version = self.get_fx_major_version(dirs['abs_from_dir'])
+        next_mc_version = str(int(curr_mc_version) + 1)
+        self.bump_version(
+            dirs['abs_from_dir'], curr_mc_version, next_mc_version, "a1", "a1",
+            bump_major=True
+        )
+        # touch clobber files
         self.touch_clobber_file(dirs['abs_from_dir'])
         self.touch_clobber_file(dirs['abs_to_dir'])
 
@@ -483,8 +506,6 @@ class GeckoMigration(MercurialScript):
         self.hg_merge_via_debugsetparents(
             dirs['abs_to_dir'], old_head=base_to_rev, new_head=new_from_rev,
             user=self.config['hg_user'],
-            message="Merge old head via |hg debugsetparents %s %s|. "
-            "CLOSED TREE DONTBUILD a=release" % (new_from_rev, base_to_rev)
         )
         self.hg_tag(
             dirs['abs_to_dir'], end_tag, user=self.config['hg_user'],
