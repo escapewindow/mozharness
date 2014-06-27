@@ -80,11 +80,11 @@ class GeckoMigration(MercurialScript):
         if self.config['migration_behavior'] not in VALID_MIGRATION_BEHAVIORS:
             message += "%s must be one of %s!\n" % (self.config['migration_behavior'], VALID_MIGRATION_BEHAVIORS)
         if self.config['migration_behavior'] == 'beta_to_release':
-            if self.config.get("require_remove_locales") and not self.config.get("remove_locales"):
-                message += "You must specify --remove-locales!\n"
+            if self.config.get("require_remove_locales") and not self.config.get("remove_locales") and 'migrate' in self.actions:
+                message += "You must specify --remove-locale!\n"
         else:
-            if self.config.get("require_remove_locales"):
-                message += "--remove-locales isn't valid unless you're using beta_to_release migration_behavior!\n"
+            if self.config.get("require_remove_locales") or self.config.get("remove_locales"):
+                self.warning("--remove-locale isn't valid unless you're using beta_to_release migration_behavior!\n")
         if message:
             self.fatal(message)
 
@@ -261,7 +261,7 @@ class GeckoMigration(MercurialScript):
             if locale not in locales:
                 new_contents += "%s\n" % line
             else:
-                self.info("Removed locale: %s", locale)
+                self.info("Removed locale: %s" % locale)
         self.write_to_file(file_name, new_contents)
 
     def touch_clobber_file(self, cwd):
@@ -555,7 +555,28 @@ class GeckoMigration(MercurialScript):
     def push(self):
         """
             """
-        pass
+        error_message = """Push failed!  If there was a push race, try rerunning
+the script (--clean-repos --pull --migrate).  The second run will be faster."""
+        dirs = self.query_abs_dirs()
+        hg = self.query_exe("hg", return_type="list")
+        for cwd in (dirs['abs_from_dir'], dirs['abs_to_dir']):
+            status = self.run_command(
+                hg + ['push'],
+                cwd=cwd,
+                error_list=HgErrorList,
+                success_codes=[0, 1],
+            )
+            if status == 1:
+                self.warning("No changes for %s!" % cwd)
+            elif status:
+                if cwd == dirs['abs_from_dir'] and self.config['migration_behavior'] == 'central_to_aurora':
+                    message = """m-c push failed!
+You may be able to fix by |hg rebase| and rerunning --push if successful.
+If not, try rerunning the script (--clean-repos --pull --migrate).
+The second run will be faster."""
+                else:
+                    message = error_message
+                self.fatal(message)
 
 
 # __main__ {{{1
