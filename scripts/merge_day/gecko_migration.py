@@ -207,6 +207,8 @@ class GeckoMigration(MercurialScript):
             # I don't know how to do this elegantly.
             # I'm reverting .hgtags to old_head, then appending the new tags
             # from new_head to .hgtags, and hoping nothing goes wrong.
+            # I'd rather not write patch files from scratch, so this seems
+            # like a slightly more complex but less objectionable method?
             self.info("Trying to preserve tags from before debugsetparents...")
             dirs = self.query_abs_dirs()
             patch_file = os.path.join(dirs['abs_work_dir'], 'patch_file')
@@ -299,7 +301,7 @@ class GeckoMigration(MercurialScript):
             )
 
     # Branch-specific workflow helper methods {{{1
-    def central_to_aurora(self):
+    def central_to_aurora(self, end_tag):
         """ mozilla-central -> mozilla-aurora behavior.
 
             We could have all of these individually toggled by flags, but
@@ -308,44 +310,54 @@ class GeckoMigration(MercurialScript):
             staging beta user repo migrations.
             """
         dirs = self.query_abs_dirs()
-
-        # ma_revision = get_revision(dirs['abs_to_dir'])
-        # tag(dirs['abs_to_dir'], tags=[ma_tag, ma_end_tag], rev=ma_revision, user=hg_user,
-        #     msg="Added %s %s tags for changeset %s. IGNORE BROKEN CHANGESETS DONTBUILD CLOSED TREE NO BUG a=release" %
-        #     (ma_tag, ma_end_tag,  ma_revision))
-        # log.info("Reverting locales")
-        # for f in locale_files:
-        #     run_cmd(["hg", "revert", "-r", ma_end_tag, f], cwd=dirs['abs_to_dir'])
-        # bump_version(dirs['abs_to_dir'], next_ma_version, next_ma_version, "a1", "a2")
-        # raw_input("Hit 'return' to display diffs onscreen")
-        # run_cmd(["hg", "diff"], cwd=dirs['abs_to_dir'])
-        # raw_input("If the diff looks good hit return to commit those changes")
-        # commit(dirs['abs_to_dir'], user=hg_user, msg="Version bump. IGNORE BROKEN CHANGESETS CLOSED TREE NO BUG a=release")
-
-        # replace(path.join(dirs['abs_to_dir'], "browser/confvars.sh"),
-        #         "MOZ_BRANDING_DIRECTORY=browser/branding/nightly",
-        #         "MOZ_BRANDING_DIRECTORY=browser/branding/aurora")
-        # replace(path.join(dirs['abs_to_dir'], "browser/confvars.sh"),
-        #         "ACCEPTED_MAR_CHANNEL_IDS=firefox-mozilla-central",
-        #         "ACCEPTED_MAR_CHANNEL_IDS=firefox-mozilla-aurora")
-        # replace(path.join(dirs['abs_to_dir'], "browser/confvars.sh"),
-        #         "MAR_CHANNEL_ID=firefox-mozilla-central",
-        #         "MAR_CHANNEL_ID=firefox-mozilla-aurora")
-        # for d in branding_dirs:
-        #     for f in branding_files:
-        #         replace(path.join(dirs['abs_to_dir'], d, f),
-        #                 "ac_add_options --with-branding=mobile/android/branding/nightly",
-        #                 "ac_add_options --with-branding=mobile/android/branding/aurora")
-        #         if f == "l10n-nightly":
-        #             replace(path.join(dirs['abs_to_dir'], d, f),
-        #                     "ac_add_options --with-l10n-base=../../l10n-central",
-        #                     "ac_add_options --with-l10n-base=..")
-        # for f in profiling_files:
-        #     replace(path.join(dirs['abs_to_dir'], f), "ac_add_options --enable-profiling", "")
-        # for f in elf_hack_files:
-        #     replace(path.join(dirs['abs_to_dir'], f),
-        #             "ac_add_options --disable-elf-hack # --enable-elf-hack conflicts with --enable-profiling", "")
-
+        self.info("Reverting locales")
+        hg = self.query_exe("hg", return_type="list")
+        for f in self.config["locale_files"]:
+            self.run_command(
+                hg + ["revert", "-r", end_tag, f],
+                cwd=dirs['abs_to_dir'],
+                error_list=HgErrorList,
+                halt_on_failure=True,
+            )
+        next_ma_version = self.get_fx_major_version(dirs['abs_to_dir'])
+        self.bump_version(dirs['abs_to_dir'], next_ma_version, next_ma_version, "a1", "a2")
+        self.replace(
+            os.path.join(dirs['abs_to_dir'], "browser/confvars.sh"),
+            "MOZ_BRANDING_DIRECTORY=browser/branding/nightly",
+            "MOZ_BRANDING_DIRECTORY=browser/branding/aurora"
+        )
+        self.replace(
+            os.path.join(dirs['abs_to_dir'], "browser/confvars.sh"),
+            "ACCEPTED_MAR_CHANNEL_IDS=firefox-mozilla-central",
+            "ACCEPTED_MAR_CHANNEL_IDS=firefox-mozilla-aurora"
+        )
+        self.replace(
+            os.path.join(dirs['abs_to_dir'], "browser/confvars.sh"),
+            "MAR_CHANNEL_ID=firefox-mozilla-central",
+            "MAR_CHANNEL_ID=firefox-mozilla-aurora"
+        )
+        for d in self.config["branding_dirs"]:
+            for f in self.config["branding_files"]:
+                self.replace(
+                    os.path.join(dirs['abs_to_dir'], d, f),
+                    "ac_add_options --with-branding=mobile/android/branding/nightly",
+                    "ac_add_options --with-branding=mobile/android/branding/aurora"
+                )
+                if f == "l10n-nightly":
+                    self.replace(
+                        os.path.join(dirs['abs_to_dir'], d, f),
+                        "ac_add_options --with-l10n-base=../../l10n-central",
+                        "ac_add_options --with-l10n-base=.."
+                    )
+        for f in self.config["profiling_files"]:
+            self.replace(
+                os.path.join(dirs['abs_to_dir'], f),
+                "ac_add_options --enable-profiling", ""
+            )
+        for f in self.config["elf_hack_files"]:
+            self.replace(
+                os.path.join(dirs['abs_to_dir'], f),
+                "ac_add_options --disable-elf-hack # --enable-elf-hack conflicts with --enable-profiling", "")
         # bump m-c version
         curr_mc_version = self.get_fx_major_version(dirs['abs_from_dir'])
         next_mc_version = str(int(curr_mc_version) + 1)
@@ -357,7 +369,7 @@ class GeckoMigration(MercurialScript):
         self.touch_clobber_file(dirs['abs_from_dir'])
         self.touch_clobber_file(dirs['abs_to_dir'])
 
-    def aurora_to_beta(self):
+    def aurora_to_beta(self, *args, **kwargs):
         """ mozilla-aurora -> mozilla-beta behavior.
 
             We could have all of these individually toggled by flags, but
@@ -389,7 +401,7 @@ class GeckoMigration(MercurialScript):
         self.touch_clobber_file(dirs['abs_to_dir'])
         # TODO mozconfig diffing
 
-    def beta_to_release(self):
+    def beta_to_release(self, *args, **kwargs):
         """ mozilla-beta -> mozilla-release behavior.
 
             We could have all of these individually toggled by flags, but
@@ -516,8 +528,8 @@ class GeckoMigration(MercurialScript):
         # Call beta_to_release etc.
         if not hasattr(self, self.config['migration_behavior']):
             self.fatal("Don't know how to proceed with migration_behavior %s !" % self.config['migration_behavior'])
-        getattr(self, self.config['migration_behavior'])()
-        self.info("Verify the diff, and apply any manual changes, such as disabling features.")
+        getattr(self, self.config['migration_behavior'])(end_tag=end_tag)
+        self.info("Verify the diff, and apply any manual changes, such as disabling features, and --commit-changes")
 
     def commit_changes(self):
         """ Do the commit.
@@ -533,6 +545,7 @@ class GeckoMigration(MercurialScript):
                 cwd, user=self.config['hg_user'],
                 message="Update configs. IGNORE BROKEN CHANGESETS CLOSED TREE NO BUG a=release ba=release"
             )
+        self.info("Now verify |hg out| and |hg out --patch| if you're paranoid, and --push")
 
     def push(self):
         """
